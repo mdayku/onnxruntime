@@ -1,0 +1,789 @@
+# ONNX Autodoc - System Architecture
+
+## Overview
+
+This document describes the system architecture for ONNX Autodoc, a model architecture inspection tool integrated into ONNX Runtime.
+
+---
+
+## Table of Contents
+
+1. [System Context](#1-system-context)
+2. [High-Level Architecture](#2-high-level-architecture)
+3. [Component Details](#3-component-details)
+4. [Data Flow](#4-data-flow)
+5. [File Structure](#5-file-structure)
+6. [Integration Points](#6-integration-points)
+7. [Deployment Architecture](#7-deployment-architecture)
+8. [Design Decisions](#8-design-decisions)
+
+---
+
+## 1. System Context
+
+### 1.1 Context Diagram
+
+```
++------------------+     +------------------+     +------------------+
+|                  |     |                  |     |                  |
+|  ML Engineers    |     |  MLOps/Platform  |     |  Leadership      |
+|                  |     |                  |     |                  |
++--------+---------+     +--------+---------+     +--------+---------+
+         |                        |                        |
+         |   Inspect models       |   Registry integration |   Reports
+         v                        v                        v
++------------------------------------------------------------------------+
+|                                                                        |
+|                          ONNX Autodoc                                  |
+|                                                                        |
+|   CLI Interface  -->  Analysis Engine  -->  Report Generators          |
+|                                                                        |
++------------------------------------------------------------------------+
+         |                        |                        |
+         v                        v                        v
++------------------+     +------------------+     +------------------+
+|                  |     |                  |     |                  |
+|  ONNX Models     |     |  Hardware        |     |  External Eval   |
+|  (.onnx files)   |     |  Profiles        |     |  Pipelines       |
+|                  |     |                  |     |                  |
++------------------+     +------------------+     +------------------+
+```
+
+### 1.2 External Dependencies
+
+| Dependency | Purpose | Required |
+|------------|---------|----------|
+| `onnx` library | Model loading and parsing | Yes |
+| `numpy` | Numerical computations | Yes |
+| `protobuf` | ONNX serialization | Yes |
+| `matplotlib` | Visualization generation | No (optional) |
+| `openai` / `anthropic` | LLM summarization | No (optional) |
+| `jinja2` | HTML templating | No (optional) |
+
+---
+
+## 2. High-Level Architecture
+
+### 2.1 Layered Architecture
+
+```
++------------------------------------------------------------------+
+|                        Presentation Layer                         |
+|                                                                   |
+|   +------------+   +------------+   +------------+                |
+|   |   CLI      |   | JSON API   |   | Python API |                |
+|   +------------+   +------------+   +------------+                |
++------------------------------------------------------------------+
+                              |
+                              v
++------------------------------------------------------------------+
+|                        Application Layer                          |
+|                                                                   |
+|   +------------------+   +------------------+                     |
+|   | Report Generator |   | Compare Engine   |                     |
+|   +------------------+   +------------------+                     |
+|                                                                   |
+|   +------------------+   +------------------+                     |
+|   | Visualization    |   | LLM Summarizer   |                     |
+|   +------------------+   +------------------+                     |
++------------------------------------------------------------------+
+                              |
+                              v
++------------------------------------------------------------------+
+|                         Domain Layer                              |
+|                                                                   |
+|   +------------------+   +------------------+                     |
+|   | Model Inspector  |   | Hardware Profile |                     |
+|   +------------------+   +------------------+                     |
+|                                                                   |
+|   +------------------+   +------------------+                     |
+|   | Metrics Engine   |   | Risk Analyzer    |                     |
+|   +------------------+   +------------------+                     |
++------------------------------------------------------------------+
+                              |
+                              v
++------------------------------------------------------------------+
+|                      Infrastructure Layer                         |
+|                                                                   |
+|   +------------------+   +------------------+                     |
+|   | ONNX Graph       |   | File System      |                     |
+|   | Loader           |   | I/O              |                     |
+|   +------------------+   +------------------+                     |
++------------------------------------------------------------------+
+```
+
+### 2.2 Component Overview
+
+| Layer | Components | Responsibility |
+|-------|------------|----------------|
+| **Presentation** | CLI, JSON API, Python API | User interaction, argument parsing |
+| **Application** | Report Generator, Compare Engine, Visualization, LLM Summarizer | Orchestration, output formatting |
+| **Domain** | Model Inspector, Metrics Engine, Risk Analyzer, Hardware Profile | Core business logic |
+| **Infrastructure** | ONNX Graph Loader, File System I/O | External resource access |
+
+---
+
+## 3. Component Details
+
+### 3.1 ONNX Graph Loader
+
+**Purpose**: Load and parse ONNX models into an internal representation.
+
+```python
+class ONNXGraphLoader:
+    """Load ONNX models and extract graph structure."""
+
+    def load(self, path: str) -> ModelProto:
+        """Load ONNX model from file."""
+        pass
+
+    def extract_graph(self, model: ModelProto) -> GraphInfo:
+        """Extract graph nodes, edges, and metadata."""
+        pass
+
+    def infer_shapes(self, model: ModelProto) -> Dict[str, TensorShape]:
+        """Run shape inference to get tensor dimensions."""
+        pass
+```
+
+**Key Classes:**
+
+```
++------------------+     +------------------+     +------------------+
+|   ModelProto     | --> |   GraphInfo      | --> |   NodeInfo       |
++------------------+     +------------------+     +------------------+
+| path             |     | name             |     | name             |
+| opset_version    |     | nodes            |     | op_type          |
+| producer         |     | inputs           |     | inputs           |
+| ir_version       |     | outputs          |     | outputs          |
++------------------+     | initializers     |     | attributes       |
+                         +------------------+     +------------------+
+```
+
+### 3.2 Metrics Engine
+
+**Purpose**: Compute structural complexity metrics.
+
+```python
+class MetricsEngine:
+    """Compute model complexity metrics."""
+
+    def count_parameters(self, graph: GraphInfo) -> ParamCounts:
+        """Count parameters per node, block, and globally."""
+        pass
+
+    def estimate_flops(self, graph: GraphInfo) -> FlopCounts:
+        """Estimate FLOPs for each operation."""
+        pass
+
+    def estimate_memory(self, graph: GraphInfo) -> MemoryEstimates:
+        """Estimate activation memory and peak usage."""
+        pass
+
+    def extract_attention_metrics(self, graph: GraphInfo) -> AttentionMetrics:
+        """Extract transformer-specific metrics."""
+        pass
+```
+
+**FLOP Calculation Matrix:**
+
+| Op Type | FLOP Formula |
+|---------|--------------|
+| Conv2D | `2 * K_h * K_w * C_in * C_out * H_out * W_out` |
+| MatMul | `2 * M * N * K` |
+| Gemm | `2 * M * N * K + M * N` (with bias) |
+| Add/Mul | `N` (element count) |
+| Softmax | `5 * N` (approximation) |
+
+### 3.3 Pattern Analyzer
+
+**Purpose**: Detect common architectural patterns and group nodes into blocks.
+
+```python
+class PatternAnalyzer:
+    """Detect architectural patterns in the graph."""
+
+    def detect_conv_bn_relu(self, graph: GraphInfo) -> List[Block]:
+        """Find Conv-BatchNorm-ReLU sequences."""
+        pass
+
+    def detect_residual_blocks(self, graph: GraphInfo) -> List[Block]:
+        """Find skip connection patterns."""
+        pass
+
+    def detect_transformer_blocks(self, graph: GraphInfo) -> List[Block]:
+        """Find attention + MLP patterns."""
+        pass
+
+    def group_into_blocks(self, graph: GraphInfo) -> List[Block]:
+        """Aggregate all pattern detections."""
+        pass
+```
+
+**Pattern Detection State Machine:**
+
+```
+                    Conv
+          +----------+----------+
+          |                     |
+          v                     v
+    +----------+          +----------+
+    |   BN     |          | No Match |
+    +----------+          +----------+
+          |
+          v
+    +----------+
+    |  ReLU    | --> Block(Conv-BN-ReLU)
+    +----------+
+```
+
+### 3.4 Risk Analyzer
+
+**Purpose**: Apply heuristics to detect potentially problematic patterns.
+
+```python
+class RiskAnalyzer:
+    """Detect architectural risk signals."""
+
+    def check_deep_without_skips(self, graph: GraphInfo) -> Optional[RiskSignal]:
+        """Flag deep networks without skip connections."""
+        pass
+
+    def check_oversized_dense(self, graph: GraphInfo) -> Optional[RiskSignal]:
+        """Flag excessively large fully-connected layers."""
+        pass
+
+    def check_dynamic_shapes(self, graph: GraphInfo) -> Optional[RiskSignal]:
+        """Flag problematic dynamic dimensions."""
+        pass
+
+    def analyze(self, graph: GraphInfo) -> List[RiskSignal]:
+        """Run all heuristics and return signals."""
+        pass
+```
+
+**Risk Signal Schema:**
+
+```python
+@dataclass
+class RiskSignal:
+    id: str              # e.g., "no_skip_connections"
+    severity: str        # "info" | "warning" | "high"
+    description: str     # Human-readable explanation
+    nodes: List[str]     # Affected nodes
+    recommendation: str  # Suggested action
+```
+
+### 3.5 Model Inspector (Orchestrator)
+
+**Purpose**: Coordinate all analysis components and produce the final report.
+
+```python
+class ModelInspector:
+    """Main orchestrator for model analysis."""
+
+    def __init__(
+        self,
+        loader: ONNXGraphLoader,
+        metrics: MetricsEngine,
+        patterns: PatternAnalyzer,
+        risks: RiskAnalyzer,
+    ):
+        pass
+
+    def inspect(self, model_path: str) -> InspectionReport:
+        """Run full analysis pipeline."""
+        pass
+
+    def to_json(self) -> Dict[str, Any]:
+        """Serialize report to JSON."""
+        pass
+
+    def to_markdown(self) -> str:
+        """Generate Markdown model card."""
+        pass
+```
+
+### 3.6 Visualization Module
+
+**Purpose**: Generate matplotlib charts for reports.
+
+```python
+class VisualizationEngine:
+    """Generate charts for model analysis."""
+
+    def __init__(self, style: str = "default"):
+        pass
+
+    def operator_histogram(
+        self,
+        op_counts: Dict[str, int],
+        output_path: Path
+    ) -> str:
+        """Generate operator type distribution chart."""
+        pass
+
+    def layer_depth_profile(
+        self,
+        layers: List[LayerInfo],
+        output_path: Path
+    ) -> str:
+        """Generate cumulative compute distribution."""
+        pass
+
+    def parameter_distribution(
+        self,
+        param_counts: Dict[str, int],
+        output_path: Path
+    ) -> str:
+        """Generate parameter distribution by layer."""
+        pass
+
+    def generate_all(
+        self,
+        report: InspectionReport,
+        assets_dir: Path
+    ) -> Dict[str, str]:
+        """Generate all charts and return paths."""
+        pass
+```
+
+### 3.7 Hardware Profile System
+
+**Purpose**: Estimate hardware requirements and utilization.
+
+```python
+class HardwareProfile:
+    """Hardware specification for estimates."""
+
+    name: str
+    vendor: str
+    type: str  # "gpu" | "cpu" | "npu"
+    vram_bytes: int
+    peak_fp16_flops: int
+    peak_fp32_flops: int
+    memory_bandwidth_bytes_per_s: int
+
+class HardwareEstimator:
+    """Estimate hardware requirements."""
+
+    def estimate_vram(
+        self,
+        report: InspectionReport,
+        profile: HardwareProfile,
+        batch_size: int,
+        precision: str
+    ) -> int:
+        """Estimate VRAM requirement in bytes."""
+        pass
+
+    def estimate_latency(
+        self,
+        report: InspectionReport,
+        profile: HardwareProfile,
+        batch_size: int
+    ) -> float:
+        """Estimate theoretical latency in ms."""
+        pass
+
+    def identify_bottleneck(
+        self,
+        report: InspectionReport,
+        profile: HardwareProfile
+    ) -> str:
+        """Identify whether compute or memory limited."""
+        pass
+```
+
+### 3.8 Compare Engine
+
+**Purpose**: Compare multiple model variants.
+
+```python
+class CompareEngine:
+    """Compare multiple model variants."""
+
+    def load_variants(
+        self,
+        model_paths: List[str],
+        eval_metrics_paths: List[str]
+    ) -> List[VariantInfo]:
+        """Load models and their eval metrics."""
+        pass
+
+    def verify_compatibility(
+        self,
+        variants: List[VariantInfo]
+    ) -> bool:
+        """Check if models are comparable."""
+        pass
+
+    def compute_deltas(
+        self,
+        variants: List[VariantInfo],
+        baseline_precision: str
+    ) -> CompareReport:
+        """Compute differences vs baseline."""
+        pass
+```
+
+---
+
+## 4. Data Flow
+
+### 4.1 Single Model Inspection
+
+```
+                                    +------------------+
+                                    |  Command Line    |
+                                    |  Arguments       |
+                                    +--------+---------+
+                                             |
+                                             v
++------------------+              +------------------+
+|  ONNX Model      | ----------> |  ONNX Graph      |
+|  (.onnx file)    |             |  Loader          |
++------------------+              +--------+---------+
+                                           |
+                                           v
+                                  +------------------+
+                                  |  GraphInfo       |
+                                  |  (parsed graph)  |
+                                  +--------+---------+
+                                           |
+              +----------------------------+----------------------------+
+              |                            |                            |
+              v                            v                            v
+    +------------------+         +------------------+         +------------------+
+    |  Metrics         |         |  Pattern         |         |  Risk            |
+    |  Engine          |         |  Analyzer        |         |  Analyzer        |
+    +--------+---------+         +--------+---------+         +--------+---------+
+             |                            |                            |
+             v                            v                            v
+    +------------------+         +------------------+         +------------------+
+    |  ParamCounts     |         |  Blocks          |         |  RiskSignals     |
+    |  FlopCounts      |         |  Patterns        |         |                  |
+    |  MemoryEstimates |         |                  |         |                  |
+    +------------------+         +------------------+         +------------------+
+              \                           |                           /
+               \                          |                          /
+                \                         v                         /
+                 +-----------> +------------------+ <--------------+
+                               |  InspectionReport|
+                               +--------+---------+
+                                        |
+              +-------------------------+-------------------------+
+              |                         |                         |
+              v                         v                         v
+    +------------------+      +------------------+      +------------------+
+    |  JSON            |      |  Markdown        |      |  Visualization   |
+    |  Serializer      |      |  Renderer        |      |  Engine          |
+    +--------+---------+      +--------+---------+      +--------+---------+
+             |                         |                         |
+             v                         v                         v
+    +------------------+      +------------------+      +------------------+
+    |  report.json     |      |  model_card.md   |      |  assets/*.png    |
+    +------------------+      +------------------+      +------------------+
+```
+
+### 4.2 Compare Mode Flow
+
+```
++------------------+     +------------------+     +------------------+
+|  Model FP32      |     |  Model FP16      |     |  Model INT8      |
++--------+---------+     +--------+---------+     +--------+---------+
+         |                        |                        |
+         v                        v                        v
++------------------+     +------------------+     +------------------+
+|  Inspector       |     |  Inspector       |     |  Inspector       |
++--------+---------+     +--------+---------+     +--------+---------+
+         |                        |                        |
+         v                        v                        v
++------------------+     +------------------+     +------------------+
+|  Report FP32     |     |  Report FP16     |     |  Report INT8     |
++--------+---------+     +--------+---------+     +--------+---------+
+         \                        |                       /
+          \                       |                      /
+           +----------------------+---------------------+
+                                  |
+                                  v
+                         +------------------+
+                         |  Compare Engine  |
+                         +--------+---------+
+                                  |
+                    +-------------+-------------+
+                    |                           |
+                    v                           v
+           +------------------+        +------------------+
+           |  Eval Metrics    |        |  Hardware        |
+           |  (external JSON) |        |  Profile         |
+           +--------+---------+        +--------+---------+
+                    \                          /
+                     \                        /
+                      +----------+-----------+
+                                 |
+                                 v
+                        +------------------+
+                        |  CompareReport   |
+                        +--------+---------+
+                                 |
+                    +------------+------------+
+                    |                         |
+                    v                         v
+           +------------------+      +------------------+
+           |  quant_impact    |      |  quant_impact    |
+           |  .json           |      |  .md             |
+           +------------------+      +------------------+
+```
+
+---
+
+## 5. File Structure
+
+### 5.1 Repository Layout
+
+```
+onnxruntime/
+|
++-- tools/
+|   +-- autodoc/
+|       +-- __init__.py
+|       +-- analysis.py           # Core analysis logic
+|       +-- visualizations.py     # Matplotlib chart generation
+|       +-- render_markdown.py    # Markdown report renderer
+|       +-- render_html.py        # HTML report renderer (optional)
+|       +-- hardware_profiles/
+|           +-- __init__.py
+|           +-- nvidia_rtx_4090.json
+|           +-- nvidia_a10.json
+|           +-- nvidia_t4.json
+|
++-- python/
+|   +-- tools/
+|       +-- model_inspect.py           # Main CLI entrypoint
+|       +-- model_inspect_compare.py   # Compare mode CLI
+|
++-- core/
+|   +-- graph/
+|       +-- model_inspector.h     # C++ core (stretch goal)
+|       +-- model_inspector.cc
+|
++-- test/
+|   +-- python/
+|   |   +-- tools/
+|   |       +-- test_model_inspect.py
+|   |       +-- test_model_inspect_compare.py
+|   |       +-- test_visualizations.py
+|   |       +-- fixtures/
+|   |           +-- resnet50_tiny.onnx
+|   |           +-- bert_tiny.onnx
+|   |
+|   +-- graph/
+|       +-- model_inspector_test.cc  # C++ tests (stretch goal)
+|
++-- samples/
+    +-- tools/
+        +-- model_inspect_resnet50.sh
+        +-- model_inspect_bert.sh
+        +-- model_inspect_compare_yolo.sh
+
+docs/marcu/
+|
++-- README.md             # Project overview
++-- PRD.md                # Product requirements
++-- Architecture.md       # This document
++-- THE UNCHARTED TERRITORY CHALLENGE.md  # Challenge requirements
++-- model_inspect_scaffold.md             # Code scaffolds
+```
+
+### 5.2 Module Dependencies
+
+```
+model_inspect.py (CLI)
+    |
+    +-- analysis.py
+    |       |
+    |       +-- onnx (external)
+    |       +-- numpy (external)
+    |
+    +-- visualizations.py
+    |       |
+    |       +-- matplotlib (external, optional)
+    |
+    +-- render_markdown.py
+    |
+    +-- render_html.py (optional)
+            |
+            +-- jinja2 (external, optional)
+```
+
+---
+
+## 6. Integration Points
+
+### 6.1 ONNX Runtime Integration
+
+The tool integrates with existing ONNX Runtime tooling:
+
+| Existing Tool | Integration Point |
+|--------------|-------------------|
+| `check_onnx_model_mobile_usability` | Similar CLI pattern, can share utilities |
+| `onnxruntime_perf_test` | Autodoc can consume perf test output |
+| ONNX Runtime Python bindings | Leverage existing model loading code |
+
+### 6.2 External Pipeline Integration
+
+```
++------------------+     +------------------+     +------------------+
+|  YOLO Batch      |     |  ResNet Eval     |     |  BERT Eval       |
+|  Eval Pipeline   |     |  Pipeline        |     |  Pipeline        |
++--------+---------+     +--------+---------+     +--------+---------+
+         |                        |                        |
+         v                        v                        v
++------------------------------------------------------------------------+
+|                    Generic Eval/Perf JSON Schema                       |
+|                                                                        |
+|  { "model_id": "...", "precision": "...", "eval": {...}, "perf": {...}}|
++------------------------------------------------------------------------+
+                                  |
+                                  v
+                         +------------------+
+                         |  ONNX Autodoc    |
+                         |  Compare Mode    |
+                         +------------------+
+```
+
+### 6.3 CI/CD Integration
+
+```yaml
+# Example GitHub Actions workflow
+name: Model Analysis
+
+on:
+  push:
+    paths:
+      - 'models/*.onnx'
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: pip install onnxruntime onnx matplotlib
+
+      - name: Analyze models
+        run: |
+          for model in models/*.onnx; do
+            python -m onnxruntime.tools.model_inspect "$model" \
+              --out-json "reports/$(basename $model .onnx).json" \
+              --out-md "reports/$(basename $model .onnx).md"
+          done
+
+      - name: Upload reports
+        uses: actions/upload-artifact@v2
+        with:
+          name: model-reports
+          path: reports/
+```
+
+---
+
+## 7. Deployment Architecture
+
+### 7.1 Standalone CLI
+
+```
++------------------+
+|  User Machine    |
+|                  |
+|  +------------+  |
+|  | Python     |  |
+|  | 3.10+      |  |
+|  +------------+  |
+|       |          |
+|       v          |
+|  +------------+  |
+|  | model_     |  |     +------------------+
+|  | inspect    |--+---> |  .json / .md     |
+|  +------------+  |     |  reports         |
+|                  |     +------------------+
++------------------+
+```
+
+### 7.2 Integration with Model Registry
+
+```
++------------------+     +------------------+     +------------------+
+|  Model Registry  | --> |  ONNX Autodoc    | --> |  Registry        |
+|  (upload event)  |     |  (webhook/job)   |     |  Metadata Store  |
++------------------+     +------------------+     +------------------+
+                                                          |
+                                                          v
+                                                 +------------------+
+                                                 |  Search/Filter   |
+                                                 |  by Metrics      |
+                                                 +------------------+
+```
+
+### 7.3 Batch Processing Mode
+
+```
++------------------+
+|  Model Directory |
+|                  |
+|  +-- model1.onnx |
+|  +-- model2.onnx |
+|  +-- model3.onnx |
++--------+---------+
+         |
+         v
++------------------+     +------------------+
+|  Batch Script    | --> |  reports/        |
+|                  |     |  +-- model1.json |
+|  for model in    |     |  +-- model1.md   |
+|    models/*.onnx |     |  +-- model2.json |
+|  do inspect      |     |  +-- model2.md   |
+|  done            |     |  +-- ...         |
++------------------+     +------------------+
+```
+
+---
+
+## 8. Design Decisions
+
+### 8.1 Decision Log
+
+| Decision | Rationale | Alternatives Considered |
+|----------|-----------|------------------------|
+| Python-first implementation | Faster development, easier ONNX integration | C++-first with Python bindings |
+| Matplotlib for visualization | Widely available, simple API, no JS dependencies | Plotly, D3.js, Vega-Lite |
+| JSON as primary output format | Machine-readable, widely supported | Protobuf, MessagePack |
+| Optional LLM integration | Not everyone has API access; core functionality works without | Required LLM dependency |
+| Hardware profiles as JSON files | Easy to extend, no code changes for new hardware | Hardcoded profiles |
+| Graceful degradation | Tool should always produce some output | Fail fast on any error |
+
+### 8.2 Trade-offs
+
+| Trade-off | Choice | Consequence |
+|-----------|--------|-------------|
+| Accuracy vs Speed | Approximate FLOPs | May not match exact profiler results |
+| Simplicity vs Completeness | Focus on common ops | Exotic ops get generic estimates |
+| Bundled vs External | Integrated into ORT | Requires ORT build; could be standalone |
+
+### 8.3 Future Considerations
+
+- **C++ Core**: For performance-critical deployments, implement core analysis in C++
+- **Interactive Mode**: Web-based UI for exploring model architecture
+- **Model Zoo Integration**: Pre-computed reports for ONNX Model Zoo
+- **Diff Mode**: Visual diff between model versions
+- **Custom Risk Rules**: User-defined heuristics via YAML config
+
+---
+
+## Revision History
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | Dec 2024 | Marcus | Initial architecture document |
