@@ -13,7 +13,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 
 | Epic | Status | Stories | Tasks Complete |
 |------|--------|---------|----------------|
-| Epic 1: Environment Setup | In Progress | 3 | 0/12 |
+| Epic 1: Environment Setup | In Progress | 3 | 2/12 |
 | Epic 2: Core Analysis Engine | Not Started | 4 | 0/17 |
 | Epic 3: Pattern Analysis | Not Started | 2 | 0/9 |
 | Epic 4: CLI and Output | Not Started | 3 | 0/13 |
@@ -28,9 +28,9 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 ## Epic 1: Environment Setup and Repo Exploration
 
 ### Story 1.1: Fork and Build ONNX Runtime
-- [ ] **Task 1.1.1**: Fork microsoft/onnxruntime repository
-- [ ] **Task 1.1.2**: Set up local development environment (Python 3.10+, CMake, etc.)
-- [ ] **Task 1.1.3**: Successfully build ONNX Runtime from source
+- [x] **Task 1.1.1**: Fork microsoft/onnxruntime repository
+- [x] **Task 1.1.2**: Set up local development environment (Python 3.10+, CMake, etc.)
+- [ ] **Task 1.1.3**: Successfully build ONNX Runtime from source *(in progress - CUDA kernels)*
 - [ ] **Task 1.1.4**: Run existing test suite to verify build
 
 ### Story 1.2: Codebase Familiarization
