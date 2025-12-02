@@ -17,6 +17,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 | Epic 2: Core Analysis Engine | In Progress | 4 | 12/17 |
 | Epic 3: Pattern Analysis | In Progress | 2 | 7/9 |
 | Epic 4: CLI and Output | In Progress | 3 | 11/14 |
+| Epic 4B: PyTorch Integration | In Progress | 1 | 7/8 |
 | Epic 5: Visualization | **Complete** | 3 | 12/12 |
 | Epic 6: Hardware/Compare | In Progress | 7 | 9/28 |
 | Epic 7: LLM Integration | **Complete** | 1 | 5/5 |
@@ -115,6 +116,27 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 4.3.4**: Generate risk signals section
 - [x] **Task 4.3.5**: Add hardware estimates section
 - [ ] **Task 4.3.6**: Add executive summary section
+
+---
+
+## Epic 4B: PyTorch Integration
+
+### Story 4B.1: PyTorch to ONNX Conversion
+- [x] **Task 4B.1.1**: Add `--from-pytorch` CLI flag with model path argument
+- [x] **Task 4B.1.2**: Implement PyTorch model loading (TorchScript + torch.load)
+- [x] **Task 4B.1.3**: Require `--input-shape` for conversion
+- [x] **Task 4B.1.4**: Implement torch.onnx.export wrapper with sensible defaults
+- [x] **Task 4B.1.5**: Generate temp ONNX file for analysis (or --keep-onnx to save)
+- [x] **Task 4B.1.6**: Support TorchScript models (.pt from torch.jit.save)
+- [ ] **Task 4B.1.7**: Add tests for PyTorch conversion flow
+- [x] **Task 4B.1.8**: Handle conversion errors gracefully (missing torch, export failures)
+
+### Story 4B.2: Dataset/Class Metadata Extraction
+- [x] **Task 4B.2.1**: Detect Ultralytics models and extract class names
+- [ ] **Task 4B.2.2**: Parse output shapes to infer number of classes (future)
+- [x] **Task 4B.2.3**: Add DatasetInfo dataclass (task, num_classes, class_names)
+- [x] **Task 4B.2.4**: Add Dataset Info section to Markdown/HTML reports
+- [x] **Task 4B.2.5**: Add --pytorch-weights flag to provide original .pt for metadata
 
 ---
 

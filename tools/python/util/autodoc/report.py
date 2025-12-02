@@ -58,6 +58,16 @@ class GraphSummary:
 
 
 @dataclass
+class DatasetInfo:
+    """Dataset and class information extracted from model metadata."""
+
+    task: str | None = None  # "detect", "classify", "segment", etc.
+    num_classes: int | None = None
+    class_names: list[str] = field(default_factory=list)
+    source: str | None = None  # "ultralytics", "output_shape", etc.
+
+
+@dataclass
 class InspectionReport:
     """
     Complete inspection report for an ONNX model.
@@ -97,6 +107,9 @@ class InspectionReport:
 
     # LLM summary (optional, set by CLI if --llm-summary specified)
     llm_summary: dict[str, Any] | None = None
+
+    # Dataset info (optional, extracted from model metadata)
+    dataset_info: DatasetInfo | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert report to a JSON-serializable dictionary."""
@@ -263,6 +276,25 @@ class InspectionReport:
                 for bt, count in sorted(block_types.items(), key=lambda x: -x[1]):
                     lines.append(f"- {bt}: {count}")
                 lines.append("")
+
+        # Dataset info (if available)
+        if self.dataset_info:
+            lines.append("## Dataset Info")
+            lines.append("")
+            if self.dataset_info.task:
+                lines.append(f"**Task**: {self.dataset_info.task}")
+            if self.dataset_info.num_classes:
+                lines.append(f"**Number of Classes**: {self.dataset_info.num_classes}")
+            if self.dataset_info.class_names:
+                lines.append("")
+                lines.append("### Class Names")
+                lines.append("")
+                for idx, name in enumerate(self.dataset_info.class_names):
+                    lines.append(f"- `{idx}`: {name}")
+            if self.dataset_info.source:
+                lines.append("")
+                lines.append(f"*Metadata source: {self.dataset_info.source}*")
+            lines.append("")
 
         # Hardware estimates
         if self.hardware_estimates and self.hardware_profile:
@@ -528,6 +560,30 @@ class InspectionReport:
                 html_parts.append("</ul>")
 
         html_parts.append("</section>")
+
+        # Dataset Info
+        if self.dataset_info:
+            html_parts.append('<section class="dataset-info">')
+            html_parts.append("<h2>Dataset Info</h2>")
+            if self.dataset_info.task:
+                html_parts.append(
+                    f"<p><strong>Task:</strong> {self.dataset_info.task}</p>"
+                )
+            if self.dataset_info.num_classes:
+                html_parts.append(
+                    f"<p><strong>Number of Classes:</strong> {self.dataset_info.num_classes}</p>"
+                )
+            if self.dataset_info.class_names:
+                html_parts.append("<h3>Class Names</h3>")
+                html_parts.append('<div class="class-list"><ul>')
+                for idx, name in enumerate(self.dataset_info.class_names):
+                    html_parts.append(f"<li><code>{idx}</code>: {name}</li>")
+                html_parts.append("</ul></div>")
+            if self.dataset_info.source:
+                html_parts.append(
+                    f'<p class="metadata-source"><em>Source: {self.dataset_info.source}</em></p>'
+                )
+            html_parts.append("</section>")
 
         # Hardware Estimates
         if self.hardware_estimates and self.hardware_profile:

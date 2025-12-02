@@ -86,6 +86,44 @@ Examples:
         help="Output path for HTML report with embedded images. Single shareable file.",
     )
 
+    # PyTorch conversion options
+    pytorch_group = parser.add_argument_group("PyTorch Conversion Options")
+    pytorch_group.add_argument(
+        "--from-pytorch",
+        type=pathlib.Path,
+        default=None,
+        metavar="MODEL_PATH",
+        help="Convert a PyTorch model (.pth, .pt) to ONNX before analysis. Requires torch.",
+    )
+    pytorch_group.add_argument(
+        "--input-shape",
+        type=str,
+        default=None,
+        metavar="SHAPE",
+        help="Input shape for PyTorch conversion, e.g., '1,3,224,224'. Required with --from-pytorch.",
+    )
+    pytorch_group.add_argument(
+        "--keep-onnx",
+        type=pathlib.Path,
+        default=None,
+        metavar="PATH",
+        help="Save the converted ONNX model to this path (otherwise uses temp file).",
+    )
+    pytorch_group.add_argument(
+        "--opset-version",
+        type=int,
+        default=17,
+        help="ONNX opset version for PyTorch export (default: 17).",
+    )
+    pytorch_group.add_argument(
+        "--pytorch-weights",
+        type=pathlib.Path,
+        default=None,
+        metavar="PATH",
+        help="Path to original PyTorch weights (.pt) to extract class names/metadata. "
+        "Useful when analyzing a pre-converted ONNX file.",
+    )
+
     # Hardware options
     hardware_group = parser.add_argument_group("Hardware Options")
     hardware_group.add_argument(
@@ -259,6 +297,193 @@ def _generate_markdown_with_extras(
     return "\n".join(lines)
 
 
+def _extract_ultralytics_metadata(
+    weights_path: pathlib.Path,
+    logger: logging.Logger,
+) -> dict[str, Any] | None:
+    """
+    Extract metadata from an Ultralytics model (.pt file).
+
+    Returns dict with task, num_classes, class_names or None if not Ultralytics.
+    """
+    try:
+        from ultralytics import YOLO
+
+        model = YOLO(str(weights_path))
+
+        return {
+            "task": model.task,
+            "num_classes": len(model.names),
+            "class_names": list(model.names.values()),
+            "source": "ultralytics",
+        }
+    except ImportError:
+        logger.debug("ultralytics not installed, skipping metadata extraction")
+        return None
+    except Exception as e:
+        logger.debug(f"Could not extract Ultralytics metadata: {e}")
+        return None
+
+
+def _convert_pytorch_to_onnx(
+    pytorch_path: pathlib.Path,
+    input_shape_str: str | None,
+    output_path: pathlib.Path | None,
+    opset_version: int,
+    logger: logging.Logger,
+) -> tuple[pathlib.Path | None, Any]:
+    """
+    Convert a PyTorch model to ONNX format.
+
+    Args:
+        pytorch_path: Path to PyTorch model (.pth, .pt)
+        input_shape_str: Input shape as comma-separated string, e.g., "1,3,224,224"
+        output_path: Where to save ONNX file (None = temp file)
+        opset_version: ONNX opset version
+        logger: Logger instance
+
+    Returns:
+        Tuple of (onnx_path, temp_file_handle_or_None)
+    """
+    # Check if torch is available
+    try:
+        import torch
+    except ImportError:
+        logger.error("PyTorch not installed. Install with: pip install torch")
+        return None, None
+
+    pytorch_path = pytorch_path.resolve()
+    if not pytorch_path.exists():
+        logger.error(f"PyTorch model not found: {pytorch_path}")
+        return None, None
+
+    # Parse input shape
+    if not input_shape_str:
+        logger.error(
+            "--input-shape is required for PyTorch conversion. "
+            "Example: --input-shape 1,3,224,224"
+        )
+        return None, None
+
+    try:
+        input_shape = tuple(int(x.strip()) for x in input_shape_str.split(","))
+        logger.info(f"Input shape: {input_shape}")
+    except ValueError:
+        logger.error(
+            f"Invalid --input-shape format: '{input_shape_str}'. "
+            "Use comma-separated integers, e.g., '1,3,224,224'"
+        )
+        return None, None
+
+    # Load PyTorch model
+    logger.info(f"Loading PyTorch model from: {pytorch_path}")
+    model = None
+
+    # Try 1: TorchScript model (.pt files from torch.jit.save)
+    try:
+        model = torch.jit.load(str(pytorch_path), map_location="cpu")
+        logger.info(f"Loaded TorchScript model: {type(model).__name__}")
+    except Exception:
+        pass
+
+    # Try 2: Regular torch.load (full model or state_dict)
+    if model is None:
+        try:
+            loaded = torch.load(pytorch_path, map_location="cpu", weights_only=False)
+
+            if isinstance(loaded, dict):
+                # It's a state_dict - we can't use it directly
+                logger.error(
+                    "Model file appears to be a state_dict (weights only). "
+                    "To convert, you need either:\n"
+                    "  1. A TorchScript model: torch.jit.save(torch.jit.script(model), 'model.pt')\n"
+                    "  2. A full model: torch.save(model, 'model.pth')  # run from same codebase\n"
+                    "  3. Export to ONNX directly in your training code using torch.onnx.export()"
+                )
+                return None, None
+
+            model = loaded
+            logger.info(f"Loaded PyTorch model: {type(model).__name__}")
+
+        except Exception as e:
+            error_msg = str(e)
+            if "Can't get attribute" in error_msg:
+                logger.error(
+                    f"Failed to load model - class definition not found.\n"
+                    f"The model was saved with torch.save(model, ...) which requires "
+                    f"the original class to be importable.\n\n"
+                    f"Solutions:\n"
+                    f"  1. Save as TorchScript: torch.jit.save(torch.jit.script(model), 'model.pt')\n"
+                    f"  2. Export to ONNX in your code: torch.onnx.export(model, dummy_input, 'model.onnx')\n"
+                    f"  3. Run this tool from the directory containing your model definition"
+                )
+            else:
+                logger.error(f"Failed to load PyTorch model: {e}")
+            return None, None
+
+    if model is None:
+        logger.error("Could not load the PyTorch model.")
+        return None, None
+
+    model.eval()
+
+    # Create dummy input
+    try:
+        dummy_input = torch.randn(*input_shape)
+        logger.info(f"Created dummy input with shape: {dummy_input.shape}")
+    except Exception as e:
+        logger.error(f"Failed to create input tensor: {e}")
+        return None, None
+
+    # Determine output path
+    temp_file = None
+    if output_path:
+        onnx_path = output_path.resolve()
+        onnx_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        import tempfile
+
+        temp_file = tempfile.NamedTemporaryFile(suffix=".onnx", delete=False)
+        onnx_path = pathlib.Path(temp_file.name)
+        temp_file.close()
+
+    # Export to ONNX
+    logger.info(f"Exporting to ONNX (opset {opset_version})...")
+    try:
+        torch.onnx.export(
+            model,
+            dummy_input,
+            str(onnx_path),
+            input_names=["input"],
+            output_names=["output"],
+            dynamic_axes={
+                "input": {0: "batch_size"},
+                "output": {0: "batch_size"},
+            },
+            opset_version=opset_version,
+            do_constant_folding=True,
+        )
+        logger.info(f"ONNX model saved to: {onnx_path}")
+
+        # Verify the export
+        import onnx
+
+        onnx_model = onnx.load(str(onnx_path))
+        onnx.checker.check_model(onnx_model)
+        logger.info("ONNX model validated successfully")
+
+    except Exception as e:
+        logger.error(f"ONNX export failed: {e}")
+        if temp_file:
+            try:
+                onnx_path.unlink()
+            except Exception:
+                pass
+        return None, None
+
+    return onnx_path, temp_file
+
+
 def run_inspect():
     """Main entry point for the model_inspect CLI."""
     args = parse_args()
@@ -345,22 +570,36 @@ def run_inspect():
         print("=" * 70 + "\n")
         sys.exit(0)
 
-    # Validate model path
-    if args.model_path is None:
-        logger.error(
-            "Model path is required. Use --list-hardware to see available profiles."
+    # Handle PyTorch conversion if requested
+    temp_onnx_file = None
+    if args.from_pytorch:
+        model_path, temp_onnx_file = _convert_pytorch_to_onnx(
+            args.from_pytorch,
+            args.input_shape,
+            args.keep_onnx,
+            args.opset_version,
+            logger,
         )
-        sys.exit(1)
+        if model_path is None:
+            sys.exit(1)
+    else:
+        # Validate model path
+        if args.model_path is None:
+            logger.error(
+                "Model path is required. Use --list-hardware to see available profiles, "
+                "or --from-pytorch to convert a PyTorch model."
+            )
+            sys.exit(1)
 
-    model_path = args.model_path.resolve()
-    if not model_path.exists():
-        logger.error(f"Model file not found: {model_path}")
-        sys.exit(1)
+        model_path = args.model_path.resolve()
+        if not model_path.exists():
+            logger.error(f"Model file not found: {model_path}")
+            sys.exit(1)
 
-    if not model_path.suffix.lower() in (".onnx", ".pb", ".ort"):
-        logger.warning(
-            f"Unexpected file extension: {model_path.suffix}. Proceeding anyway."
-        )
+        if model_path.suffix.lower() not in (".onnx", ".pb", ".ort"):
+            logger.warning(
+                f"Unexpected file extension: {model_path.suffix}. Proceeding anyway."
+            )
 
     # Determine hardware profile
     hardware_profile = None
@@ -408,6 +647,27 @@ def run_inspect():
 
             traceback.print_exc()
         sys.exit(1)
+
+    # Extract dataset metadata if PyTorch weights provided
+    if args.pytorch_weights or args.from_pytorch:
+        weights_path = args.pytorch_weights or args.from_pytorch
+        if weights_path.exists():
+            logger.info(f"Extracting metadata from: {weights_path}")
+            metadata = _extract_ultralytics_metadata(weights_path, logger)
+            if metadata:
+                from .autodoc.report import DatasetInfo
+
+                report.dataset_info = DatasetInfo(
+                    task=metadata.get("task"),
+                    num_classes=metadata.get("num_classes"),
+                    class_names=metadata.get("class_names", []),
+                    source=metadata.get("source"),
+                )
+                logger.info(
+                    f"Extracted {report.dataset_info.num_classes} class(es): "
+                    f"{', '.join(report.dataset_info.class_names[:5])}"
+                    f"{'...' if len(report.dataset_info.class_names) > 5 else ''}"
+                )
 
     # Generate LLM summaries if requested
     llm_summary = None
@@ -587,6 +847,14 @@ def run_inspect():
             print(f"  Markdown card: {args.out_md}")
         if args.out_html:
             print(f"  HTML report: {args.out_html}")
+
+    # Cleanup temp ONNX file if we created one
+    if temp_onnx_file is not None:
+        try:
+            pathlib.Path(temp_onnx_file.name).unlink()
+            logger.debug(f"Cleaned up temp ONNX file: {temp_onnx_file.name}")
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
