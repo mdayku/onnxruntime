@@ -156,10 +156,43 @@ INSPECTION_REPORT_SCHEMA: dict[str, Any] = {
                     "minimum": 0,
                     "description": "Non-trainable parameter count",
                 },
-                "by_node_type": {
+                "by_op_type": {
                     "type": "object",
-                    "description": "Parameters by operator type",
+                    "description": "Parameters by operator type (fractional for shared weights)",
+                    "additionalProperties": {"type": "number", "minimum": 0},
+                },
+                "shared_weights": {
+                    "type": "object",
+                    "description": "Information about shared weights",
+                    "properties": {
+                        "count": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Number of weights shared across 2+ nodes",
+                        },
+                        "details": {
+                            "type": "object",
+                            "description": "Shared weight name to list of node names using it",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                    },
+                },
+                "precision_breakdown": {
+                    "type": "object",
+                    "description": "Parameter count by data type (fp32, fp16, int8, etc.)",
                     "additionalProperties": {"type": "integer", "minimum": 0},
+                },
+                "is_quantized": {
+                    "type": "boolean",
+                    "description": "Whether model uses quantized weights or ops",
+                },
+                "quantized_ops": {
+                    "type": "array",
+                    "description": "List of quantized operation types detected",
+                    "items": {"type": "string"},
                 },
             },
         },

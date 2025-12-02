@@ -560,5 +560,315 @@ class TestKVCacheEstimation:
             model_path.unlink()
 
 
+def create_shared_weights_model() -> onnx.ModelProto:
+    """Create a model with shared weights (same weight used by two nodes)."""
+    # Input: [1, 8]
+    X = helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 8])
+
+    # Shared weight: [8, 16] = 128 params
+    W_shared = helper.make_tensor(
+        "W_shared",
+        TensorProto.FLOAT,
+        [8, 16],
+        np.random.randn(8, 16).astype(np.float32).flatten().tolist(),
+    )
+
+    # Output: [1, 16]
+    Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 16])
+
+    # Two MatMul nodes using the same weight
+    matmul1 = helper.make_node("MatMul", ["X", "W_shared"], ["hidden"], name="MatMul1")
+    matmul2 = helper.make_node("MatMul", ["hidden", "W_shared"], ["Y"], name="MatMul2")
+
+    graph = helper.make_graph(
+        [matmul1, matmul2],
+        "shared_weights_test",
+        [X],
+        [Y],
+        [W_shared],
+    )
+
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 17)])
+    return model
+
+
+def create_int8_weights_model() -> onnx.ModelProto:
+    """Create a model with INT8 quantized weights."""
+    # Input: [1, 8]
+    X = helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 8])
+
+    # INT8 weight: [8, 16] = 128 params
+    W_int8 = helper.make_tensor(
+        "W_int8",
+        TensorProto.INT8,
+        [8, 16],
+        np.random.randint(-128, 127, (8, 16), dtype=np.int8).flatten().tolist(),
+    )
+
+    # Scale and zero point for dequantization
+    scale = helper.make_tensor("scale", TensorProto.FLOAT, [], [0.01])
+    zero_point = helper.make_tensor("zero_point", TensorProto.INT8, [], [0])
+
+    # Output: [1, 16]
+    Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 16])
+
+    # Dequantize the weight, then MatMul
+    dequant_node = helper.make_node(
+        "DequantizeLinear", ["W_int8", "scale", "zero_point"], ["W_float"]
+    )
+    matmul_node = helper.make_node("MatMul", ["X", "W_float"], ["Y"])
+
+    graph = helper.make_graph(
+        [dequant_node, matmul_node],
+        "int8_weights_test",
+        [X],
+        [Y],
+        [W_int8, scale, zero_point],
+    )
+
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 17)])
+    return model
+
+
+def create_mixed_precision_model() -> onnx.ModelProto:
+    """Create a model with mixed precision weights (fp32, fp16)."""
+    # Input: [1, 8]
+    X = helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 8])
+
+    # FP32 weight: [8, 16] = 128 params
+    W_fp32 = helper.make_tensor(
+        "W_fp32",
+        TensorProto.FLOAT,
+        [8, 16],
+        np.random.randn(8, 16).astype(np.float32).flatten().tolist(),
+    )
+
+    # FP16 weight: [16, 8] = 128 params
+    W_fp16 = helper.make_tensor(
+        "W_fp16",
+        TensorProto.FLOAT16,
+        [16, 8],
+        np.random.randn(16, 8).astype(np.float16).flatten().tolist(),
+    )
+
+    # Output: [1, 8]
+    Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 8])
+
+    # Two MatMul nodes with different precision weights
+    matmul1 = helper.make_node("MatMul", ["X", "W_fp32"], ["hidden"])
+    cast_node = helper.make_node(
+        "Cast", ["W_fp16"], ["W_fp16_casted"], to=TensorProto.FLOAT
+    )
+    matmul2 = helper.make_node("MatMul", ["hidden", "W_fp16_casted"], ["Y"])
+
+    graph = helper.make_graph(
+        [matmul1, cast_node, matmul2],
+        "mixed_precision_test",
+        [X],
+        [Y],
+        [W_fp32, W_fp16],
+    )
+
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 17)])
+    return model
+
+
+class TestSharedWeights:
+    """Tests for shared weight handling (Task 2.2.4)."""
+
+    def test_shared_weights_detected(self):
+        """Test that shared weights are correctly detected."""
+        model = create_shared_weights_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            engine = MetricsEngine()
+            params = engine.count_parameters(graph_info)
+
+            # Should detect 1 shared weight
+            assert params.num_shared_weights == 1
+            assert "W_shared" in params.shared_weights
+            assert len(params.shared_weights["W_shared"]) == 2
+        finally:
+            model_path.unlink()
+
+    def test_shared_weights_fractional_attribution(self):
+        """Test that shared weights use fractional attribution."""
+        model = create_shared_weights_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            engine = MetricsEngine()
+            params = engine.count_parameters(graph_info)
+
+            # Total should still be 128 (8*16)
+            assert params.total == 128
+
+            # by_op_type should sum to 128 (fractional attribution)
+            op_type_sum = sum(params.by_op_type.values())
+            assert abs(op_type_sum - 128) < 0.01  # Allow floating point tolerance
+
+            # MatMul should have the full 128 (64 + 64 from two nodes)
+            assert "MatMul" in params.by_op_type
+            assert abs(params.by_op_type["MatMul"] - 128) < 0.01
+        finally:
+            model_path.unlink()
+
+    def test_no_shared_weights_normal_model(self):
+        """Test that normal models report 0 shared weights."""
+        model = create_simple_conv_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            engine = MetricsEngine()
+            params = engine.count_parameters(graph_info)
+
+            # Should have no shared weights
+            assert params.num_shared_weights == 0
+            assert len(params.shared_weights) == 0
+        finally:
+            model_path.unlink()
+
+
+class TestQuantizedParams:
+    """Tests for quantized parameter detection (Task 2.2.4)."""
+
+    def test_int8_weights_detected(self):
+        """Test that INT8 weights are detected."""
+        model = create_int8_weights_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            engine = MetricsEngine()
+            params = engine.count_parameters(graph_info)
+
+            # Should detect quantization
+            assert params.is_quantized is True
+            assert "DequantizeLinear" in params.quantized_ops
+        finally:
+            model_path.unlink()
+
+    def test_precision_breakdown(self):
+        """Test that precision breakdown is computed correctly."""
+        model = create_int8_weights_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            engine = MetricsEngine()
+            params = engine.count_parameters(graph_info)
+
+            # Should have precision breakdown
+            assert len(params.precision_breakdown) > 0
+            # INT8 weight: 8*16 = 128 params + zero_point (1) = 129
+            assert "int8" in params.precision_breakdown
+            assert params.precision_breakdown["int8"] == 129
+        finally:
+            model_path.unlink()
+
+    def test_mixed_precision_breakdown(self):
+        """Test precision breakdown for mixed precision model."""
+        model = create_mixed_precision_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            engine = MetricsEngine()
+            params = engine.count_parameters(graph_info)
+
+            # Should have precision breakdown with both precisions
+            assert "fp32" in params.precision_breakdown
+            assert "fp16" in params.precision_breakdown
+            assert params.precision_breakdown["fp32"] == 128  # 8*16
+            assert params.precision_breakdown["fp16"] == 128  # 16*8
+
+            # Total should be 256
+            assert params.total == 256
+        finally:
+            model_path.unlink()
+
+    def test_non_quantized_model(self):
+        """Test that non-quantized models are not marked as quantized."""
+        model = create_simple_conv_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            engine = MetricsEngine()
+            params = engine.count_parameters(graph_info)
+
+            # Should not be quantized
+            assert params.is_quantized is False
+            assert len(params.quantized_ops) == 0
+        finally:
+            model_path.unlink()
+
+    def test_param_counts_to_dict_includes_new_fields(self):
+        """Test that to_dict includes shared weights and quantization info."""
+        model = create_int8_weights_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            engine = MetricsEngine()
+            params = engine.count_parameters(graph_info)
+
+            result = params.to_dict()
+
+            # Check new fields exist
+            assert "shared_weights" in result
+            assert "count" in result["shared_weights"]
+            assert "details" in result["shared_weights"]
+            assert "precision_breakdown" in result
+            assert "is_quantized" in result
+            assert "quantized_ops" in result
+        finally:
+            model_path.unlink()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

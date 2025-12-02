@@ -60,7 +60,7 @@ class NodeInfo:
     outputs: list[str]
     attributes: dict[str, Any]
     # Computed during analysis
-    param_count: int = 0
+    param_count: float = 0.0  # Float for fractional shared weight attribution
     flops: int = 0
 
 
@@ -93,15 +93,41 @@ class ParamCounts:
     total: int = 0
     trainable: int = 0  # Assumed: all initializers are trainable unless marked
     non_trainable: int = 0
-    by_node: dict[str, int] = field(default_factory=dict)
-    by_op_type: dict[str, int] = field(default_factory=dict)
+    by_node: dict[str, float] = field(
+        default_factory=dict
+    )  # Float for fractional shared attribution
+    by_op_type: dict[str, float] = field(
+        default_factory=dict
+    )  # Float for fractional shared attribution
+
+    # Shared weight tracking
+    shared_weights: dict[str, list[str]] = field(
+        default_factory=dict
+    )  # initializer -> nodes using it
+    num_shared_weights: int = 0  # Count of weights used by 2+ nodes
+
+    # Quantization info
+    precision_breakdown: dict[str, int] = field(
+        default_factory=dict
+    )  # dtype -> param count
+    is_quantized: bool = False  # True if model has quantized weights or ops
+    quantized_ops: list[str] = field(
+        default_factory=list
+    )  # Quantized op types detected
 
     def to_dict(self) -> dict:
         return {
             "total": self.total,
             "trainable": self.trainable,
             "non_trainable": self.non_trainable,
-            "by_op_type": self.by_op_type,
+            "by_op_type": {k: round(v, 2) for k, v in self.by_op_type.items()},
+            "shared_weights": {
+                "count": self.num_shared_weights,
+                "details": {k: v for k, v in self.shared_weights.items() if len(v) > 1},
+            },
+            "precision_breakdown": self.precision_breakdown,
+            "is_quantized": self.is_quantized,
+            "quantized_ops": self.quantized_ops,
         }
 
 
@@ -374,6 +400,27 @@ class MetricsEngine:
         "com.microsoft.MultiHeadAttention": "attention",
     }
 
+    # Quantized operation types in ONNX
+    QUANTIZED_OPS: ClassVar[set[str]] = {
+        "QuantizeLinear",
+        "DequantizeLinear",
+        "QLinearConv",
+        "QLinearMatMul",
+        "QLinearAdd",
+        "QGemm",
+        "ConvInteger",
+        "MatMulInteger",
+        "DynamicQuantizeLinear",
+        "QLinearSigmoid",
+        "QLinearLeakyRelu",
+        "QLinearAveragePool",
+        "QLinearGlobalAveragePool",
+        "QLinearConcat",
+    }
+
+    # Quantized dtypes
+    QUANTIZED_DTYPES: ClassVar[set[type]] = {np.int8, np.uint8, np.int16, np.uint16}
+
     def __init__(self, logger: logging.Logger | None = None):
         self.logger = logger or logging.getLogger("autodoc.metrics")
 
@@ -384,6 +431,10 @@ class MetricsEngine:
         Parameters are counted from initializers. All initializers are
         assumed trainable unless specifically marked otherwise.
 
+        Handles edge cases:
+        - Shared weights: Uses fractional attribution so by_op_type sums to total
+        - Quantized params: Detects INT8/UINT8 weights and quantized ops
+
         Args:
             graph_info: Parsed graph information.
 
@@ -392,20 +443,55 @@ class MetricsEngine:
         """
         counts = ParamCounts()
 
-        # Count from initializers
+        # First pass: build usage map (which nodes use each initializer)
+        usage_map: dict[str, list[str]] = {name: [] for name in graph_info.initializers}
+        for node in graph_info.nodes:
+            for inp in node.inputs:
+                if inp in graph_info.initializers:
+                    usage_map[inp].append(node.name)
+
+        # Track shared weights (used by 2+ nodes)
+        counts.shared_weights = {k: v for k, v in usage_map.items() if len(v) > 1}
+        counts.num_shared_weights = len(counts.shared_weights)
+
+        # Detect quantized ops in the graph
+        quantized_ops_found = set()
+        for node in graph_info.nodes:
+            if node.op_type in self.QUANTIZED_OPS:
+                quantized_ops_found.add(node.op_type)
+        counts.quantized_ops = sorted(quantized_ops_found)
+
+        # Second pass: count parameters with fractional attribution
         for name, tensor in graph_info.initializers.items():
             param_count = int(np.prod(tensor.shape)) if tensor.shape else 1
             counts.total += param_count
-            counts.by_node[name] = param_count
+            counts.by_node[name] = float(param_count)
 
-            # Find which node uses this initializer
+            # Track precision breakdown
+            dtype_name = self._get_dtype_name(tensor)
+            counts.precision_breakdown[dtype_name] = (
+                counts.precision_breakdown.get(dtype_name, 0) + param_count
+            )
+
+            # Check if this is a quantized weight
+            if hasattr(tensor, "dtype") and tensor.dtype in self.QUANTIZED_DTYPES:
+                counts.is_quantized = True
+
+            # Fractional attribution to nodes sharing this weight
+            using_nodes = usage_map[name]
+            num_users = len(using_nodes) if using_nodes else 1
+            fractional_count = param_count / num_users
+
             for node in graph_info.nodes:
-                if name in node.inputs:
+                if node.name in using_nodes:
                     counts.by_op_type[node.op_type] = (
-                        counts.by_op_type.get(node.op_type, 0) + param_count
+                        counts.by_op_type.get(node.op_type, 0.0) + fractional_count
                     )
-                    node.param_count += param_count
-                    break
+                    node.param_count += fractional_count
+
+        # Mark as quantized if quantized ops are present
+        if counts.quantized_ops:
+            counts.is_quantized = True
 
         # For now, assume all are trainable
         # Could be refined with graph analysis (e.g., constants, frozen layers)
@@ -413,6 +499,24 @@ class MetricsEngine:
         counts.non_trainable = 0
 
         return counts
+
+    def _get_dtype_name(self, tensor: np.ndarray) -> str:
+        """Get a human-readable dtype name for a tensor."""
+        if not hasattr(tensor, "dtype"):
+            return "unknown"
+        dtype = tensor.dtype
+        dtype_map = {
+            np.float32: "fp32",
+            np.float64: "fp64",
+            np.float16: "fp16",
+            np.int8: "int8",
+            np.uint8: "uint8",
+            np.int16: "int16",
+            np.uint16: "uint16",
+            np.int32: "int32",
+            np.int64: "int64",
+        }
+        return dtype_map.get(dtype.type, str(dtype))
 
     def estimate_flops(self, graph_info: GraphInfo) -> FlopCounts:
         """

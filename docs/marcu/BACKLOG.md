@@ -61,7 +61,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 2.2.1**: Count parameters from initializers
 - [x] **Task 2.2.2**: Associate parameters with nodes
 - [x] **Task 2.2.3**: Aggregate by node type and block
-- [ ] **Task 2.2.4**: Handle edge cases (shared weights, quantized params)
+- [x] **Task 2.2.4**: Handle edge cases (shared weights, quantized params)
 
 ### Story 2.3: FLOP Estimation
 - [x] **Task 2.3.1**: Implement Conv2D FLOP calculation

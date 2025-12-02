@@ -292,6 +292,37 @@ class InspectionReport:
                 lines.append(
                     f"  - Non-trainable: {self._format_number(self.param_counts.non_trainable)}"
                 )
+
+                # Shared weights info
+                if self.param_counts.num_shared_weights > 0:
+                    lines.append(
+                        f"  - Shared Weights: {self.param_counts.num_shared_weights} "
+                        f"(used by multiple nodes)"
+                    )
+
+                # Precision breakdown
+                if self.param_counts.precision_breakdown:
+                    breakdown_parts = [
+                        f"{dtype}: {self._format_number(count)}"
+                        for dtype, count in sorted(
+                            self.param_counts.precision_breakdown.items(),
+                            key=lambda x: -x[1],
+                        )[:4]
+                    ]
+                    if breakdown_parts:
+                        lines.append(f"  - By Precision: {', '.join(breakdown_parts)}")
+
+                # Quantization info
+                if self.param_counts.is_quantized:
+                    lines.append("  - **Quantization Detected**")
+                    if self.param_counts.quantized_ops:
+                        lines.append(
+                            f"    - Quantized Ops: {', '.join(self.param_counts.quantized_ops[:5])}"
+                        )
+                        if len(self.param_counts.quantized_ops) > 5:
+                            lines.append(
+                                f"    - ... and {len(self.param_counts.quantized_ops) - 5} more"
+                            )
                 lines.append("")
 
             if self.flop_counts:
@@ -596,6 +627,16 @@ class InspectionReport:
             </div>
             """
             )
+        # Quantization indicator card
+        if self.param_counts and self.param_counts.is_quantized:
+            html_parts.append(
+                """
+            <div class="card" style="border-color: #4CAF50;">
+                <div class="card-value" style="color: #4CAF50;">Yes</div>
+                <div class="card-label">Quantized</div>
+            </div>
+            """
+            )
         html_parts.append("</section>")
 
         # Complexity Metrics Details (KV Cache + Memory Breakdown)
@@ -647,6 +688,73 @@ class InspectionReport:
                             f"<td>{self._format_bytes(remaining)}</td></tr>"
                         )
                     html_parts.append("</table></section>")
+
+        # Parameter Details section (shared weights, precision, quantization)
+        if self.param_counts:
+            has_content = (
+                self.param_counts.num_shared_weights > 0
+                or self.param_counts.precision_breakdown
+                or self.param_counts.is_quantized
+            )
+            if has_content:
+                html_parts.append('<section class="param-details">')
+                html_parts.append("<h2>Parameter Details</h2>")
+
+                # Precision breakdown
+                if self.param_counts.precision_breakdown:
+                    html_parts.append("<h3>Precision Breakdown</h3>")
+                    html_parts.append("<table>")
+                    html_parts.append("<tr><th>Data Type</th><th>Parameters</th></tr>")
+                    for dtype, count in sorted(
+                        self.param_counts.precision_breakdown.items(),
+                        key=lambda x: -x[1],
+                    ):
+                        html_parts.append(
+                            f"<tr><td>{dtype}</td><td>{self._format_number(count)}</td></tr>"
+                        )
+                    html_parts.append("</table>")
+
+                # Shared weights info
+                if self.param_counts.num_shared_weights > 0:
+                    html_parts.append("<h3>Shared Weights</h3>")
+                    html_parts.append(
+                        f"<p><strong>{self.param_counts.num_shared_weights}</strong> weights are shared across multiple nodes.</p>"
+                    )
+                    if self.param_counts.shared_weights:
+                        html_parts.append(
+                            "<details><summary>Show shared weight details</summary>"
+                        )
+                        html_parts.append("<table>")
+                        html_parts.append(
+                            "<tr><th>Weight Name</th><th>Used By Nodes</th></tr>"
+                        )
+                        for name, nodes in list(
+                            self.param_counts.shared_weights.items()
+                        )[:10]:
+                            nodes_str = ", ".join(nodes[:5])
+                            if len(nodes) > 5:
+                                nodes_str += f" (+{len(nodes) - 5} more)"
+                            html_parts.append(
+                                f"<tr><td>{name}</td><td>{nodes_str}</td></tr>"
+                            )
+                        if len(self.param_counts.shared_weights) > 10:
+                            html_parts.append(
+                                f"<tr><td colspan='2'>... and {len(self.param_counts.shared_weights) - 10} more shared weights</td></tr>"
+                            )
+                        html_parts.append("</table></details>")
+
+                # Quantization info
+                if self.param_counts.is_quantized:
+                    html_parts.append("<h3>Quantization</h3>")
+                    html_parts.append(
+                        '<p style="color: #4CAF50; font-weight: bold;">Model is quantized</p>'
+                    )
+                    if self.param_counts.quantized_ops:
+                        html_parts.append(
+                            f"<p>Quantized operations: {', '.join(self.param_counts.quantized_ops)}</p>"
+                        )
+
+                html_parts.append("</section>")
 
         # Visualizations
         if images:
