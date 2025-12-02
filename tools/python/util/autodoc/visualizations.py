@@ -288,7 +288,7 @@ class VisualizationGenerator:
 
     def param_distribution(
         self,
-        params_by_op: dict[str, int],
+        params_by_op: dict[str, float],
         output_path: Path,
         max_ops: int = 10,
     ) -> Path | None:
@@ -540,10 +540,10 @@ class VisualizationGenerator:
             return None
 
         # Compute cumulative values
-        cum_params = []
-        cum_flops = []
-        running_params = 0
-        running_flops = 0
+        cum_params: list[float] = []
+        cum_flops: list[int] = []
+        running_params: float = 0.0
+        running_flops: int = 0
         for _, params, flops in nodes_with_metrics:
             running_params += params
             running_flops += flops
