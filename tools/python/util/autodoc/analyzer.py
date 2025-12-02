@@ -127,12 +127,21 @@ class MemoryEstimates:
     model_size_bytes: int = 0  # Size of parameters/initializers
     peak_activation_bytes: int = 0  # Estimated peak activation memory (batch=1)
     per_layer_activation_bytes: dict[str, int] = field(default_factory=dict)
+    # KV cache estimates for transformer models
+    kv_cache_bytes_per_token: int = 0  # KV cache per token (for streaming inference)
+    kv_cache_bytes_full_context: int = 0  # Total KV cache at max seq length
+    kv_cache_config: dict[str, int] = field(default_factory=dict)  # num_layers, hidden_dim, etc.
 
     def to_dict(self) -> dict:
-        return {
+        result = {
             "model_size_bytes": self.model_size_bytes,
             "peak_activation_bytes": self.peak_activation_bytes,
         }
+        if self.kv_cache_bytes_per_token > 0:
+            result["kv_cache_bytes_per_token"] = self.kv_cache_bytes_per_token
+            result["kv_cache_bytes_full_context"] = self.kv_cache_bytes_full_context
+            result["kv_cache_config"] = self.kv_cache_config
+        return result
 
 
 class ONNXGraphLoader:
@@ -610,13 +619,14 @@ class MetricsEngine:
         """
         Estimate memory usage for the model.
 
-        Computes model size (parameters) and peak activation memory.
+        Computes model size (parameters), peak activation memory, and
+        KV cache size for transformer models.
 
         Args:
             graph_info: Parsed graph information.
 
         Returns:
-            MemoryEstimates with size and activation memory.
+            MemoryEstimates with size, activation memory, and KV cache estimates.
         """
         estimates = MemoryEstimates()
 
@@ -665,4 +675,117 @@ class MetricsEngine:
             size for _, size in sorted_activations[:top_n]
         )
 
+        # Estimate KV cache for transformer models
+        kv_config = self._estimate_kv_cache_config(graph_info)
+        if kv_config:
+            estimates.kv_cache_config = kv_config
+            estimates.kv_cache_bytes_per_token = self._compute_kv_cache_per_token(
+                kv_config
+            )
+            estimates.kv_cache_bytes_full_context = (
+                estimates.kv_cache_bytes_per_token * kv_config["seq_len"]
+            )
+
         return estimates
+
+    def _estimate_kv_cache_config(self, graph_info: GraphInfo) -> dict[str, int]:
+        """
+        Detect transformer architecture and extract KV cache config.
+
+        Returns dict with num_layers, hidden_dim, num_heads, seq_len, bytes_per_elem
+        or empty dict if not a transformer.
+        """
+        # Check for attention ops
+        attention_ops = {"Attention", "MultiHeadAttention", "Softmax"}
+        attention_count = sum(
+            graph_info.op_type_counts.get(op, 0) for op in attention_ops
+        )
+
+        if attention_count == 0:
+            return {}
+
+        # Try to detect transformer parameters
+        num_layers = 0
+        hidden_dim = 768  # Default
+        num_heads = 12  # Default
+        seq_len = 512  # Default
+        bytes_per_elem = 4  # FP32 default
+
+        # Count attention ops to estimate number of layers
+        # Each transformer layer typically has one attention block
+        mha_count = (
+            graph_info.op_type_counts.get("Attention", 0)
+            + graph_info.op_type_counts.get("MultiHeadAttention", 0)
+        )
+        softmax_count = graph_info.op_type_counts.get("Softmax", 0)
+
+        # Use MHA count if available, otherwise estimate from Softmax
+        if mha_count > 0:
+            num_layers = mha_count
+        elif softmax_count > 0:
+            # Softmax in attention: typically one per layer (or two with cross-attention)
+            num_layers = max(1, softmax_count // 2)
+
+        if num_layers == 0:
+            return {}
+
+        # Try to infer hidden_dim from weight shapes
+        for node in graph_info.nodes:
+            if node.op_type in ("MatMul", "Gemm"):
+                for inp in node.inputs:
+                    if inp in graph_info.initializers:
+                        weight = graph_info.initializers[inp]
+                        if len(weight.shape) == 2:
+                            # Dense layer weights: [in_features, out_features] or vice versa
+                            dim = max(weight.shape)
+                            if 256 <= dim <= 16384 and dim % 64 == 0:
+                                hidden_dim = dim
+                                break
+                break
+
+        # Try to infer sequence length from input shapes
+        for name, shape in graph_info.input_shapes.items():
+            if len(shape) >= 2:
+                # Look for typical transformer input shape [batch, seq_len, ...] or [batch, seq_len]
+                for dim in shape[1:3]:
+                    if isinstance(dim, int) and 16 <= dim <= 32768:
+                        seq_len = dim
+                        break
+
+        # Estimate num_heads from hidden_dim (typical: 64-128 per head)
+        if hidden_dim >= 256:
+            num_heads = max(1, hidden_dim // 64)
+
+        self.logger.debug(
+            f"KV cache config: layers={num_layers}, hidden={hidden_dim}, "
+            f"heads={num_heads}, seq={seq_len}"
+        )
+
+        return {
+            "num_layers": num_layers,
+            "hidden_dim": hidden_dim,
+            "num_heads": num_heads,
+            "seq_len": seq_len,
+            "bytes_per_elem": bytes_per_elem,
+        }
+
+    def _compute_kv_cache_per_token(self, config: dict[str, int]) -> int:
+        """
+        Compute KV cache memory per token.
+
+        Formula: 2 * num_layers * hidden_dim * bytes_per_elem
+        (2 for K and V, each of size [hidden_dim])
+
+        For multi-head attention with head_dim = hidden_dim / num_heads:
+        KV cache per token per layer = 2 * hidden_dim * bytes_per_elem
+
+        Total per token = 2 * num_layers * hidden_dim * bytes_per_elem
+        """
+        num_layers = config.get("num_layers", 0)
+        hidden_dim = config.get("hidden_dim", 0)
+        bytes_per_elem = config.get("bytes_per_elem", 4)
+
+        # KV cache: each layer stores K and V for each token
+        # K and V each have shape [batch, num_heads, seq_len, head_dim]
+        # Per token: 2 * hidden_dim * bytes_per_elem per layer
+        return 2 * num_layers * hidden_dim * bytes_per_elem

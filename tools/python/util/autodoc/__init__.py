@@ -42,7 +42,7 @@ from .llm_summarizer import (
 )
 from .patterns import PatternAnalyzer
 from .report import InspectionReport, ModelInspector
-from .risks import RiskAnalyzer, RiskSignal
+from .risks import RiskAnalyzer, RiskSignal, RiskThresholds
 from .visualizations import (
     THEME,
     ChartTheme,
@@ -72,6 +72,7 @@ __all__ = [
     "PatternAnalyzer",
     "RiskAnalyzer",
     "RiskSignal",
+    "RiskThresholds",
     # Visualization
     "VisualizationGenerator",
     "detect_local_hardware",

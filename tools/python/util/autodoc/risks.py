@@ -47,6 +47,30 @@ class RiskSignal:
         }
 
 
+@dataclass
+class RiskThresholds:
+    """
+    Configurable thresholds for risk detection.
+
+    Allows tuning sensitivity based on model type and use case.
+    """
+
+    # Minimum thresholds - don't bother analyzing tiny models
+    min_params_for_analysis: int = 100_000  # 100K params minimum
+    min_flops_for_bottleneck: int = 1_000_000_000  # 1B FLOPs before flagging bottlenecks
+    min_nodes_for_depth_check: int = 20  # At least 20 nodes before checking depth
+
+    # Thresholds for risk detection
+    deep_network_threshold: int = 50  # nodes before considering "deep"
+    oversized_dense_threshold: int = 100_000_000  # 100M params in single layer
+    large_embedding_threshold: int = 500_000_000  # 500M params for embedding
+    high_flop_ratio_threshold: float = 0.5  # Single op using >50% of FLOPs
+
+    # Minimum trainable layers before flagging missing normalization/activations
+    min_trainable_for_norm_check: int = 10
+    min_trainable_for_activation_check: int = 5
+
+
 class RiskAnalyzer:
     """
     Detect architectural risk signals in ONNX graphs.
@@ -56,21 +80,36 @@ class RiskAnalyzer:
 
     Note: Risk signals are only generated for models above minimum
     complexity thresholds to avoid flagging trivial test models.
+
+    Thresholds can be configured via the `thresholds` parameter.
     """
 
-    # Minimum thresholds - don't bother analyzing tiny models
-    MIN_PARAMS_FOR_ANALYSIS = 100_000  # 100K params minimum
-    MIN_FLOPS_FOR_BOTTLENECK = 1_000_000_000  # 1B FLOPs before flagging bottlenecks
-    MIN_NODES_FOR_DEPTH_CHECK = 20  # At least 20 nodes before checking depth
+    # Default thresholds (class-level for backward compatibility)
+    MIN_PARAMS_FOR_ANALYSIS = 100_000
+    MIN_FLOPS_FOR_BOTTLENECK = 1_000_000_000
+    MIN_NODES_FOR_DEPTH_CHECK = 20
+    DEEP_NETWORK_THRESHOLD = 50
+    OVERSIZED_DENSE_THRESHOLD = 100_000_000
+    LARGE_EMBEDDING_THRESHOLD = 500_000_000
+    HIGH_FLOP_RATIO_THRESHOLD = 0.5
 
-    # Thresholds for risk detection
-    DEEP_NETWORK_THRESHOLD = 50  # nodes before considering "deep"
-    OVERSIZED_DENSE_THRESHOLD = 100_000_000  # 100M params in single layer
-    LARGE_EMBEDDING_THRESHOLD = 500_000_000  # 500M params for embedding
-    HIGH_FLOP_RATIO_THRESHOLD = 0.5  # Single op using >50% of FLOPs
-
-    def __init__(self, logger: logging.Logger | None = None):
+    def __init__(
+        self,
+        logger: logging.Logger | None = None,
+        thresholds: RiskThresholds | None = None,
+    ):
         self.logger = logger or logging.getLogger("autodoc.risks")
+        self.thresholds = thresholds or RiskThresholds()
+
+        # Also update class-level constants for backward compatibility
+        if thresholds:
+            self.MIN_PARAMS_FOR_ANALYSIS = thresholds.min_params_for_analysis
+            self.MIN_FLOPS_FOR_BOTTLENECK = thresholds.min_flops_for_bottleneck
+            self.MIN_NODES_FOR_DEPTH_CHECK = thresholds.min_nodes_for_depth_check
+            self.DEEP_NETWORK_THRESHOLD = thresholds.deep_network_threshold
+            self.OVERSIZED_DENSE_THRESHOLD = thresholds.oversized_dense_threshold
+            self.LARGE_EMBEDDING_THRESHOLD = thresholds.large_embedding_threshold
+            self.HIGH_FLOP_RATIO_THRESHOLD = thresholds.high_flop_ratio_threshold
 
     def analyze(self, graph_info: GraphInfo, blocks: list[Block]) -> list[RiskSignal]:
         """
@@ -249,8 +288,9 @@ class RiskAnalyzer:
             + graph_info.op_type_counts.get("Gemm", 0)
         )
 
-        # Need at least 10 trainable layers to care about normalization
-        if not has_norm and trainable_count >= 10:
+        # Need at least N trainable layers to care about normalization
+        min_trainable = self.thresholds.min_trainable_for_norm_check
+        if not has_norm and trainable_count >= min_trainable:
             return RiskSignal(
                 id="missing_normalization",
                 severity="info",
@@ -388,8 +428,9 @@ class RiskAnalyzer:
             + graph_info.op_type_counts.get("Gemm", 0)
         )
 
-        # Need at least 5 trainable layers to care about missing activations
-        if not has_standard and trainable_count >= 5:
+        # Need at least N trainable layers to care about missing activations
+        min_trainable = self.thresholds.min_trainable_for_activation_check
+        if not has_standard and trainable_count >= min_trainable:
             return RiskSignal(
                 id="no_activations",
                 severity="warning",

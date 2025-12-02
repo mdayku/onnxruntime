@@ -6,12 +6,22 @@ Unit tests for PyTorch to ONNX conversion functionality.
 """
 from __future__ import annotations
 
+import logging
 import sys
-import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
+
+# Add parent path for test imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+
+from util.model_inspect import (
+    _convert_pytorch_to_onnx,
+    _extract_ultralytics_metadata,
+)
+
+from ..report import DatasetInfo
 
 # Check if torch is available
 try:
@@ -21,23 +31,27 @@ try:
     _TORCH_AVAILABLE = True
 except ImportError:
     _TORCH_AVAILABLE = False
+    nn = None  # Placeholder for type hints
 
 
-class SimpleTestModel(nn.Module):
-    """Simple model for testing conversion."""
+# Only define the model class if torch is available
+if _TORCH_AVAILABLE:
 
-    def __init__(self):
-        super().__init__()
-        self.conv = nn.Conv2d(3, 16, 3, padding=1)
-        self.relu = nn.ReLU()
-        self.pool = nn.AdaptiveAvgPool2d(1)
-        self.fc = nn.Linear(16, 10)
+    class SimpleTestModel(nn.Module):
+        """Simple model for testing conversion."""
 
-    def forward(self, x):
-        x = self.relu(self.conv(x))
-        x = self.pool(x)
-        x = x.view(x.size(0), -1)
-        return self.fc(x)
+        def __init__(self):
+            super().__init__()
+            self.conv = nn.Conv2d(3, 16, 3, padding=1)
+            self.relu = nn.ReLU()
+            self.pool = nn.AdaptiveAvgPool2d(1)
+            self.fc = nn.Linear(16, 10)
+
+        def forward(self, x):
+            x = self.relu(self.conv(x))
+            x = self.pool(x)
+            x = x.view(x.size(0), -1)
+            return self.fc(x)
 
 
 @pytest.mark.skipif(not _TORCH_AVAILABLE, reason="PyTorch not installed")
@@ -55,15 +69,10 @@ class TestPyTorchConversion:
         pt_path = tmp_path / "model.pt"
         torch.jit.save(traced, str(pt_path))
 
-        # Import the conversion function
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-        from util.model_inspect import _convert_pytorch_to_onnx
-        import logging
-
         logger = logging.getLogger("test")
 
         # Convert
-        onnx_path, temp_file = _convert_pytorch_to_onnx(
+        onnx_path, _temp_file = _convert_pytorch_to_onnx(
             pt_path,
             input_shape_str="1,3,32,32",
             output_path=tmp_path / "output.onnx",
@@ -84,10 +93,6 @@ class TestPyTorchConversion:
 
         pt_path = tmp_path / "model.pt"
         torch.jit.save(traced, str(pt_path))
-
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-        from util.model_inspect import _convert_pytorch_to_onnx
-        import logging
 
         logger = logging.getLogger("test")
 
@@ -112,10 +117,6 @@ class TestPyTorchConversion:
         pt_path = tmp_path / "model.pt"
         torch.jit.save(traced, str(pt_path))
 
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-        from util.model_inspect import _convert_pytorch_to_onnx
-        import logging
-
         logger = logging.getLogger("test")
 
         # Convert with invalid input shape
@@ -131,10 +132,6 @@ class TestPyTorchConversion:
 
     def test_conversion_nonexistent_file(self, tmp_path):
         """Conversion should fail gracefully for nonexistent file."""
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-        from util.model_inspect import _convert_pytorch_to_onnx
-        import logging
-
         logger = logging.getLogger("test")
 
         onnx_path, _ = _convert_pytorch_to_onnx(
@@ -156,10 +153,6 @@ class TestPyTorchConversion:
 
         pt_path = tmp_path / "model.pt"
         torch.jit.save(traced, str(pt_path))
-
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-        from util.model_inspect import _convert_pytorch_to_onnx
-        import logging
 
         logger = logging.getLogger("test")
 
@@ -187,10 +180,6 @@ class TestPyTorchConversion:
         pt_path = tmp_path / "weights.pth"
         torch.save(model.state_dict(), pt_path)
 
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-        from util.model_inspect import _convert_pytorch_to_onnx
-        import logging
-
         logger = logging.getLogger("test")
 
         onnx_path, _ = _convert_pytorch_to_onnx(
@@ -210,10 +199,6 @@ class TestUltralyticsMetadataExtraction:
 
     def test_extraction_without_ultralytics(self, tmp_path):
         """Should return None gracefully when ultralytics not available."""
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-        from util.model_inspect import _extract_ultralytics_metadata
-        import logging
-
         logger = logging.getLogger("test")
 
         # Mock ultralytics not being available
@@ -228,8 +213,6 @@ class TestDatasetInfo:
 
     def test_dataset_info_creation(self):
         """DatasetInfo should be created with expected fields."""
-        from ..report import DatasetInfo
-
         info = DatasetInfo(
             task="detect",
             num_classes=5,
@@ -244,8 +227,6 @@ class TestDatasetInfo:
 
     def test_dataset_info_defaults(self):
         """DatasetInfo should have sensible defaults."""
-        from ..report import DatasetInfo
-
         info = DatasetInfo()
 
         assert info.task is None

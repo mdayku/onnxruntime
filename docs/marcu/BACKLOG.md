@@ -14,9 +14,9 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 | Epic | Status | Stories | Tasks Complete |
 |------|--------|---------|----------------|
 | Epic 1: Environment Setup | In Progress | 3 | 7/12 |
-| Epic 2: Core Analysis Engine | In Progress | 4 | 12/17 |
-| Epic 3: Pattern Analysis | In Progress | 2 | 7/9 |
-| Epic 4: CLI and Output | In Progress | 3 | 11/14 |
+| Epic 2: Core Analysis Engine | In Progress | 4 | 13/17 |
+| Epic 3: Pattern Analysis | In Progress | 2 | 8/9 |
+| Epic 4: CLI and Output | In Progress | 3 | 12/14 |
 | Epic 4B: PyTorch Integration | In Progress | 1 | 7/8 |
 | Epic 5: Visualization | **Complete** | 3 | 12/12 |
 | Epic 6: Hardware/Compare | In Progress | 7 | 9/28 |
@@ -73,7 +73,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 ### Story 2.4: Memory Estimation
 - [x] **Task 2.4.1**: Calculate activation tensor sizes
 - [x] **Task 2.4.2**: Implement peak memory estimation (heuristic, top-3 activations)
-- [ ] **Task 2.4.3**: Estimate KV cache size for attention models
+- [x] **Task 2.4.3**: Estimate KV cache size for attention models (formula: 2*layers*hidden*bytes per token)
 - [ ] **Task 2.4.4**: Add memory breakdown by component
 
 ---
@@ -91,7 +91,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 3.2.2**: Flag oversized dense layers
 - [x] **Task 3.2.3**: Identify problematic dynamic shapes
 - [ ] **Task 3.2.4**: Detect non-standard residual patterns
-- [ ] **Task 3.2.5**: Add configurable severity thresholds (need smarter minimum thresholds)
+- [x] **Task 3.2.5**: Add configurable severity thresholds (RiskThresholds dataclass)
 
 ---
 
@@ -115,7 +115,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 4.3.3**: Generate metrics tables
 - [x] **Task 4.3.4**: Generate risk signals section
 - [x] **Task 4.3.5**: Add hardware estimates section
-- [ ] **Task 4.3.6**: Add executive summary section
+- [x] **Task 4.3.6**: Add executive summary section (matches HTML, shows LLM summary)
 
 ---
 

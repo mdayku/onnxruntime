@@ -408,5 +408,157 @@ class TestMetricsEngineEdgeCases:
             model_path.unlink()
 
 
+def create_transformer_like_model() -> onnx.ModelProto:
+    """Create a minimal transformer-like model with Softmax (for KV cache testing)."""
+    # Input: [1, 128, 768] - batch, seq, hidden
+    X = helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 128, 768])
+
+    # QKV projection weights: [768, 768] = 589,824 params each
+    Wq = helper.make_tensor(
+        "Wq",
+        TensorProto.FLOAT,
+        [768, 768],
+        np.random.randn(768, 768).astype(np.float32).flatten().tolist(),
+    )
+    Wk = helper.make_tensor(
+        "Wk",
+        TensorProto.FLOAT,
+        [768, 768],
+        np.random.randn(768, 768).astype(np.float32).flatten().tolist(),
+    )
+    Wv = helper.make_tensor(
+        "Wv",
+        TensorProto.FLOAT,
+        [768, 768],
+        np.random.randn(768, 768).astype(np.float32).flatten().tolist(),
+    )
+
+    Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 128, 768])
+
+    # Create Q, K, V projections
+    q_node = helper.make_node("MatMul", ["X", "Wq"], ["Q"])
+    k_node = helper.make_node("MatMul", ["X", "Wk"], ["K"])
+    v_node = helper.make_node("MatMul", ["X", "Wv"], ["V"])
+
+    # Softmax for attention scores
+    softmax_node = helper.make_node("Softmax", ["Q"], ["attn_scores"], axis=-1)
+
+    # Output projection (simplified - just use V as output for testing)
+    add_node = helper.make_node("Add", ["attn_scores", "V"], ["Y"])
+
+    graph = helper.make_graph(
+        [q_node, k_node, v_node, softmax_node, add_node],
+        "transformer_test",
+        [X],
+        [Y],
+        [Wq, Wk, Wv],
+    )
+
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 17)])
+    return model
+
+
+class TestKVCacheEstimation:
+    """Tests for KV cache estimation in transformer models."""
+
+    def test_kv_cache_detected_for_transformer(self):
+        """Test that KV cache is estimated for transformer-like models."""
+        model = create_transformer_like_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            engine = MetricsEngine()
+            memory = engine.estimate_memory(graph_info)
+
+            # Should detect KV cache for transformer model
+            assert memory.kv_cache_bytes_per_token > 0
+            assert memory.kv_cache_bytes_full_context > 0
+            assert "num_layers" in memory.kv_cache_config
+            assert "hidden_dim" in memory.kv_cache_config
+        finally:
+            model_path.unlink()
+
+    def test_kv_cache_not_detected_for_cnn(self):
+        """Test that KV cache is not estimated for CNN models."""
+        model = create_simple_conv_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            engine = MetricsEngine()
+            memory = engine.estimate_memory(graph_info)
+
+            # Should NOT detect KV cache for CNN model
+            assert memory.kv_cache_bytes_per_token == 0
+            assert memory.kv_cache_bytes_full_context == 0
+        finally:
+            model_path.unlink()
+
+    def test_kv_cache_formula(self):
+        """Test KV cache per-token formula: 2 * num_layers * hidden_dim * bytes."""
+        model = create_transformer_like_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            engine = MetricsEngine()
+            memory = engine.estimate_memory(graph_info)
+
+            config = memory.kv_cache_config
+            if config:
+                # Verify formula: 2 * layers * hidden * bytes_per_elem
+                expected_per_token = (
+                    2
+                    * config["num_layers"]
+                    * config["hidden_dim"]
+                    * config["bytes_per_elem"]
+                )
+                assert memory.kv_cache_bytes_per_token == expected_per_token
+
+                # Full context = per_token * seq_len
+                expected_full = expected_per_token * config["seq_len"]
+                assert memory.kv_cache_bytes_full_context == expected_full
+        finally:
+            model_path.unlink()
+
+    def test_memory_estimates_to_dict_includes_kv_cache(self):
+        """Test that to_dict includes KV cache info when present."""
+        model = create_transformer_like_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            engine = MetricsEngine()
+            memory = engine.estimate_memory(graph_info)
+
+            result = memory.to_dict()
+            assert "kv_cache_bytes_per_token" in result
+            assert "kv_cache_bytes_full_context" in result
+            assert "kv_cache_config" in result
+        finally:
+            model_path.unlink()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
