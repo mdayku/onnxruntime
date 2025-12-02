@@ -26,7 +26,9 @@ def create_simple_model() -> onnx.ModelProto:
     X = helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 3, 8, 8])
 
     W = helper.make_tensor(
-        "W", TensorProto.FLOAT, [16, 3, 3, 3],
+        "W",
+        TensorProto.FLOAT,
+        [16, 3, 3, 3],
         np.random.randn(16, 3, 3, 3).astype(np.float32).flatten().tolist(),
     )
 
@@ -222,7 +224,13 @@ class TestReportRiskSignals:
             report = inspector.inspect(model_path)
 
             assert isinstance(report.detected_blocks, list)
-            assert report.architecture_type in ("cnn", "mlp", "transformer", "hybrid", "unknown")
+            assert report.architecture_type in (
+                "cnn",
+                "mlp",
+                "transformer",
+                "hybrid",
+                "unknown",
+            )
         finally:
             model_path.unlink()
 

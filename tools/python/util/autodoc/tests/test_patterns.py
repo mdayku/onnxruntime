@@ -26,17 +26,29 @@ def create_conv_bn_relu_model() -> onnx.ModelProto:
     X = helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 3, 8, 8])
 
     W = helper.make_tensor(
-        "W", TensorProto.FLOAT, [16, 3, 3, 3],
+        "W",
+        TensorProto.FLOAT,
+        [16, 3, 3, 3],
         np.random.randn(16, 3, 3, 3).astype(np.float32).flatten().tolist(),
     )
-    scale = helper.make_tensor("scale", TensorProto.FLOAT, [16], np.ones(16, dtype=np.float32).tolist())
-    bias = helper.make_tensor("bias", TensorProto.FLOAT, [16], np.zeros(16, dtype=np.float32).tolist())
-    mean = helper.make_tensor("mean", TensorProto.FLOAT, [16], np.zeros(16, dtype=np.float32).tolist())
-    var = helper.make_tensor("var", TensorProto.FLOAT, [16], np.ones(16, dtype=np.float32).tolist())
+    scale = helper.make_tensor(
+        "scale", TensorProto.FLOAT, [16], np.ones(16, dtype=np.float32).tolist()
+    )
+    bias = helper.make_tensor(
+        "bias", TensorProto.FLOAT, [16], np.zeros(16, dtype=np.float32).tolist()
+    )
+    mean = helper.make_tensor(
+        "mean", TensorProto.FLOAT, [16], np.zeros(16, dtype=np.float32).tolist()
+    )
+    var = helper.make_tensor(
+        "var", TensorProto.FLOAT, [16], np.ones(16, dtype=np.float32).tolist()
+    )
 
     Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 16, 6, 6])
 
-    conv_node = helper.make_node("Conv", ["X", "W"], ["conv_out"], kernel_shape=[3, 3], name="conv1")
+    conv_node = helper.make_node(
+        "Conv", ["X", "W"], ["conv_out"], kernel_shape=[3, 3], name="conv1"
+    )
     bn_node = helper.make_node(
         "BatchNormalization",
         ["conv_out", "scale", "bias", "mean", "var"],
@@ -62,7 +74,9 @@ def create_residual_model() -> onnx.ModelProto:
     X = helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 16, 8, 8])
 
     W = helper.make_tensor(
-        "W", TensorProto.FLOAT, [16, 16, 3, 3],
+        "W",
+        TensorProto.FLOAT,
+        [16, 16, 3, 3],
         np.random.randn(16, 16, 3, 3).astype(np.float32).flatten().tolist(),
     )
 
@@ -70,8 +84,12 @@ def create_residual_model() -> onnx.ModelProto:
 
     # Conv path
     conv_node = helper.make_node(
-        "Conv", ["X", "W"], ["conv_out"],
-        kernel_shape=[3, 3], pads=[1, 1, 1, 1], name="conv1"
+        "Conv",
+        ["X", "W"],
+        ["conv_out"],
+        kernel_shape=[3, 3],
+        pads=[1, 1, 1, 1],
+        name="conv1",
     )
     relu_node = helper.make_node("Relu", ["conv_out"], ["relu_out"], name="relu1")
 
@@ -93,7 +111,9 @@ def create_residual_model() -> onnx.ModelProto:
 def create_attention_model() -> onnx.ModelProto:
     """Create a simplified attention pattern (MatMul -> Softmax -> MatMul)."""
     # Simplified attention: Q @ K^T -> Softmax -> @ V
-    Q = helper.make_tensor_value_info("Q", TensorProto.FLOAT, [1, 8, 64])  # [B, seq, dim]
+    Q = helper.make_tensor_value_info(
+        "Q", TensorProto.FLOAT, [1, 8, 64]
+    )  # [B, seq, dim]
     K = helper.make_tensor_value_info("K", TensorProto.FLOAT, [1, 8, 64])
     V = helper.make_tensor_value_info("V", TensorProto.FLOAT, [1, 8, 64])
 
@@ -101,15 +121,18 @@ def create_attention_model() -> onnx.ModelProto:
 
     # K transpose: [1, 8, 64] -> [1, 64, 8]
     transpose_node = helper.make_node(
-        "Transpose", ["K"], ["K_T"],
-        perm=[0, 2, 1], name="transpose_k"
+        "Transpose", ["K"], ["K_T"], perm=[0, 2, 1], name="transpose_k"
     )
 
     # Q @ K^T: [1, 8, 64] @ [1, 64, 8] -> [1, 8, 8]
-    matmul1 = helper.make_node("MatMul", ["Q", "K_T"], ["attn_scores"], name="matmul_qk")
+    matmul1 = helper.make_node(
+        "MatMul", ["Q", "K_T"], ["attn_scores"], name="matmul_qk"
+    )
 
     # Softmax
-    softmax = helper.make_node("Softmax", ["attn_scores"], ["attn_probs"], axis=-1, name="softmax")
+    softmax = helper.make_node(
+        "Softmax", ["attn_scores"], ["attn_probs"], axis=-1, name="softmax"
+    )
 
     # @ V: [1, 8, 8] @ [1, 8, 64] -> [1, 8, 64]
     matmul2 = helper.make_node("MatMul", ["attn_probs", "V"], ["Y"], name="matmul_v")
@@ -131,15 +154,16 @@ def create_embedding_model() -> onnx.ModelProto:
 
     # Embedding table: [1000, 256] = 256K params
     embed_table = helper.make_tensor(
-        "embed_table", TensorProto.FLOAT, [1000, 256],
+        "embed_table",
+        TensorProto.FLOAT,
+        [1000, 256],
         np.random.randn(1000, 256).astype(np.float32).flatten().tolist(),
     )
 
     Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [4, 16, 256])
 
     gather_node = helper.make_node(
-        "Gather", ["embed_table", "indices"], ["Y"],
-        axis=0, name="embedding"
+        "Gather", ["embed_table", "indices"], ["Y"], axis=0, name="embedding"
     )
 
     graph = helper.make_graph(

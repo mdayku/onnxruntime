@@ -163,15 +163,25 @@ def create_conv_bn_relu_model() -> onnx.ModelProto:
 
     # Conv weights: [16, 3, 3, 3] = 432 params
     W = helper.make_tensor(
-        "W", TensorProto.FLOAT, [16, 3, 3, 3],
+        "W",
+        TensorProto.FLOAT,
+        [16, 3, 3, 3],
         np.random.randn(16, 3, 3, 3).astype(np.float32).flatten().tolist(),
     )
 
     # BN params: scale, bias, mean, var each [16] = 64 params total
-    scale = helper.make_tensor("scale", TensorProto.FLOAT, [16], np.ones(16, dtype=np.float32).tolist())
-    bias = helper.make_tensor("bias", TensorProto.FLOAT, [16], np.zeros(16, dtype=np.float32).tolist())
-    mean = helper.make_tensor("mean", TensorProto.FLOAT, [16], np.zeros(16, dtype=np.float32).tolist())
-    var = helper.make_tensor("var", TensorProto.FLOAT, [16], np.ones(16, dtype=np.float32).tolist())
+    scale = helper.make_tensor(
+        "scale", TensorProto.FLOAT, [16], np.ones(16, dtype=np.float32).tolist()
+    )
+    bias = helper.make_tensor(
+        "bias", TensorProto.FLOAT, [16], np.zeros(16, dtype=np.float32).tolist()
+    )
+    mean = helper.make_tensor(
+        "mean", TensorProto.FLOAT, [16], np.zeros(16, dtype=np.float32).tolist()
+    )
+    var = helper.make_tensor(
+        "var", TensorProto.FLOAT, [16], np.ones(16, dtype=np.float32).tolist()
+    )
 
     Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 16, 6, 6])
 

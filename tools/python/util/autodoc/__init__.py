@@ -39,6 +39,13 @@ from .visualizations import (
     generate_visualizations,
     is_available as is_visualization_available,
 )
+from .llm_summarizer import (
+    LLMSummarizer,
+    LLMSummary,
+    summarize_report,
+    is_available as is_llm_available,
+    has_api_key as has_llm_api_key,
+)
 
 __all__ = [
     "ModelInspector",
@@ -63,4 +70,10 @@ __all__ = [
     "THEME",
     "generate_visualizations",
     "is_visualization_available",
+    # LLM Summarization
+    "LLMSummarizer",
+    "LLMSummary",
+    "summarize_report",
+    "is_llm_available",
+    "has_llm_api_key",
 ]

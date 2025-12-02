@@ -96,7 +96,9 @@ def _apply_theme(fig: "Figure", ax, title: str) -> None:
 
     # Axes styling
     ax.set_facecolor(THEME.background)
-    ax.set_title(title, color=THEME.text, fontsize=THEME.title_size, fontweight="bold", pad=15)
+    ax.set_title(
+        title, color=THEME.text, fontsize=THEME.title_size, fontweight="bold", pad=15
+    )
 
     # Spines
     for spine in ax.spines.values():
@@ -239,11 +241,19 @@ class VisualizationGenerator:
         counts = [count for _, count in top_ops]
 
         # Create figure
-        fig, ax = plt.subplots(figsize=(THEME.figure_width, THEME.figure_height), dpi=THEME.figure_dpi)
+        fig, ax = plt.subplots(
+            figsize=(THEME.figure_width, THEME.figure_height), dpi=THEME.figure_dpi
+        )
 
         # Horizontal bar chart
         y_pos = range(len(labels))
-        bars = ax.barh(y_pos, counts, color=THEME.accent_primary, edgecolor=THEME.background, height=0.7)
+        bars = ax.barh(
+            y_pos,
+            counts,
+            color=THEME.accent_primary,
+            edgecolor=THEME.background,
+            height=0.7,
+        )
 
         # Labels
         ax.set_yticks(y_pos)
@@ -266,7 +276,12 @@ class VisualizationGenerator:
 
         # Adjust layout
         plt.tight_layout()
-        fig.savefig(output_path, facecolor=THEME.background, edgecolor="none", bbox_inches="tight")
+        fig.savefig(
+            output_path,
+            facecolor=THEME.background,
+            edgecolor="none",
+            bbox_inches="tight",
+        )
         plt.close(fig)
 
         return output_path
@@ -304,7 +319,9 @@ class VisualizationGenerator:
         colors = THEME.palette[: len(sizes)]
 
         # Create figure
-        fig, ax = plt.subplots(figsize=(THEME.figure_height, THEME.figure_height), dpi=THEME.figure_dpi)
+        fig, ax = plt.subplots(
+            figsize=(THEME.figure_height, THEME.figure_height), dpi=THEME.figure_dpi
+        )
 
         wedges, texts, autotexts = ax.pie(
             sizes,
@@ -331,7 +348,12 @@ class VisualizationGenerator:
         fig.patch.set_facecolor(THEME.background)
 
         plt.tight_layout()
-        fig.savefig(output_path, facecolor=THEME.background, edgecolor="none", bbox_inches="tight")
+        fig.savefig(
+            output_path,
+            facecolor=THEME.background,
+            edgecolor="none",
+            bbox_inches="tight",
+        )
         plt.close(fig)
 
         return output_path
@@ -361,10 +383,18 @@ class VisualizationGenerator:
         values = [flops for _, flops in sorted_ops]
 
         # Create figure
-        fig, ax = plt.subplots(figsize=(THEME.figure_width, THEME.figure_height), dpi=THEME.figure_dpi)
+        fig, ax = plt.subplots(
+            figsize=(THEME.figure_width, THEME.figure_height), dpi=THEME.figure_dpi
+        )
 
         x_pos = range(len(labels))
-        bars = ax.bar(x_pos, values, color=THEME.accent_secondary, edgecolor=THEME.background, width=0.7)
+        bars = ax.bar(
+            x_pos,
+            values,
+            color=THEME.accent_secondary,
+            edgecolor=THEME.background,
+            width=0.7,
+        )
 
         ax.set_xticks(x_pos)
         ax.set_xticklabels(labels, rotation=45, ha="right")
@@ -385,7 +415,12 @@ class VisualizationGenerator:
         _apply_theme(fig, ax, "FLOPs Distribution by Operator Type")
 
         plt.tight_layout()
-        fig.savefig(output_path, facecolor=THEME.background, edgecolor="none", bbox_inches="tight")
+        fig.savefig(
+            output_path,
+            facecolor=THEME.background,
+            edgecolor="none",
+            bbox_inches="tight",
+        )
         plt.close(fig)
 
         return output_path
@@ -402,16 +437,26 @@ class VisualizationGenerator:
         """
         if not _MATPLOTLIB_AVAILABLE:
             return None
-        if not report.param_counts or not report.flop_counts or not report.memory_estimates:
+        if (
+            not report.param_counts
+            or not report.flop_counts
+            or not report.memory_estimates
+        ):
             return None
 
-        fig, axes = plt.subplots(1, 3, figsize=(THEME.figure_width, 4), dpi=THEME.figure_dpi)
+        fig, axes = plt.subplots(
+            1, 3, figsize=(THEME.figure_width, 4), dpi=THEME.figure_dpi
+        )
         fig.patch.set_facecolor(THEME.background)
 
         metrics = [
             ("Parameters", report.param_counts.total, THEME.accent_primary),
             ("FLOPs", report.flop_counts.total, THEME.accent_secondary),
-            ("Memory (bytes)", report.memory_estimates.model_size_bytes, THEME.accent_tertiary),
+            (
+                "Memory (bytes)",
+                report.memory_estimates.model_size_bytes,
+                THEME.accent_tertiary,
+            ),
         ]
 
         for ax, (label, value, color) in zip(axes, metrics):
@@ -458,7 +503,12 @@ class VisualizationGenerator:
         )
 
         plt.tight_layout(rect=[0, 0, 1, 0.9])
-        fig.savefig(output_path, facecolor=THEME.background, edgecolor="none", bbox_inches="tight")
+        fig.savefig(
+            output_path,
+            facecolor=THEME.background,
+            edgecolor="none",
+            bbox_inches="tight",
+        )
         plt.close(fig)
 
         return output_path
@@ -503,12 +553,16 @@ class VisualizationGenerator:
         x = range(len(nodes_with_metrics))
 
         # Create figure with two y-axes
-        fig, ax1 = plt.subplots(figsize=(THEME.figure_width, THEME.figure_height), dpi=THEME.figure_dpi)
+        fig, ax1 = plt.subplots(
+            figsize=(THEME.figure_width, THEME.figure_height), dpi=THEME.figure_dpi
+        )
         ax2 = ax1.twinx()
 
         # Plot cumulative params
         line1 = ax1.fill_between(x, cum_params, alpha=0.3, color=THEME.accent_primary)
-        ax1.plot(x, cum_params, color=THEME.accent_primary, linewidth=2, label="Parameters")
+        ax1.plot(
+            x, cum_params, color=THEME.accent_primary, linewidth=2, label="Parameters"
+        )
         ax1.set_ylabel("Cumulative Parameters", color=THEME.accent_primary)
         ax1.tick_params(axis="y", labelcolor=THEME.accent_primary)
 
@@ -547,10 +601,21 @@ class VisualizationGenerator:
             plt.Line2D([0], [0], color=THEME.accent_primary, linewidth=2),
             plt.Line2D([0], [0], color=THEME.accent_secondary, linewidth=2),
         ]
-        ax1.legend(lines, ["Parameters", "FLOPs"], loc="upper left", facecolor=THEME.background, labelcolor=THEME.text)
+        ax1.legend(
+            lines,
+            ["Parameters", "FLOPs"],
+            loc="upper left",
+            facecolor=THEME.background,
+            labelcolor=THEME.text,
+        )
 
         plt.tight_layout()
-        fig.savefig(output_path, facecolor=THEME.background, edgecolor="none", bbox_inches="tight")
+        fig.savefig(
+            output_path,
+            facecolor=THEME.background,
+            edgecolor="none",
+            bbox_inches="tight",
+        )
         plt.close(fig)
 
         return output_path
@@ -574,4 +639,3 @@ def generate_visualizations(
     """
     generator = VisualizationGenerator(logger=logger)
     return generator.generate_all(report, Path(output_dir))
-

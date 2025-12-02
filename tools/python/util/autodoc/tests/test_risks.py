@@ -33,7 +33,9 @@ def create_deep_no_skip_model(num_layers: int = 60) -> onnx.ModelProto:
 
     for i in range(num_layers):
         W = helper.make_tensor(
-            f"W_{i}", TensorProto.FLOAT, [64, 64],
+            f"W_{i}",
+            TensorProto.FLOAT,
+            [64, 64],
             np.random.randn(64, 64).astype(np.float32).flatten().tolist(),
         )
         initializers.append(W)
@@ -69,7 +71,9 @@ def create_small_model() -> onnx.ModelProto:
     Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 8])
 
     W = helper.make_tensor(
-        "W", TensorProto.FLOAT, [8, 8],
+        "W",
+        TensorProto.FLOAT,
+        [8, 8],
         np.random.randn(8, 8).astype(np.float32).flatten().tolist(),
     )
 
@@ -96,7 +100,9 @@ def create_no_activation_model() -> onnx.ModelProto:
     # Create 25 MatMul layers with no activations (exceeds 20-node threshold)
     for i in range(25):
         W = helper.make_tensor(
-            f"W_{i}", TensorProto.FLOAT, [64, 64],
+            f"W_{i}",
+            TensorProto.FLOAT,
+            [64, 64],
             np.random.randn(64, 64).astype(np.float32).flatten().tolist(),
         )
         initializers.append(W)

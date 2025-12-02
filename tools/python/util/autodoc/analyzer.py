@@ -19,6 +19,7 @@ from typing import Any
 import numpy as np
 import onnx
 
+
 # Standalone implementations that work without onnxruntime
 def get_opsets_imported(model: onnx.ModelProto) -> dict:
     """Get the opsets imported by the model."""
@@ -168,14 +169,18 @@ class ONNXGraphLoader:
             try:
                 model = onnx.shape_inference.infer_shapes(model, strict_mode=True)
             except Exception as e:
-                self.logger.warning(f"Shape inference failed: {e}. Proceeding without shape info.")
+                self.logger.warning(
+                    f"Shape inference failed: {e}. Proceeding without shape info."
+                )
 
         graph_info = self._extract_graph_info(model.graph, model)
 
         self.logger.debug(f"Loaded graph with {graph_info.num_nodes} nodes")
         return model, graph_info
 
-    def _extract_graph_info(self, graph: onnx.GraphProto, model: onnx.ModelProto) -> GraphInfo:
+    def _extract_graph_info(
+        self, graph: onnx.GraphProto, model: onnx.ModelProto
+    ) -> GraphInfo:
         """Extract GraphInfo from an ONNX GraphProto."""
 
         # Extract initializers (weights/biases)
@@ -232,7 +237,9 @@ class ONNXGraphLoader:
                 elif attr.HasField("f"):
                     attributes[attr.name] = attr.f
                 elif attr.HasField("s"):
-                    attributes[attr.name] = attr.s.decode("utf-8") if isinstance(attr.s, bytes) else attr.s
+                    attributes[attr.name] = (
+                        attr.s.decode("utf-8") if isinstance(attr.s, bytes) else attr.s
+                    )
                 elif attr.ints:
                     attributes[attr.name] = list(attr.ints)
                 elif attr.floats:
@@ -343,7 +350,9 @@ class MetricsEngine:
             # Find which node uses this initializer
             for node in graph_info.nodes:
                 if name in node.inputs:
-                    counts.by_op_type[node.op_type] = counts.by_op_type.get(node.op_type, 0) + param_count
+                    counts.by_op_type[node.op_type] = (
+                        counts.by_op_type.get(node.op_type, 0) + param_count
+                    )
                     node.param_count += param_count
                     break
 
@@ -374,7 +383,9 @@ class MetricsEngine:
             node.flops = flops
             counts.total += flops
             counts.by_node[node.name] = flops
-            counts.by_op_type[node.op_type] = counts.by_op_type.get(node.op_type, 0) + flops
+            counts.by_op_type[node.op_type] = (
+                counts.by_op_type.get(node.op_type, 0) + flops
+            )
 
         return counts
 
@@ -423,7 +434,9 @@ class MetricsEngine:
         # Get output shape
         if node.outputs and node.outputs[0] in graph_info.value_shapes:
             output_shape = graph_info.value_shapes[node.outputs[0]]
-            if len(output_shape) >= 4 and all(isinstance(d, int) for d in output_shape[-2:]):
+            if len(output_shape) >= 4 and all(
+                isinstance(d, int) for d in output_shape[-2:]
+            ):
                 h_out, w_out = output_shape[-2], output_shape[-1]
             else:
                 h_out, w_out = 1, 1
@@ -464,14 +477,18 @@ class MetricsEngine:
         if len(shape_a) < 2 or len(shape_b) < 2:
             return 0
 
-        if not all(isinstance(d, int) for d in shape_a[-2:]) or not all(isinstance(d, int) for d in shape_b[-2:]):
+        if not all(isinstance(d, int) for d in shape_a[-2:]) or not all(
+            isinstance(d, int) for d in shape_b[-2:]
+        ):
             return 0
 
         m, k = shape_a[-2], shape_a[-1]
         k2, n = shape_b[-2], shape_b[-1]
 
         if k != k2:
-            self.logger.warning(f"MatMul shape mismatch in node {node.name}: K={k} vs K={k2}")
+            self.logger.warning(
+                f"MatMul shape mismatch in node {node.name}: K={k} vs K={k2}"
+            )
             return 0
 
         # Handle batch dimensions
@@ -487,7 +504,11 @@ class MetricsEngine:
         flops = self._estimate_matmul_flops(node, graph_info)
 
         # Add bias computation if present
-        if len(node.inputs) > 2 and node.outputs and node.outputs[0] in graph_info.value_shapes:
+        if (
+            len(node.inputs) > 2
+            and node.outputs
+            and node.outputs[0] in graph_info.value_shapes
+        ):
             output_shape = graph_info.value_shapes[node.outputs[0]]
             if output_shape and all(isinstance(d, int) for d in output_shape):
                 bias_flops = int(np.prod(output_shape))
@@ -540,7 +561,11 @@ class MetricsEngine:
                 elif tensor.dtype in (np.int16, np.uint16):
                     bytes_per_elem = 2
 
-            tensor_bytes = int(np.prod(tensor.shape)) * bytes_per_elem if tensor.shape else bytes_per_elem
+            tensor_bytes = (
+                int(np.prod(tensor.shape)) * bytes_per_elem
+                if tensor.shape
+                else bytes_per_elem
+            )
             estimates.model_size_bytes += tensor_bytes
 
         # Peak activation memory: rough estimate based on intermediate tensor sizes
@@ -562,6 +587,8 @@ class MetricsEngine:
         sorted_activations = sorted(activation_sizes, key=lambda x: -x[1])
         # Rough heuristic: top 3 largest activations might coexist
         top_n = min(3, len(sorted_activations))
-        estimates.peak_activation_bytes = sum(size for _, size in sorted_activations[:top_n])
+        estimates.peak_activation_bytes = sum(
+            size for _, size in sorted_activations[:top_n]
+        )
 
         return estimates

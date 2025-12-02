@@ -56,8 +56,21 @@ class PatternAnalyzer:
     """
 
     # Operators that commonly appear together
-    CONV_ACTIVATIONS = {"Relu", "LeakyRelu", "Sigmoid", "Tanh", "Clip", "HardSwish", "Silu"}
-    NORM_OPS = {"BatchNormalization", "InstanceNormalization", "LayerNormalization", "GroupNormalization"}
+    CONV_ACTIVATIONS = {
+        "Relu",
+        "LeakyRelu",
+        "Sigmoid",
+        "Tanh",
+        "Clip",
+        "HardSwish",
+        "Silu",
+    }
+    NORM_OPS = {
+        "BatchNormalization",
+        "InstanceNormalization",
+        "LayerNormalization",
+        "GroupNormalization",
+    }
     ATTENTION_OPS = {"MatMul", "Softmax", "Transpose"}
     EMBEDDING_OPS = {"Gather", "Embedding"}
 
@@ -112,7 +125,9 @@ class PatternAnalyzer:
                     if next_node and next_node.op_type in self.NORM_OPS:
                         block_nodes.append(next_node.name)
                         block_type_parts.append("BN")
-                        current_output = next_node.outputs[0] if next_node.outputs else None
+                        current_output = (
+                            next_node.outputs[0] if next_node.outputs else None
+                        )
 
                         # Look for activation after BN
                         if current_output:
@@ -192,7 +207,12 @@ class PatternAnalyzer:
                 inp = softmax.inputs[0]
                 if inp in graph_info.node_by_output:
                     prev = graph_info.node_by_output[inp]
-                    if prev.op_type in ("MatMul", "Gemm", "Div", "Mul"):  # Div for scaling
+                    if prev.op_type in (
+                        "MatMul",
+                        "Gemm",
+                        "Div",
+                        "Mul",
+                    ):  # Div for scaling
                         before_nodes.append(prev.name)
 
             # Find MatMul after softmax
@@ -214,10 +234,14 @@ class PatternAnalyzer:
                 )
 
         # Also look for LayerNorm which often brackets transformer blocks
-        layernorm_count = sum(1 for n in graph_info.nodes if n.op_type == "LayerNormalization")
+        layernorm_count = sum(
+            1 for n in graph_info.nodes if n.op_type == "LayerNormalization"
+        )
         if layernorm_count >= 2 and blocks:
             # Likely a transformer architecture
-            self.logger.debug(f"Found {len(blocks)} attention blocks with {layernorm_count} LayerNorms")
+            self.logger.debug(
+                f"Found {len(blocks)} attention blocks with {layernorm_count} LayerNorms"
+            )
 
         return blocks
 
@@ -243,13 +267,18 @@ class PatternAnalyzer:
                                 nodes=[node.name],
                                 start_node=node.name,
                                 end_node=node.name,
-                                attributes={"vocab_size": int(vocab_size), "embed_dim": int(embed_dim)},
+                                attributes={
+                                    "vocab_size": int(vocab_size),
+                                    "embed_dim": int(embed_dim),
+                                },
                             )
                         )
 
         return blocks
 
-    def classify_architecture(self, graph_info: "GraphInfo", blocks: list[Block]) -> str:
+    def classify_architecture(
+        self, graph_info: "GraphInfo", blocks: list[Block]
+    ) -> str:
         """
         Classify the overall architecture type.
 
@@ -284,7 +313,9 @@ class PatternAnalyzer:
         else:
             return "unknown"
 
-    def _find_consumer(self, output_name: str, graph_info: "GraphInfo") -> "NodeInfo | None":
+    def _find_consumer(
+        self, output_name: str, graph_info: "GraphInfo"
+    ) -> "NodeInfo | None":
         """Find the first node that consumes a given output."""
         for node in graph_info.nodes:
             if output_name in node.inputs:

@@ -72,7 +72,9 @@ class RiskAnalyzer:
     def __init__(self, logger: logging.Logger | None = None):
         self.logger = logger or logging.getLogger("autodoc.risks")
 
-    def analyze(self, graph_info: "GraphInfo", blocks: list["Block"]) -> list[RiskSignal]:
+    def analyze(
+        self, graph_info: "GraphInfo", blocks: list["Block"]
+    ) -> list[RiskSignal]:
         """
         Run all risk heuristics and return detected signals.
 
@@ -234,7 +236,12 @@ class RiskAnalyzer:
         if graph_info.num_nodes < self.MIN_NODES_FOR_DEPTH_CHECK:
             return None
 
-        norm_ops = {"BatchNormalization", "LayerNormalization", "InstanceNormalization", "GroupNormalization"}
+        norm_ops = {
+            "BatchNormalization",
+            "LayerNormalization",
+            "InstanceNormalization",
+            "GroupNormalization",
+        }
         has_norm = any(op in graph_info.op_type_counts for op in norm_ops)
 
         # Count trainable layers (Conv, MatMul, Gemm)
@@ -285,7 +292,9 @@ class RiskAnalyzer:
                     bottlenecks.append((node.name, node.op_type, ratio))
 
         if bottlenecks:
-            desc_parts = [f"{name} ({op}: {ratio:.1%})" for name, op, ratio in bottlenecks]
+            desc_parts = [
+                f"{name} ({op}: {ratio:.1%})" for name, op, ratio in bottlenecks
+            ]
             total_gflops = total_flops / 1e9
             return RiskSignal(
                 id="compute_bottleneck",
@@ -317,10 +326,15 @@ class RiskAnalyzer:
             param_count = vocab_size * embed_dim
 
             if param_count > self.LARGE_EMBEDDING_THRESHOLD:
-                large_embeddings.append((block.name, vocab_size, embed_dim, param_count))
+                large_embeddings.append(
+                    (block.name, vocab_size, embed_dim, param_count)
+                )
 
         if large_embeddings:
-            details = [f"{name}: vocab={v}, dim={d}, params={p:,}" for name, v, d, p in large_embeddings]
+            details = [
+                f"{name}: vocab={v}, dim={d}, params={p:,}"
+                for name, v, d, p in large_embeddings
+            ]
             return RiskSignal(
                 id="large_embedding",
                 severity="info",
@@ -357,8 +371,18 @@ class RiskAnalyzer:
                 found_unusual.append(f"{op} (x{graph_info.op_type_counts[op]})")
 
         # Check for missing activations in deep networks
-        standard_activations = {"Relu", "LeakyRelu", "Gelu", "Silu", "Sigmoid", "Tanh", "Softmax"}
-        has_standard = any(op in graph_info.op_type_counts for op in standard_activations)
+        standard_activations = {
+            "Relu",
+            "LeakyRelu",
+            "Gelu",
+            "Silu",
+            "Sigmoid",
+            "Tanh",
+            "Softmax",
+        }
+        has_standard = any(
+            op in graph_info.op_type_counts for op in standard_activations
+        )
 
         trainable_count = (
             graph_info.op_type_counts.get("Conv", 0)

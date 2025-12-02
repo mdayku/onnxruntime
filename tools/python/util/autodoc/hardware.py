@@ -60,7 +60,9 @@ class HardwareProfile:
             "vendor": self.vendor,
             "device_type": self.device_type,
             "vram_gb": round(self.vram_bytes / (1024**3), 1),
-            "memory_bandwidth_gb_s": round(self.memory_bandwidth_bytes_per_s / (1024**3), 1),
+            "memory_bandwidth_gb_s": round(
+                self.memory_bandwidth_bytes_per_s / (1024**3), 1
+            ),
             "peak_fp32_tflops": self.peak_fp32_tflops,
             "peak_fp16_tflops": self.peak_fp16_tflops,
             "peak_int8_tops": self.peak_int8_tops,
@@ -713,25 +715,47 @@ class HardwareDetector:
 
         return None
 
-    def _match_jetson_profile(self, gpu_name_lower: str, vram_mb: int) -> HardwareProfile | None:
+    def _match_jetson_profile(
+        self, gpu_name_lower: str, vram_mb: int
+    ) -> HardwareProfile | None:
         """Match Jetson device to appropriate profile."""
         # Orin series
         if "orin" in gpu_name_lower:
             if "agx" in gpu_name_lower:
-                return NVIDIA_JETSON_AGX_ORIN_64GB if vram_mb > 40000 else NVIDIA_JETSON_AGX_ORIN_32GB
+                return (
+                    NVIDIA_JETSON_AGX_ORIN_64GB
+                    if vram_mb > 40000
+                    else NVIDIA_JETSON_AGX_ORIN_32GB
+                )
             elif "nx" in gpu_name_lower:
-                return NVIDIA_JETSON_ORIN_NX_16GB if vram_mb > 10000 else NVIDIA_JETSON_ORIN_NX_8GB
+                return (
+                    NVIDIA_JETSON_ORIN_NX_16GB
+                    if vram_mb > 10000
+                    else NVIDIA_JETSON_ORIN_NX_8GB
+                )
             elif "nano" in gpu_name_lower:
-                return NVIDIA_JETSON_ORIN_NANO_8GB if vram_mb > 5000 else NVIDIA_JETSON_ORIN_NANO_4GB
+                return (
+                    NVIDIA_JETSON_ORIN_NANO_8GB
+                    if vram_mb > 5000
+                    else NVIDIA_JETSON_ORIN_NANO_4GB
+                )
             # Default Orin
             return NVIDIA_JETSON_ORIN_NX_8GB
 
         # Xavier series
         if "xavier" in gpu_name_lower:
             if "agx" in gpu_name_lower:
-                return NVIDIA_JETSON_AGX_XAVIER_32GB if vram_mb > 20000 else NVIDIA_JETSON_AGX_XAVIER_16GB
+                return (
+                    NVIDIA_JETSON_AGX_XAVIER_32GB
+                    if vram_mb > 20000
+                    else NVIDIA_JETSON_AGX_XAVIER_16GB
+                )
             elif "nx" in gpu_name_lower:
-                return NVIDIA_JETSON_XAVIER_NX_16GB if vram_mb > 10000 else NVIDIA_JETSON_XAVIER_NX_8GB
+                return (
+                    NVIDIA_JETSON_XAVIER_NX_16GB
+                    if vram_mb > 10000
+                    else NVIDIA_JETSON_XAVIER_NX_8GB
+                )
             return NVIDIA_JETSON_XAVIER_NX_8GB
 
         # TX2 series
@@ -770,7 +794,9 @@ class HardwareDetector:
         cpu_count = os.cpu_count() or 4
         estimated_fp32_tflops = 0.1 * cpu_count  # ~0.1 TFLOPS per core
 
-        self.logger.info(f"Detected CPU: {cpu_name} ({cpu_count} cores, {ram_bytes / (1024**3):.1f} GB RAM)")
+        self.logger.info(
+            f"Detected CPU: {cpu_name} ({cpu_count} cores, {ram_bytes / (1024**3):.1f} GB RAM)"
+        )
 
         return HardwareProfile(
             name=f"{cpu_name} (detected)",
@@ -883,11 +909,19 @@ class HardwareEstimator:
 
         # Theoretical compute time
         total_flops = model_flops * batch_size
-        compute_time_ms = (total_flops / (peak_tflops * 1e12)) * 1000 if peak_tflops > 0 else float("inf")
+        compute_time_ms = (
+            (total_flops / (peak_tflops * 1e12)) * 1000
+            if peak_tflops > 0
+            else float("inf")
+        )
 
         # Memory bandwidth time (moving activations)
-        total_memory_access = (weights_bytes + activation_bytes * 2) * batch_size  # Read + write activations
-        memory_time_ms = (total_memory_access / hardware.memory_bandwidth_bytes_per_s) * 1000
+        total_memory_access = (
+            weights_bytes + activation_bytes * 2
+        ) * batch_size  # Read + write activations
+        memory_time_ms = (
+            total_memory_access / hardware.memory_bandwidth_bytes_per_s
+        ) * 1000
 
         # Bottleneck analysis
         if not fits_in_vram:
