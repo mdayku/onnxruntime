@@ -15,7 +15,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 |------|--------|---------|----------------|
 | Epic 1: Environment Setup | In Progress | 3 | 7/12 |
 | Epic 2: Core Analysis Engine | **Complete** | 4 | 17/17 |
-| Epic 3: Pattern Analysis | In Progress | 2 | 8/9 |
+| Epic 3: Pattern Analysis | **Complete** | 2 | 9/9 |
 | Epic 4: CLI and Output | In Progress | 4 | 14/18 |
 | Epic 4B: PyTorch Integration | In Progress | 2 | 12/14 |
 | Epic 5: Visualization | **Complete** | 3 | 12/12 |
@@ -90,7 +90,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 3.2.1**: Detect deep networks without skip connections
 - [x] **Task 3.2.2**: Flag oversized dense layers
 - [x] **Task 3.2.3**: Identify problematic dynamic shapes
-- [ ] **Task 3.2.4**: Detect non-standard residual patterns
+- [x] **Task 3.2.4**: Detect non-standard residual patterns (Concat, Gated, Sub variants)
 - [x] **Task 3.2.5**: Add configurable severity thresholds (RiskThresholds dataclass)
 
 ---

@@ -92,6 +92,7 @@ class PatternAnalyzer:
         # Detect various patterns
         blocks.extend(self.detect_conv_bn_relu(graph_info))
         blocks.extend(self.detect_residual_blocks(graph_info))
+        blocks.extend(self.detect_nonstandard_residual_blocks(graph_info))
         blocks.extend(self.detect_transformer_blocks(graph_info))
         blocks.extend(self.detect_embedding_layers(graph_info))
 
@@ -181,11 +182,134 @@ class PatternAnalyzer:
                             nodes=[node.name],
                             start_node=node.name,
                             end_node=node.name,
-                            attributes={"inputs": node.inputs},
+                            attributes={"inputs": node.inputs, "variant": "standard"},
                         )
                     )
 
         return blocks
+
+    def detect_nonstandard_residual_blocks(self, graph_info: GraphInfo) -> list[Block]:
+        """
+        Find non-standard residual/skip connection patterns.
+
+        Detects alternative skip connection implementations:
+        - Concat-based skip connections (DenseNet-style)
+        - Mul-based gating mechanisms (Highway networks, attention gates)
+        - Sub-based connections (rare but possible)
+
+        These may indicate custom architectures that need special handling.
+        """
+        blocks = []
+
+        # Concat-based skip connections (DenseNet-style)
+        for node in graph_info.nodes:
+            if node.op_type == "Concat" and len(node.inputs) >= 2:
+                # Check if inputs come from different depths (skip connection indicator)
+                input_depths = self._estimate_input_depths(node.inputs, graph_info)
+                if input_depths and max(input_depths) - min(input_depths) >= 2:
+                    blocks.append(
+                        Block(
+                            block_type="ResidualConcat",
+                            name=f"dense_skip_{len(blocks)}",
+                            nodes=[node.name],
+                            start_node=node.name,
+                            end_node=node.name,
+                            attributes={
+                                "inputs": node.inputs,
+                                "variant": "concat",
+                                "depth_diff": max(input_depths) - min(input_depths),
+                            },
+                        )
+                    )
+
+        # Mul-based gating (Highway networks, attention gates)
+        for node in graph_info.nodes:
+            if node.op_type == "Mul" and len(node.inputs) >= 2:
+                # Look for Sigmoid before Mul (gating pattern)
+                has_sigmoid_input = False
+                for inp in node.inputs:
+                    if inp in graph_info.node_by_output:
+                        prev_node = graph_info.node_by_output[inp]
+                        if prev_node.op_type == "Sigmoid":
+                            has_sigmoid_input = True
+                            break
+
+                if has_sigmoid_input:
+                    blocks.append(
+                        Block(
+                            block_type="ResidualGate",
+                            name=f"gate_{len(blocks)}",
+                            nodes=[node.name],
+                            start_node=node.name,
+                            end_node=node.name,
+                            attributes={"inputs": node.inputs, "variant": "gated"},
+                        )
+                    )
+
+        # Sub-based connections (rare, but could be learned residual)
+        for node in graph_info.nodes:
+            if node.op_type == "Sub" and len(node.inputs) >= 2:
+                input_nodes = []
+                for inp in node.inputs:
+                    if inp in graph_info.node_by_output:
+                        input_nodes.append(graph_info.node_by_output[inp])
+
+                if len(input_nodes) >= 2:
+                    blocks.append(
+                        Block(
+                            block_type="ResidualSub",
+                            name=f"sub_residual_{len(blocks)}",
+                            nodes=[node.name],
+                            start_node=node.name,
+                            end_node=node.name,
+                            attributes={"inputs": node.inputs, "variant": "subtract"},
+                        )
+                    )
+
+        return blocks
+
+    def _estimate_input_depths(
+        self, inputs: list[str], graph_info: GraphInfo, max_depth: int = 20
+    ) -> list[int]:
+        """
+        Estimate the graph depth of each input tensor.
+
+        Returns a list of estimated depths (hops from graph inputs).
+        Used to detect skip connections where inputs come from very different depths.
+        """
+        depths = []
+        for inp in inputs:
+            depth = self._trace_depth(inp, graph_info, 0, max_depth)
+            depths.append(depth)
+        return depths
+
+    def _trace_depth(
+        self,
+        tensor_name: str,
+        graph_info: GraphInfo,
+        current_depth: int,
+        max_depth: int,
+    ) -> int:
+        """Recursively trace back to find the depth of a tensor."""
+        if current_depth >= max_depth:
+            return current_depth
+
+        # If it's a graph input or initializer, depth is 0
+        if tensor_name in graph_info.input_shapes:
+            return 0
+        if tensor_name in graph_info.initializers:
+            return 0
+
+        # Find the node that produces this tensor
+        if tensor_name in graph_info.node_by_output:
+            producer = graph_info.node_by_output[tensor_name]
+            if producer.inputs:
+                # Trace back through the first input
+                return 1 + self._trace_depth(
+                    producer.inputs[0], graph_info, current_depth + 1, max_depth
+                )
+
+        return current_depth
 
     def detect_transformer_blocks(self, graph_info: GraphInfo) -> list[Block]:
         """

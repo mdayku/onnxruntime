@@ -250,6 +250,75 @@ class TestRiskSignalSeverity:
             model_path.unlink()
 
 
+def create_gated_skip_model_for_risk() -> onnx.ModelProto:
+    """Create a model with gated skip connections for risk testing."""
+    X = helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 16, 8, 8])
+
+    W = helper.make_tensor(
+        "W",
+        TensorProto.FLOAT,
+        [16, 16, 1, 1],
+        np.random.randn(16, 16, 1, 1).astype(np.float32).flatten().tolist(),
+    )
+
+    Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 16, 8, 8])
+
+    # Gate path: Conv -> Sigmoid
+    gate_conv = helper.make_node(
+        "Conv", ["X", "W"], ["gate_logits"], kernel_shape=[1, 1], name="gate_conv"
+    )
+    sigmoid = helper.make_node("Sigmoid", ["gate_logits"], ["gate"], name="sigmoid")
+
+    # Gated multiplication
+    gate_mul = helper.make_node("Mul", ["X", "gate"], ["Y"], name="gate_mul")
+
+    graph = helper.make_graph(
+        [gate_conv, sigmoid, gate_mul],
+        "gated_skip_test",
+        [X],
+        [Y],
+        [W],
+    )
+
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 17)])
+    return model
+
+
+class TestNonstandardResidualRisk:
+    """Tests for non-standard residual risk detection."""
+
+    def test_detect_nonstandard_residuals(self):
+        """Test that non-standard residual patterns are flagged."""
+        model = create_gated_skip_model_for_risk()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            pattern_analyzer = PatternAnalyzer()
+            blocks = pattern_analyzer.group_into_blocks(graph_info)
+
+            risk_analyzer = RiskAnalyzer()
+            signals = risk_analyzer.analyze(graph_info, blocks)
+
+            signal_ids = [s.id for s in signals]
+            assert "nonstandard_residuals" in signal_ids
+
+            # Check signal details
+            nonstandard_signal = next(
+                s for s in signals if s.id == "nonstandard_residuals"
+            )
+            assert nonstandard_signal.severity == "info"
+            assert "gated" in nonstandard_signal.description.lower()
+            assert nonstandard_signal.recommendation  # Should have a recommendation
+        finally:
+            model_path.unlink()
+
+
 class TestConfigurableThresholds:
     """Tests for configurable risk thresholds."""
 

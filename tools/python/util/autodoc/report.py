@@ -325,6 +325,36 @@ class InspectionReport:
                     lines.append(f"- {bt}: {count}")
                 lines.append("")
 
+                # Highlight non-standard residual patterns if present
+                nonstandard_residuals = [
+                    b
+                    for b in self.detected_blocks
+                    if b.block_type in ("ResidualConcat", "ResidualGate", "ResidualSub")
+                ]
+                if nonstandard_residuals:
+                    lines.append("### Non-Standard Skip Connections")
+                    lines.append("")
+                    lines.append(
+                        "This model uses non-standard residual/skip connection patterns:"
+                    )
+                    lines.append("")
+                    for block in nonstandard_residuals:
+                        if block.block_type == "ResidualConcat":
+                            depth_diff = block.attributes.get("depth_diff", "?")
+                            lines.append(
+                                f"- **{block.name}**: Concat-based (DenseNet-style), "
+                                f"depth difference: {depth_diff} layers"
+                            )
+                        elif block.block_type == "ResidualGate":
+                            lines.append(
+                                f"- **{block.name}**: Gated skip (Highway/attention gate)"
+                            )
+                        elif block.block_type == "ResidualSub":
+                            lines.append(
+                                f"- **{block.name}**: Subtraction-based residual"
+                            )
+                    lines.append("")
+
         # Dataset info (if available)
         if self.dataset_info:
             lines.append("## Dataset Info")
@@ -608,6 +638,61 @@ class InspectionReport:
                 html_parts.append("</ul>")
 
         html_parts.append("</section>")
+
+        # Architecture section
+        if self.architecture_type != "unknown" or self.detected_blocks:
+            html_parts.append('<section class="architecture">')
+            html_parts.append("<h2>Architecture</h2>")
+            html_parts.append(
+                f'<p><strong>Detected Type:</strong> <span class="arch-type">{self.architecture_type.upper()}</span></p>'
+            )
+
+            if self.detected_blocks:
+                # Group by block type
+                block_types: dict[str, int] = {}
+                for block in self.detected_blocks:
+                    block_types[block.block_type] = (
+                        block_types.get(block.block_type, 0) + 1
+                    )
+
+                html_parts.append("<h3>Detected Blocks</h3>")
+                html_parts.append("<table>")
+                html_parts.append("<tr><th>Block Type</th><th>Count</th></tr>")
+                for bt, count in sorted(block_types.items(), key=lambda x: -x[1]):
+                    html_parts.append(f"<tr><td>{bt}</td><td>{count}</td></tr>")
+                html_parts.append("</table>")
+
+                # Non-standard residual patterns
+                nonstandard_residuals = [
+                    b
+                    for b in self.detected_blocks
+                    if b.block_type in ("ResidualConcat", "ResidualGate", "ResidualSub")
+                ]
+                if nonstandard_residuals:
+                    html_parts.append('<div class="nonstandard-residuals">')
+                    html_parts.append("<h3>Non-Standard Skip Connections</h3>")
+                    html_parts.append(
+                        "<p>This model uses non-standard residual/skip connection patterns:</p>"
+                    )
+                    html_parts.append("<ul>")
+                    for block in nonstandard_residuals:
+                        if block.block_type == "ResidualConcat":
+                            depth_diff = block.attributes.get("depth_diff", "?")
+                            html_parts.append(
+                                f"<li><strong>{block.name}</strong>: Concat-based (DenseNet-style), "
+                                f"depth difference: {depth_diff} layers</li>"
+                            )
+                        elif block.block_type == "ResidualGate":
+                            html_parts.append(
+                                f"<li><strong>{block.name}</strong>: Gated skip (Highway/attention gate)</li>"
+                            )
+                        elif block.block_type == "ResidualSub":
+                            html_parts.append(
+                                f"<li><strong>{block.name}</strong>: Subtraction-based residual</li>"
+                            )
+                    html_parts.append("</ul></div>")
+
+            html_parts.append("</section>")
 
         # Dataset Info
         if self.dataset_info:
@@ -943,6 +1028,25 @@ class InspectionReport:
             font-family: 'SF Mono', Monaco, 'Courier New', monospace;
             font-size: 0.9em;
             color: var(--accent-coral);
+        }}
+
+        /* Architecture Section */
+        .architecture .arch-type {{
+            color: var(--accent-cyan);
+            font-weight: bold;
+        }}
+
+        .nonstandard-residuals {{
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border-left: 4px solid var(--accent-yellow);
+        }}
+
+        .nonstandard-residuals h3 {{
+            color: var(--accent-yellow);
+            margin-top: 0;
         }}
 
         /* Hardware Section */

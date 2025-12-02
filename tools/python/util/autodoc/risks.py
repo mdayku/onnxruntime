@@ -155,6 +155,10 @@ class RiskAnalyzer:
         if signal:
             signals.append(signal)
 
+        signal = self.check_nonstandard_residuals(graph_info, blocks)
+        if signal:
+            signals.append(signal)
+
         self.logger.debug(f"Detected {len(signals)} risk signals")
         return signals
 
@@ -460,3 +464,68 @@ class RiskAnalyzer:
             )
 
         return None
+
+    def check_nonstandard_residuals(
+        self, graph_info: GraphInfo, blocks: list[Block]
+    ) -> RiskSignal | None:
+        """
+        Flag non-standard residual/skip connection patterns.
+
+        Non-standard patterns include:
+        - Concat-based skip connections (DenseNet-style)
+        - Gated skip connections (Highway networks)
+        - Subtraction-based residuals
+
+        These may require special handling for optimization or deployment.
+        """
+        # Identify non-standard residual blocks
+        nonstandard_types = {
+            "ResidualConcat": "concat-based (DenseNet-style)",
+            "ResidualGate": "gated (Highway/attention gate)",
+            "ResidualSub": "subtraction-based",
+        }
+
+        found_nonstandard: dict[str, list[str]] = {}
+        for block in blocks:
+            if block.block_type in nonstandard_types:
+                variant = nonstandard_types[block.block_type]
+                if variant not in found_nonstandard:
+                    found_nonstandard[variant] = []
+                found_nonstandard[variant].append(block.name)
+
+        if not found_nonstandard:
+            return None
+
+        # Build description
+        details = []
+        all_nodes = []
+        for variant, block_names in found_nonstandard.items():
+            details.append(f"{len(block_names)} {variant}")
+            all_nodes.extend(block_names)
+
+        total_count = sum(len(names) for names in found_nonstandard.values())
+
+        # Check if model also has standard residuals
+        standard_count = sum(1 for b in blocks if b.block_type == "ResidualAdd")
+        mixed_msg = ""
+        if standard_count > 0:
+            mixed_msg = (
+                f" Model also has {standard_count} standard Add-based residuals."
+            )
+
+        return RiskSignal(
+            id="nonstandard_residuals",
+            severity="info",
+            description=(
+                f"Model uses {total_count} non-standard skip connection(s): "
+                f"{', '.join(details)}.{mixed_msg} "
+                "These patterns may indicate custom architectures requiring special attention."
+            ),
+            nodes=all_nodes,
+            recommendation=(
+                "Non-standard skip connections are valid but may need special handling: "
+                "Concat-based patterns increase tensor sizes through the network. "
+                "Gated patterns add compute overhead but enable selective information flow. "
+                "Ensure your deployment target and optimization tools support these patterns."
+            ),
+        )

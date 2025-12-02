@@ -269,6 +269,247 @@ class TestPatternAnalyzer:
             model_path.unlink()
 
 
+def create_concat_skip_model() -> onnx.ModelProto:
+    """Create a model with Concat-based skip connections (DenseNet-style)."""
+    X = helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 16, 8, 8])
+
+    W1 = helper.make_tensor(
+        "W1",
+        TensorProto.FLOAT,
+        [16, 16, 3, 3],
+        np.random.randn(16, 16, 3, 3).astype(np.float32).flatten().tolist(),
+    )
+    W2 = helper.make_tensor(
+        "W2",
+        TensorProto.FLOAT,
+        [16, 16, 3, 3],
+        np.random.randn(16, 16, 3, 3).astype(np.float32).flatten().tolist(),
+    )
+
+    Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 32, 8, 8])
+
+    # Conv path 1
+    conv1 = helper.make_node(
+        "Conv",
+        ["X", "W1"],
+        ["conv1_out"],
+        kernel_shape=[3, 3],
+        pads=[1, 1, 1, 1],
+        name="conv1",
+    )
+    relu1 = helper.make_node("Relu", ["conv1_out"], ["relu1_out"], name="relu1")
+
+    # Conv path 2
+    conv2 = helper.make_node(
+        "Conv",
+        ["relu1_out", "W2"],
+        ["conv2_out"],
+        kernel_shape=[3, 3],
+        pads=[1, 1, 1, 1],
+        name="conv2",
+    )
+    relu2 = helper.make_node("Relu", ["conv2_out"], ["relu2_out"], name="relu2")
+
+    # DenseNet-style concat: concatenate input with processed features
+    concat_node = helper.make_node(
+        "Concat", ["X", "relu2_out"], ["Y"], axis=1, name="dense_concat"
+    )
+
+    graph = helper.make_graph(
+        [conv1, relu1, conv2, relu2, concat_node],
+        "concat_skip_test",
+        [X],
+        [Y],
+        [W1, W2],
+    )
+
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 17)])
+    return model
+
+
+def create_gated_skip_model() -> onnx.ModelProto:
+    """Create a model with gated skip connections (Highway-style)."""
+    X = helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 16, 8, 8])
+
+    W = helper.make_tensor(
+        "W",
+        TensorProto.FLOAT,
+        [16, 16, 1, 1],
+        np.random.randn(16, 16, 1, 1).astype(np.float32).flatten().tolist(),
+    )
+
+    Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 16, 8, 8])
+
+    # Gate path: Conv -> Sigmoid
+    gate_conv = helper.make_node(
+        "Conv", ["X", "W"], ["gate_logits"], kernel_shape=[1, 1], name="gate_conv"
+    )
+    sigmoid = helper.make_node("Sigmoid", ["gate_logits"], ["gate"], name="sigmoid")
+
+    # Gated multiplication
+    gate_mul = helper.make_node("Mul", ["X", "gate"], ["Y"], name="gate_mul")
+
+    graph = helper.make_graph(
+        [gate_conv, sigmoid, gate_mul],
+        "gated_skip_test",
+        [X],
+        [Y],
+        [W],
+    )
+
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 17)])
+    return model
+
+
+def create_sub_residual_model() -> onnx.ModelProto:
+    """Create a model with subtraction-based residual connections."""
+    X = helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 16, 8, 8])
+
+    W1 = helper.make_tensor(
+        "W1",
+        TensorProto.FLOAT,
+        [16, 16, 3, 3],
+        np.random.randn(16, 16, 3, 3).astype(np.float32).flatten().tolist(),
+    )
+    W2 = helper.make_tensor(
+        "W2",
+        TensorProto.FLOAT,
+        [16, 16, 3, 3],
+        np.random.randn(16, 16, 3, 3).astype(np.float32).flatten().tolist(),
+    )
+
+    Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 16, 8, 8])
+
+    # First path: identity-like conv
+    conv1 = helper.make_node(
+        "Conv",
+        ["X", "W1"],
+        ["conv1_out"],
+        kernel_shape=[3, 3],
+        pads=[1, 1, 1, 1],
+        name="conv1",
+    )
+    relu1 = helper.make_node("Relu", ["conv1_out"], ["relu1_out"], name="relu1")
+
+    # Second path: another conv
+    conv2 = helper.make_node(
+        "Conv",
+        ["X", "W2"],
+        ["conv2_out"],
+        kernel_shape=[3, 3],
+        pads=[1, 1, 1, 1],
+        name="conv2",
+    )
+    relu2 = helper.make_node("Relu", ["conv2_out"], ["relu2_out"], name="relu2")
+
+    # Subtraction residual (learn the difference between two paths)
+    sub_node = helper.make_node(
+        "Sub", ["relu1_out", "relu2_out"], ["Y"], name="sub_residual"
+    )
+
+    graph = helper.make_graph(
+        [conv1, relu1, conv2, relu2, sub_node],
+        "sub_residual_test",
+        [X],
+        [Y],
+        [W1, W2],
+    )
+
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 17)])
+    return model
+
+
+class TestNonstandardResiduals:
+    """Tests for non-standard residual pattern detection."""
+
+    def test_detect_concat_skip(self):
+        """Test detection of Concat-based skip connections (DenseNet-style)."""
+        model = create_concat_skip_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            analyzer = PatternAnalyzer()
+            blocks = analyzer.detect_nonstandard_residual_blocks(graph_info)
+
+            # Should find concat-based skip
+            concat_blocks = [b for b in blocks if b.block_type == "ResidualConcat"]
+            assert len(concat_blocks) >= 1
+            assert concat_blocks[0].attributes.get("variant") == "concat"
+        finally:
+            model_path.unlink()
+
+    def test_detect_gated_skip(self):
+        """Test detection of gated skip connections (Highway-style)."""
+        model = create_gated_skip_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            analyzer = PatternAnalyzer()
+            blocks = analyzer.detect_nonstandard_residual_blocks(graph_info)
+
+            # Should find gated pattern
+            gate_blocks = [b for b in blocks if b.block_type == "ResidualGate"]
+            assert len(gate_blocks) >= 1
+            assert gate_blocks[0].attributes.get("variant") == "gated"
+        finally:
+            model_path.unlink()
+
+    def test_detect_sub_residual(self):
+        """Test detection of subtraction-based residual connections."""
+        model = create_sub_residual_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            analyzer = PatternAnalyzer()
+            blocks = analyzer.detect_nonstandard_residual_blocks(graph_info)
+
+            # Should find sub-based residual
+            sub_blocks = [b for b in blocks if b.block_type == "ResidualSub"]
+            assert len(sub_blocks) >= 1
+            assert sub_blocks[0].attributes.get("variant") == "subtract"
+        finally:
+            model_path.unlink()
+
+    def test_group_into_blocks_includes_nonstandard(self):
+        """Test that group_into_blocks includes non-standard residuals."""
+        model = create_gated_skip_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            analyzer = PatternAnalyzer()
+            all_blocks = analyzer.group_into_blocks(graph_info)
+
+            # Nonstandard residuals should be included in the grouped blocks
+            gate_blocks = [b for b in all_blocks if b.block_type == "ResidualGate"]
+            assert len(gate_blocks) >= 1
+        finally:
+            model_path.unlink()
+
+
 class TestArchitectureClassification:
     """Tests for architecture type classification."""
 
