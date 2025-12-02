@@ -13,14 +13,14 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 
 | Epic | Status | Stories | Tasks Complete |
 |------|--------|---------|----------------|
-| Epic 1: Environment Setup | In Progress | 3 | 2/12 |
-| Epic 2: Core Analysis Engine | Not Started | 4 | 0/17 |
-| Epic 3: Pattern Analysis | Not Started | 2 | 0/9 |
-| Epic 4: CLI and Output | Not Started | 3 | 0/13 |
+| Epic 1: Environment Setup | In Progress | 3 | 5/12 |
+| Epic 2: Core Analysis Engine | In Progress | 4 | 12/17 |
+| Epic 3: Pattern Analysis | In Progress | 2 | 4/9 |
+| Epic 4: CLI and Output | In Progress | 3 | 9/13 |
 | Epic 5: Visualization | Not Started | 3 | 0/11 |
-| Epic 6: Hardware/Compare | Not Started | 4 | 0/15 |
+| Epic 6: Hardware/Compare | In Progress | 7 | 8/28 |
 | Epic 7: LLM Integration | Not Started | 1 | 0/5 |
-| Epic 8: Testing | Not Started | 3 | 0/12 |
+| Epic 8: Testing & CI/CD | Not Started | 4 | 0/18 |
 | Epic 9: Demo/Deliverables | Not Started | 3 | 0/13 |
 
 ---
@@ -34,15 +34,15 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [ ] **Task 1.1.4**: Run existing test suite to verify build
 
 ### Story 1.2: Codebase Familiarization
-- [ ] **Task 1.2.1**: Map key directories and their purposes
-- [ ] **Task 1.2.2**: Study existing Python tools (`check_onnx_model_mobile_usability`, etc.)
+- [x] **Task 1.2.1**: Map key directories and their purposes
+- [x] **Task 1.2.2**: Study existing Python tools (`check_onnx_model_mobile_usability`, etc.)
 - [ ] **Task 1.2.3**: Understand graph representation classes (C++ and Python)
 - [ ] **Task 1.2.4**: Document extension points and integration patterns
 
 ### Story 1.3: Project Scaffolding
-- [ ] **Task 1.3.1**: Create `onnxruntime/tools/autodoc/` directory structure
-- [ ] **Task 1.3.2**: Set up `__init__.py` and module structure
-- [ ] **Task 1.3.3**: Create stub files for all planned modules
+- [x] **Task 1.3.1**: Create `tools/python/util/autodoc/` directory structure
+- [x] **Task 1.3.2**: Set up `__init__.py` and module structure
+- [x] **Task 1.3.3**: Create stub files for all planned modules (analyzer, patterns, risks, report)
 - [ ] **Task 1.3.4**: Add project to ONNX Runtime build system
 
 ---
@@ -50,27 +50,27 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 ## Epic 2: Core Analysis Engine
 
 ### Story 2.1: ONNX Graph Loader
-- [ ] **Task 2.1.1**: Implement model loading with `onnx.load()`
-- [ ] **Task 2.1.2**: Extract graph metadata (opset, producer, IR version)
-- [ ] **Task 2.1.3**: Parse nodes, inputs, outputs, initializers
-- [ ] **Task 2.1.4**: Implement shape inference wrapper
+- [x] **Task 2.1.1**: Implement model loading with `onnx.load()`
+- [x] **Task 2.1.2**: Extract graph metadata (opset, producer, IR version)
+- [x] **Task 2.1.3**: Parse nodes, inputs, outputs, initializers
+- [x] **Task 2.1.4**: Implement shape inference wrapper (with ORT fallback)
 
 ### Story 2.2: Parameter Counting
-- [ ] **Task 2.2.1**: Count parameters from initializers
-- [ ] **Task 2.2.2**: Associate parameters with nodes
-- [ ] **Task 2.2.3**: Aggregate by node type and block
+- [x] **Task 2.2.1**: Count parameters from initializers
+- [x] **Task 2.2.2**: Associate parameters with nodes
+- [x] **Task 2.2.3**: Aggregate by node type and block
 - [ ] **Task 2.2.4**: Handle edge cases (shared weights, quantized params)
 
 ### Story 2.3: FLOP Estimation
-- [ ] **Task 2.3.1**: Implement Conv2D FLOP calculation
-- [ ] **Task 2.3.2**: Implement MatMul/Gemm FLOP calculation
+- [x] **Task 2.3.1**: Implement Conv2D FLOP calculation
+- [x] **Task 2.3.2**: Implement MatMul/Gemm FLOP calculation
 - [ ] **Task 2.3.3**: Implement attention pattern FLOP calculation
-- [ ] **Task 2.3.4**: Add fallback estimation for unknown ops
-- [ ] **Task 2.3.5**: Identify and flag FLOP hotspots
+- [x] **Task 2.3.4**: Add fallback estimation for unknown ops (elementwise)
+- [x] **Task 2.3.5**: Identify and flag FLOP hotspots
 
 ### Story 2.4: Memory Estimation
-- [ ] **Task 2.4.1**: Calculate activation tensor sizes
-- [ ] **Task 2.4.2**: Implement peak memory estimation via topological walk
+- [x] **Task 2.4.1**: Calculate activation tensor sizes
+- [x] **Task 2.4.2**: Implement peak memory estimation (heuristic, top-3 activations)
 - [ ] **Task 2.4.3**: Estimate KV cache size for attention models
 - [ ] **Task 2.4.4**: Add memory breakdown by component
 
@@ -79,39 +79,39 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 ## Epic 3: Pattern Analysis and Risk Detection
 
 ### Story 3.1: Block Detection
-- [ ] **Task 3.1.1**: Implement Conv-BN-Relu pattern detection
-- [ ] **Task 3.1.2**: Implement residual block detection
-- [ ] **Task 3.1.3**: Implement transformer block detection
-- [ ] **Task 3.1.4**: Group nodes into logical blocks in output
+- [x] **Task 3.1.1**: Implement Conv-BN-Relu pattern detection
+- [x] **Task 3.1.2**: Implement residual block detection (Add node heuristic)
+- [x] **Task 3.1.3**: Implement transformer block detection (Softmax-based attention)
+- [x] **Task 3.1.4**: Group nodes into logical blocks in output
 
 ### Story 3.2: Risk Heuristics
-- [ ] **Task 3.2.1**: Detect deep networks without skip connections
-- [ ] **Task 3.2.2**: Flag oversized dense layers
-- [ ] **Task 3.2.3**: Identify problematic dynamic shapes
+- [x] **Task 3.2.1**: Detect deep networks without skip connections
+- [x] **Task 3.2.2**: Flag oversized dense layers
+- [x] **Task 3.2.3**: Identify problematic dynamic shapes
 - [ ] **Task 3.2.4**: Detect non-standard residual patterns
-- [ ] **Task 3.2.5**: Add configurable severity thresholds
+- [ ] **Task 3.2.5**: Add configurable severity thresholds (need smarter minimum thresholds)
 
 ---
 
 ## Epic 4: CLI and Output Formats
 
 ### Story 4.1: CLI Implementation
-- [ ] **Task 4.1.1**: Implement argument parser with all flags
-- [ ] **Task 4.1.2**: Wire CLI to analysis engine
+- [x] **Task 4.1.1**: Implement argument parser with all flags
+- [x] **Task 4.1.2**: Wire CLI to analysis engine
 - [ ] **Task 4.1.3**: Add progress indicators for large models
-- [ ] **Task 4.1.4**: Implement error handling and exit codes
+- [x] **Task 4.1.4**: Implement error handling and exit codes
 
 ### Story 4.2: JSON Output
-- [ ] **Task 4.2.1**: Implement full JSON schema serialization
+- [x] **Task 4.2.1**: Implement full JSON schema serialization
 - [ ] **Task 4.2.2**: Add schema validation
-- [ ] **Task 4.2.3**: Support stdout and file output modes
-- [ ] **Task 4.2.4**: Add pretty-print option
+- [x] **Task 4.2.3**: Support stdout and file output modes
+- [x] **Task 4.2.4**: Add pretty-print option (indent=2)
 
 ### Story 4.3: Markdown Output
-- [ ] **Task 4.3.1**: Create Markdown template structure
-- [ ] **Task 4.3.2**: Implement model card header section
-- [ ] **Task 4.3.3**: Generate metrics tables
-- [ ] **Task 4.3.4**: Generate risk signals section
+- [x] **Task 4.3.1**: Create Markdown template structure
+- [x] **Task 4.3.2**: Implement model card header section
+- [x] **Task 4.3.3**: Generate metrics tables
+- [x] **Task 4.3.4**: Generate risk signals section
 - [ ] **Task 4.3.5**: Add executive summary section
 
 ---
@@ -140,16 +140,21 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 ## Epic 6: Hardware Profiles and Compare Mode
 
 ### Story 6.1: Hardware Profile System
-- [ ] **Task 6.1.1**: Define hardware profile JSON schema
-- [ ] **Task 6.1.2**: Create initial profile library (RTX 4090, A10, T4)
-- [ ] **Task 6.1.3**: Implement profile loading and validation
-- [ ] **Task 6.1.4**: Add CLI flag for hardware profile
+- [x] **Task 6.1.1**: Define hardware profile dataclass (HardwareProfile)
+- [x] **Task 6.1.2**: Create comprehensive profile library (30+ profiles):
+  - Data Center: H100, A100, A10, L4, L40, L40S, T4, V100, P100, P40
+  - Jetson Orin: AGX Orin 64/32GB, Orin NX 16/8GB, Orin Nano 8/4GB
+  - Jetson Xavier: AGX Xavier 32/16GB, Xavier NX 16/8GB
+  - Jetson Legacy: TX2, TX2 NX, Nano 4GB, Nano 2GB
+  - Consumer: RTX 4090/4080/3090/3080
+- [x] **Task 6.1.3**: Implement profile loading and auto-detection via nvidia-smi (incl. Jetson)
+- [x] **Task 6.1.4**: Add CLI flags (--hardware, --list-hardware, --precision, --batch-size)
 
 ### Story 6.2: Hardware Estimates
-- [ ] **Task 6.2.1**: Implement VRAM requirement estimation
-- [ ] **Task 6.2.2**: Implement theoretical latency bounds
-- [ ] **Task 6.2.3**: Estimate compute utilization
-- [ ] **Task 6.2.4**: Identify bottleneck (compute vs memory)
+- [x] **Task 6.2.1**: Implement VRAM requirement estimation
+- [x] **Task 6.2.2**: Implement theoretical latency bounds
+- [x] **Task 6.2.3**: Estimate compute utilization
+- [x] **Task 6.2.4**: Identify bottleneck (compute vs memory vs vram)
 
 ### Story 6.3: Compare Mode CLI
 - [ ] **Task 6.3.1**: Implement multi-model argument parsing
@@ -161,6 +166,30 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [ ] **Task 6.4.1**: Generate comparison JSON schema
 - [ ] **Task 6.4.2**: Create comparison Markdown table
 - [ ] **Task 6.4.3**: Add trade-off analysis section
+
+### Story 6.5: Expanded VRAM Variants
+- [ ] **Task 6.5.1**: Add all A100 variants (40GB PCIe, 80GB PCIe, 80GB SXM)
+- [ ] **Task 6.5.2**: Add H100 variants (80GB PCIe, 80GB SXM, 94GB NVL)
+- [ ] **Task 6.5.3**: Add V100 variants (16GB, 32GB, PCIe vs SXM)
+- [ ] **Task 6.5.4**: Add RTX 3080 variants (10GB, 12GB)
+- [ ] **Task 6.5.5**: Add RTX 3090 Ti (24GB)
+- [ ] **Task 6.5.6**: Add full RTX 40-series lineup (4090, 4080 Super, 4080, 4070 Ti Super, 4070 Ti, 4070, 4060 Ti 16GB/8GB, 4060)
+- [ ] **Task 6.5.7**: Add full RTX 30-series lineup (3090 Ti, 3080 Ti, 3070 Ti, 3070, 3060 Ti, 3060, 3050)
+- [ ] **Task 6.5.8**: Add laptop GPU variants (Mobile suffix, lower TDP/clocks)
+
+### Story 6.6: Multi-GPU / Cluster Support
+- [ ] **Task 6.6.1**: Add multi-GPU profile multiplier (2x, 4x, 8x configurations)
+- [ ] **Task 6.6.2**: Model NVLink bandwidth for multi-GPU setups
+- [ ] **Task 6.6.3**: Estimate tensor parallelism overhead
+- [ ] **Task 6.6.4**: Add DGX system profiles (DGX A100, DGX H100)
+- [ ] **Task 6.6.5**: Add CLI flag `--gpu-count N` for multi-GPU estimates
+- [ ] **Task 6.6.6**: Estimate pipeline parallelism for models that don't fit on single GPU
+
+### Story 6.7: Cloud Instance Profiles
+- [ ] **Task 6.7.1**: Add AWS instance profiles (p4d, p5, g5, inf2)
+- [ ] **Task 6.7.2**: Add Azure instance profiles (NC, ND series)
+- [ ] **Task 6.7.3**: Add GCP instance profiles (a2, a3, g2)
+- [ ] **Task 6.7.4**: Include cost estimates per hour for cloud instances
 
 ---
 
@@ -175,7 +204,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 
 ---
 
-## Epic 8: Testing and Quality
+## Epic 8: Testing, CI/CD, and Quality
 
 ### Story 8.1: Unit Tests
 - [ ] **Task 8.1.1**: Test param counting with known models
@@ -194,6 +223,14 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [ ] **Task 8.3.2**: Add inline code documentation
 - [ ] **Task 8.3.3**: Create example scripts
 - [ ] **Task 8.3.4**: Document JSON schemas
+
+### Story 8.4: CI/CD Pipeline (GitHub Actions)
+- [ ] **Task 8.4.1**: Create `.github/workflows/autodoc-ci.yml` workflow file
+- [ ] **Task 8.4.2**: Add Python linting step (ruff/flake8)
+- [ ] **Task 8.4.3**: Add type checking step (mypy)
+- [ ] **Task 8.4.4**: Add unit test step (pytest) with coverage reporting
+- [ ] **Task 8.4.5**: Add integration test step with sample ONNX models
+- [ ] **Task 8.4.6**: Cache pip dependencies for faster CI runs
 
 ---
 

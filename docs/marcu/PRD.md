@@ -914,3 +914,5 @@ The tool should always produce *some* output, even if partial:
 |------|---------|--------|--------|
 | Dec 2025 | Initial | Created unified PRD from starter pack + visualization extension | Consolidation |
 | Dec 2025 | Structure | Split backlog into BACKLOG.md, brainlift into BRAINLIFT.md | Context window optimization |
+| Dec 2, 2025 | 4.3 | Scaffolding complete: `tools/python/util/autodoc/` with analyzer, patterns, risks, report modules | Following ORT patterns from mobile_helpers |
+| Dec 2, 2025 | Risk Signals | Added minimum thresholds for risk signals (1M+ params, 1B+ FLOPs) to avoid flagging trivial models | Common sense - don't recommend optimization for 13-param models |

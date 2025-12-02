@@ -1,0 +1,397 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+"""
+Risk analysis for ONNX Autodoc.
+
+Applies heuristics to detect potentially problematic patterns:
+- Deep networks without skip connections
+- Oversized dense layers
+- Dynamic shapes that may cause issues
+- Missing normalization
+- Unusual activation patterns
+"""
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .analyzer import GraphInfo
+    from .patterns import Block
+
+
+@dataclass
+class RiskSignal:
+    """
+    A detected risk or concern about the model architecture.
+
+    Risk signals are informational - they highlight patterns that
+    may cause issues but don't necessarily indicate problems.
+    """
+
+    id: str  # e.g., "no_skip_connections", "oversized_dense"
+    severity: str  # "info" | "warning" | "high"
+    description: str
+    nodes: list[str] = field(default_factory=list)
+    recommendation: str = ""
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "severity": self.severity,
+            "description": self.description,
+            "nodes": self.nodes,
+            "recommendation": self.recommendation,
+        }
+
+
+class RiskAnalyzer:
+    """
+    Detect architectural risk signals in ONNX graphs.
+
+    Applies various heuristics to identify patterns that may
+    cause training, inference, or deployment issues.
+
+    Note: Risk signals are only generated for models above minimum
+    complexity thresholds to avoid flagging trivial test models.
+    """
+
+    # Minimum thresholds - don't bother analyzing tiny models
+    MIN_PARAMS_FOR_ANALYSIS = 100_000  # 100K params minimum
+    MIN_FLOPS_FOR_BOTTLENECK = 1_000_000_000  # 1B FLOPs before flagging bottlenecks
+    MIN_NODES_FOR_DEPTH_CHECK = 20  # At least 20 nodes before checking depth
+
+    # Thresholds for risk detection
+    DEEP_NETWORK_THRESHOLD = 50  # nodes before considering "deep"
+    OVERSIZED_DENSE_THRESHOLD = 100_000_000  # 100M params in single layer
+    LARGE_EMBEDDING_THRESHOLD = 500_000_000  # 500M params for embedding
+    HIGH_FLOP_RATIO_THRESHOLD = 0.5  # Single op using >50% of FLOPs
+
+    def __init__(self, logger: logging.Logger | None = None):
+        self.logger = logger or logging.getLogger("autodoc.risks")
+
+    def analyze(self, graph_info: "GraphInfo", blocks: list["Block"]) -> list[RiskSignal]:
+        """
+        Run all risk heuristics and return detected signals.
+
+        Args:
+            graph_info: Parsed graph information.
+            blocks: Detected architectural blocks.
+
+        Returns:
+            List of RiskSignal instances.
+        """
+        signals = []
+
+        # Run all checks
+        signal = self.check_deep_without_skips(graph_info, blocks)
+        if signal:
+            signals.append(signal)
+
+        signal = self.check_oversized_dense(graph_info)
+        if signal:
+            signals.append(signal)
+
+        signal = self.check_dynamic_shapes(graph_info)
+        if signal:
+            signals.append(signal)
+
+        signal = self.check_missing_normalization(graph_info, blocks)
+        if signal:
+            signals.append(signal)
+
+        signal = self.check_compute_bottleneck(graph_info)
+        if signal:
+            signals.append(signal)
+
+        signal = self.check_large_embedding(graph_info, blocks)
+        if signal:
+            signals.append(signal)
+
+        signal = self.check_unusual_activations(graph_info)
+        if signal:
+            signals.append(signal)
+
+        self.logger.debug(f"Detected {len(signals)} risk signals")
+        return signals
+
+    def check_deep_without_skips(
+        self, graph_info: "GraphInfo", blocks: list["Block"]
+    ) -> RiskSignal | None:
+        """
+        Flag deep networks that lack skip connections.
+
+        Deep networks without residual connections may suffer from
+        vanishing gradients during training.
+        """
+        # Skip very small models - they don't need skip connections
+        if graph_info.num_nodes < self.MIN_NODES_FOR_DEPTH_CHECK:
+            return None
+
+        if graph_info.num_nodes < self.DEEP_NETWORK_THRESHOLD:
+            return None
+
+        # Count residual blocks
+        residual_count = sum(1 for b in blocks if "Residual" in b.block_type)
+
+        if residual_count == 0:
+            return RiskSignal(
+                id="no_skip_connections",
+                severity="warning",
+                description=(
+                    f"Model has {graph_info.num_nodes} nodes but no detected skip connections. "
+                    "Deep networks without residual connections may have training difficulties."
+                ),
+                nodes=[],
+                recommendation=(
+                    "Consider adding skip/residual connections if this model will be trained. "
+                    "If this is a pre-trained inference model, this may not be a concern."
+                ),
+            )
+
+        return None
+
+    def check_oversized_dense(self, graph_info: "GraphInfo") -> RiskSignal | None:
+        """
+        Flag excessively large fully-connected layers.
+
+        Very large MatMul/Gemm operations can dominate compute and memory.
+        """
+        large_ops = []
+
+        for node in graph_info.nodes:
+            if node.op_type in ("MatMul", "Gemm"):
+                # Check weight size
+                for inp in node.inputs:
+                    if inp in graph_info.initializers:
+                        weight = graph_info.initializers[inp]
+                        param_count = int(weight.size) if hasattr(weight, "size") else 0
+                        if param_count > self.OVERSIZED_DENSE_THRESHOLD:
+                            large_ops.append((node.name, param_count))
+                        break
+
+        if large_ops:
+            total_large = sum(p for _, p in large_ops)
+            return RiskSignal(
+                id="oversized_dense",
+                severity="info",
+                description=(
+                    f"Found {len(large_ops)} dense layer(s) with >100M parameters "
+                    f"(total: {total_large:,} params). These may dominate compute and memory."
+                ),
+                nodes=[name for name, _ in large_ops],
+                recommendation=(
+                    "Consider whether these large layers are necessary. "
+                    "Techniques like low-rank factorization or pruning may help reduce size."
+                ),
+            )
+
+        return None
+
+    def check_dynamic_shapes(self, graph_info: "GraphInfo") -> RiskSignal | None:
+        """
+        Flag inputs with dynamic shapes.
+
+        Dynamic shapes can cause issues with some inference backends
+        and prevent certain optimizations.
+        """
+        dynamic_inputs = []
+
+        for name, shape in graph_info.input_shapes.items():
+            has_dynamic = any(not isinstance(d, int) for d in shape)
+            if has_dynamic:
+                dynamic_inputs.append(name)
+
+        if dynamic_inputs:
+            return RiskSignal(
+                id="dynamic_input_shapes",
+                severity="info",
+                description=(
+                    f"Model has {len(dynamic_inputs)} input(s) with dynamic/symbolic dimensions: "
+                    f"{', '.join(dynamic_inputs)}. "
+                    "This is normal for variable-length sequences but may affect optimization."
+                ),
+                nodes=[],
+                recommendation=(
+                    "For best performance with hardware accelerators, consider providing "
+                    "fixed shapes or using onnxruntime.tools.make_dynamic_shape_fixed."
+                ),
+            )
+
+        return None
+
+    def check_missing_normalization(
+        self, graph_info: "GraphInfo", blocks: list["Block"]
+    ) -> RiskSignal | None:
+        """
+        Flag deep networks without normalization layers.
+
+        Networks without BatchNorm/LayerNorm may have training instabilities.
+        """
+        # Skip small models
+        if graph_info.num_nodes < self.MIN_NODES_FOR_DEPTH_CHECK:
+            return None
+
+        norm_ops = {"BatchNormalization", "LayerNormalization", "InstanceNormalization", "GroupNormalization"}
+        has_norm = any(op in graph_info.op_type_counts for op in norm_ops)
+
+        # Count trainable layers (Conv, MatMul, Gemm)
+        trainable_count = (
+            graph_info.op_type_counts.get("Conv", 0)
+            + graph_info.op_type_counts.get("MatMul", 0)
+            + graph_info.op_type_counts.get("Gemm", 0)
+        )
+
+        # Need at least 10 trainable layers to care about normalization
+        if not has_norm and trainable_count >= 10:
+            return RiskSignal(
+                id="missing_normalization",
+                severity="info",
+                description=(
+                    f"Model has {trainable_count} trainable layers but no normalization layers detected. "
+                    "This may affect training stability."
+                ),
+                nodes=[],
+                recommendation=(
+                    "If this model will be fine-tuned, consider adding normalization layers. "
+                    "For inference-only, this is typically not a concern."
+                ),
+            )
+
+        return None
+
+    def check_compute_bottleneck(self, graph_info: "GraphInfo") -> RiskSignal | None:
+        """
+        Flag single operations that dominate compute.
+
+        If one layer uses >50% of FLOPs, it's a potential bottleneck.
+        Only flags models with significant compute (>1B FLOPs) to avoid
+        noise on trivial models.
+        """
+        # Need to compute per-node FLOPs
+        total_flops = sum(node.flops for node in graph_info.nodes)
+
+        # Skip tiny models - no point optimizing a model with < 1B FLOPs
+        if total_flops < self.MIN_FLOPS_FOR_BOTTLENECK:
+            return None
+
+        bottlenecks = []
+        for node in graph_info.nodes:
+            if node.flops > 0:
+                ratio = node.flops / total_flops
+                if ratio > self.HIGH_FLOP_RATIO_THRESHOLD:
+                    bottlenecks.append((node.name, node.op_type, ratio))
+
+        if bottlenecks:
+            desc_parts = [f"{name} ({op}: {ratio:.1%})" for name, op, ratio in bottlenecks]
+            total_gflops = total_flops / 1e9
+            return RiskSignal(
+                id="compute_bottleneck",
+                severity="info",
+                description=(
+                    f"The following operations dominate compute ({total_gflops:.1f} GFLOPs total): "
+                    f"{', '.join(desc_parts)}. Optimizing these would have the greatest impact."
+                ),
+                nodes=[name for name, _, _ in bottlenecks],
+                recommendation="Focus optimization efforts (quantization, pruning) on these layers.",
+            )
+
+        return None
+
+    def check_large_embedding(
+        self, graph_info: "GraphInfo", blocks: list["Block"]
+    ) -> RiskSignal | None:
+        """
+        Flag very large embedding tables.
+
+        Large vocabulary embeddings can dominate model size.
+        """
+        embedding_blocks = [b for b in blocks if b.block_type == "Embedding"]
+
+        large_embeddings = []
+        for block in embedding_blocks:
+            vocab_size = block.attributes.get("vocab_size", 0)
+            embed_dim = block.attributes.get("embed_dim", 0)
+            param_count = vocab_size * embed_dim
+
+            if param_count > self.LARGE_EMBEDDING_THRESHOLD:
+                large_embeddings.append((block.name, vocab_size, embed_dim, param_count))
+
+        if large_embeddings:
+            details = [f"{name}: vocab={v}, dim={d}, params={p:,}" for name, v, d, p in large_embeddings]
+            return RiskSignal(
+                id="large_embedding",
+                severity="info",
+                description=(
+                    f"Found {len(large_embeddings)} large embedding table(s): {'; '.join(details)}. "
+                    "These dominate model size."
+                ),
+                nodes=[name for name, _, _, _ in large_embeddings],
+                recommendation=(
+                    "Consider vocabulary pruning, dimensionality reduction, or "
+                    "hash embeddings to reduce size."
+                ),
+            )
+
+        return None
+
+    def check_unusual_activations(self, graph_info: "GraphInfo") -> RiskSignal | None:
+        """
+        Flag unusual activation function patterns.
+
+        Some activation combinations may indicate issues.
+        Only checks models with sufficient complexity.
+        """
+        # Skip small models
+        if graph_info.num_nodes < self.MIN_NODES_FOR_DEPTH_CHECK:
+            return None
+
+        # Check for deprecated or unusual activations
+        unusual_ops = {"Elu", "Selu", "ThresholdedRelu", "Softsign", "Softplus"}
+        found_unusual = []
+
+        for op in unusual_ops:
+            if op in graph_info.op_type_counts:
+                found_unusual.append(f"{op} (x{graph_info.op_type_counts[op]})")
+
+        # Check for missing activations in deep networks
+        standard_activations = {"Relu", "LeakyRelu", "Gelu", "Silu", "Sigmoid", "Tanh", "Softmax"}
+        has_standard = any(op in graph_info.op_type_counts for op in standard_activations)
+
+        trainable_count = (
+            graph_info.op_type_counts.get("Conv", 0)
+            + graph_info.op_type_counts.get("MatMul", 0)
+            + graph_info.op_type_counts.get("Gemm", 0)
+        )
+
+        # Need at least 5 trainable layers to care about missing activations
+        if not has_standard and trainable_count >= 5:
+            return RiskSignal(
+                id="no_activations",
+                severity="warning",
+                description=(
+                    f"Model has {trainable_count} linear layers but no standard activation functions. "
+                    "This makes the model effectively linear, limiting expressiveness."
+                ),
+                nodes=[],
+                recommendation="Add activation functions between linear layers.",
+            )
+
+        if found_unusual:
+            return RiskSignal(
+                id="unusual_activations",
+                severity="info",
+                description=(
+                    f"Model uses less common activation functions: {', '.join(found_unusual)}. "
+                    "These may have limited hardware acceleration support."
+                ),
+                nodes=[],
+                recommendation=(
+                    "Consider using more common activations (ReLU, GELU, SiLU) for better "
+                    "hardware support, unless these specific activations are required."
+                ),
+            )
+
+        return None
