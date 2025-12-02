@@ -43,6 +43,13 @@ from .llm_summarizer import (
 from .patterns import PatternAnalyzer
 from .report import InspectionReport, ModelInspector
 from .risks import RiskAnalyzer, RiskSignal, RiskThresholds
+from .schema import (
+    INSPECTION_REPORT_SCHEMA,
+    ValidationError,
+    get_schema,
+    validate_report,
+    validate_report_strict,
+)
 from .visualizations import (
     THEME,
     ChartTheme,
@@ -55,6 +62,7 @@ from .visualizations import (
 
 __all__ = [
     "HARDWARE_PROFILES",
+    "INSPECTION_REPORT_SCHEMA",
     "THEME",
     "ChartTheme",
     "HardwareDetector",
@@ -73,14 +81,19 @@ __all__ = [
     "RiskAnalyzer",
     "RiskSignal",
     "RiskThresholds",
+    # Schema Validation
+    "ValidationError",
     # Visualization
     "VisualizationGenerator",
     "detect_local_hardware",
     "generate_visualizations",
     "get_profile",
+    "get_schema",
     "has_llm_api_key",
     "is_llm_available",
     "is_visualization_available",
     "list_available_profiles",
     "summarize_report",
+    "validate_report",
+    "validate_report_strict",
 ]

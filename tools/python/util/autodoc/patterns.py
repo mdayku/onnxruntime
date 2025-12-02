@@ -87,7 +87,7 @@ class PatternAnalyzer:
         Returns:
             List of detected Block instances.
         """
-        blocks = []
+        blocks: list[Block] = []
 
         # Detect various patterns
         blocks.extend(self.detect_conv_bn_relu(graph_info))
@@ -108,8 +108,8 @@ class PatternAnalyzer:
         - Conv -> ReLU
         - Conv -> BatchNorm
         """
-        blocks = []
-        visited = set()
+        blocks: list[Block] = []
+        visited: set[str] = set()
 
         for node in graph_info.nodes:
             if node.name in visited:
@@ -161,7 +161,7 @@ class PatternAnalyzer:
         Looks for Add nodes where one input comes from earlier in the graph
         (skip connection).
         """
-        blocks = []
+        blocks: list[Block] = []
 
         for node in graph_info.nodes:
             if node.op_type == "Add" and len(node.inputs) >= 2:
@@ -199,7 +199,7 @@ class PatternAnalyzer:
 
         These may indicate custom architectures that need special handling.
         """
-        blocks = []
+        blocks: list[Block] = []
 
         # Concat-based skip connections (DenseNet-style)
         for node in graph_info.nodes:
@@ -318,13 +318,13 @@ class PatternAnalyzer:
         Looks for the characteristic Softmax in attention computation
         and MatMul patterns for Q, K, V projections.
         """
-        blocks = []
+        blocks: list[Block] = []
         softmax_nodes = [n for n in graph_info.nodes if n.op_type == "Softmax"]
 
         for softmax in softmax_nodes:
             # Look for attention pattern: MatMul -> Softmax -> MatMul
-            before_nodes = []
-            after_nodes = []
+            before_nodes: list[str] = []
+            after_nodes: list[str] = []
 
             # Find MatMul before softmax
             if softmax.inputs:
@@ -375,7 +375,7 @@ class PatternAnalyzer:
 
         Looks for Gather operations on large weight tensors.
         """
-        blocks = []
+        blocks: list[Block] = []
 
         for node in graph_info.nodes:
             if node.op_type == "Gather":

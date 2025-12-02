@@ -134,7 +134,7 @@ class MemoryBreakdown:
     activations_by_op_type: dict[str, int] = field(default_factory=dict)  # op -> bytes
     largest_activations: list[tuple[str, int]] = field(default_factory=list)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "weights_by_op_type": self.weights_by_op_type,
             "largest_weights": [
@@ -165,8 +165,8 @@ class MemoryEstimates:
     # Detailed breakdown
     breakdown: MemoryBreakdown | None = None
 
-    def to_dict(self) -> dict:
-        result = {
+    def to_dict(self) -> dict[str, Any]:
+        result: dict[str, Any] = {
             "model_size_bytes": self.model_size_bytes,
             "peak_activation_bytes": self.peak_activation_bytes,
         }
@@ -267,7 +267,7 @@ class ONNXGraphLoader:
                 value_shapes[name] = list(arr.shape)
 
         # Extract nodes
-        nodes = []
+        nodes: list[NodeInfo] = []
         op_type_counts: dict[str, int] = {}
         node_by_name: dict[str, NodeInfo] = {}
         node_by_output: dict[str, NodeInfo] = {}
@@ -564,7 +564,8 @@ class MetricsEngine:
         ):
             output_shape = graph_info.value_shapes[node.outputs[0]]
             if output_shape and all(isinstance(d, int) for d in output_shape):
-                bias_flops = int(np.prod(output_shape))
+                int_shape: list[int] = [d for d in output_shape if isinstance(d, int)]
+                bias_flops = int(np.prod(int_shape))
                 flops += bias_flops
 
         return flops
@@ -575,13 +576,15 @@ class MetricsEngine:
         if node.outputs and node.outputs[0] in graph_info.value_shapes:
             shape = graph_info.value_shapes[node.outputs[0]]
             if shape and all(isinstance(d, int) for d in shape):
-                return int(np.prod(shape))
+                int_shape: list[int] = [d for d in shape if isinstance(d, int)]
+                return int(np.prod(int_shape))
 
         # Fallback: use first input shape
         if node.inputs and node.inputs[0] in graph_info.value_shapes:
             shape = graph_info.value_shapes[node.inputs[0]]
             if shape and all(isinstance(d, int) for d in shape):
-                return int(np.prod(shape))
+                int_shape2: list[int] = [d for d in shape if isinstance(d, int)]
+                return int(np.prod(int_shape2))
 
         return 0
 
@@ -604,11 +607,11 @@ class MetricsEngine:
         d_model = 768  # Default assumption
 
         # Try to extract from node attributes (ONNX Attention op)
-        for attr in node.attributes:
-            if attr.name == "num_heads":
-                num_heads = attr.i if hasattr(attr, "i") else num_heads
-            elif attr.name == "hidden_size":
-                d_model = attr.i if hasattr(attr, "i") else d_model
+        for attr_name, attr_value in node.attributes.items():
+            if attr_name == "num_heads" and isinstance(attr_value, int):
+                num_heads = attr_value
+            elif attr_name == "hidden_size" and isinstance(attr_value, int):
+                d_model = attr_value
 
         # Try to infer from input shapes
         if node.inputs and node.inputs[0] in graph_info.value_shapes:
@@ -720,7 +723,8 @@ class MetricsEngine:
 
             if shape and all(isinstance(d, int) for d in shape):
                 # Assume float32
-                tensor_bytes = int(np.prod(shape)) * 4
+                int_shape: list[int] = [d for d in shape if isinstance(d, int)]
+                tensor_bytes = int(np.prod(int_shape)) * 4
                 activation_sizes.append((name, tensor_bytes))
                 estimates.per_layer_activation_bytes[name] = tensor_bytes
 

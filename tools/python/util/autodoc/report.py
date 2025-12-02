@@ -157,6 +157,44 @@ class InspectionReport:
         """Serialize report to JSON string."""
         return json.dumps(self.to_dict(), indent=indent)
 
+    def validate(self) -> tuple[bool, list[str]]:
+        """
+        Validate this report against the JSON schema.
+
+        Returns:
+            Tuple of (is_valid, list of error messages).
+            If jsonschema is not installed, returns (True, []) with a warning.
+
+        Example:
+            report = inspector.inspect("model.onnx")
+            is_valid, errors = report.validate()
+            if not is_valid:
+                for error in errors:
+                    print(f"Validation error: {error}")
+        """
+        from .schema import validate_report
+
+        return validate_report(self.to_dict())
+
+    def validate_strict(self) -> None:
+        """
+        Validate this report, raising ValidationError on failure.
+
+        Raises:
+            ValidationError: If validation fails with details of errors.
+
+        Example:
+            report = inspector.inspect("model.onnx")
+            try:
+                report.validate_strict()
+                print("Report is valid!")
+            except ValidationError as e:
+                print(f"Invalid report: {e.errors}")
+        """
+        from .schema import validate_report_strict
+
+        validate_report_strict(self.to_dict())
+
     def to_markdown(self) -> str:
         """Generate a Markdown model card from this report."""
         lines = []

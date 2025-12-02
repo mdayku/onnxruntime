@@ -16,7 +16,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 | Epic 1: Environment Setup | In Progress | 3 | 7/12 |
 | Epic 2: Core Analysis Engine | **Complete** | 4 | 17/17 |
 | Epic 3: Pattern Analysis | **Complete** | 2 | 9/9 |
-| Epic 4: CLI and Output | In Progress | 4 | 17/18 |
+| Epic 4: CLI and Output | **Complete** | 4 | 18/18 |
 | Epic 4B: PyTorch Integration | In Progress | 2 | 12/14 |
 | Epic 5: Visualization | **Complete** | 3 | 12/12 |
 | Epic 6: Hardware/Compare | In Progress | 7 | 9/28 |
@@ -105,7 +105,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 
 ### Story 4.2: JSON Output
 - [x] **Task 4.2.1**: Implement full JSON schema serialization
-- [ ] **Task 4.2.2**: Add schema validation
+- [x] **Task 4.2.2**: Add schema validation (jsonschema, Draft 7, validate()/validate_strict() methods)
 - [x] **Task 4.2.3**: Support stdout and file output modes
 - [x] **Task 4.2.4**: Add pretty-print option (indent=2)
 

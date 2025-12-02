@@ -256,7 +256,11 @@ class LLMSummarizer:
 
         Raises:
             Exception: If API call fails after retries.
+            RuntimeError: If client is not configured.
         """
+        if self.client is None:
+            raise RuntimeError("LLM client is not configured")
+
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
