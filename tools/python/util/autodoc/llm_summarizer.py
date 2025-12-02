@@ -21,7 +21,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 if TYPE_CHECKING:
     from .report import InspectionReport
@@ -106,8 +106,8 @@ class LLMSummarizer:
             print(result.detailed_summary)
     """
 
-    DEFAULT_MODEL = "gpt-4o-mini"  # Cost-effective, fast, good quality
-    FALLBACK_MODELS = ["gpt-3.5-turbo", "gpt-4o"]  # Fallbacks if primary fails
+    DEFAULT_MODEL: ClassVar[str] = "gpt-4o-mini"  # Cost-effective, fast, good quality
+    FALLBACK_MODELS: ClassVar[list[str]] = ["gpt-3.5-turbo", "gpt-4o"]  # Fallbacks if primary fails
 
     def __init__(
         self,

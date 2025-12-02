@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
     from .analyzer import GraphInfo, NodeInfo
@@ -56,7 +56,7 @@ class PatternAnalyzer:
     """
 
     # Operators that commonly appear together
-    CONV_ACTIVATIONS = {
+    CONV_ACTIVATIONS: ClassVar[set[str]] = {
         "Relu",
         "LeakyRelu",
         "Sigmoid",
@@ -65,14 +65,14 @@ class PatternAnalyzer:
         "HardSwish",
         "Silu",
     }
-    NORM_OPS = {
+    NORM_OPS: ClassVar[set[str]] = {
         "BatchNormalization",
         "InstanceNormalization",
         "LayerNormalization",
         "GroupNormalization",
     }
-    ATTENTION_OPS = {"MatMul", "Softmax", "Transpose"}
-    EMBEDDING_OPS = {"Gather", "Embedding"}
+    ATTENTION_OPS: ClassVar[set[str]] = {"MatMul", "Softmax", "Transpose"}
+    EMBEDDING_OPS: ClassVar[set[str]] = {"Gather", "Embedding"}
 
     def __init__(self, logger: logging.Logger | None = None):
         self.logger = logger or logging.getLogger("autodoc.patterns")

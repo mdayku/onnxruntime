@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import pathlib
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, ClassVar
 
 import numpy as np
 import onnx
@@ -306,7 +306,7 @@ class MetricsEngine:
 
     # FLOP multipliers per operation type
     # These are rough estimates; actual FLOPs depend on implementation
-    FLOP_FORMULAS = {
+    FLOP_FORMULAS: ClassVar[dict[str, str]] = {
         # Conv: 2 * K_h * K_w * C_in * C_out * H_out * W_out
         "Conv": "conv",
         # MatMul: 2 * M * N * K
@@ -633,7 +633,7 @@ class MetricsEngine:
         estimates = MemoryEstimates()
 
         # Model size: sum of initializer sizes
-        for name, tensor in graph_info.initializers.items():
+        for tensor in graph_info.initializers.values():
             # Assume float32 (4 bytes) for now
             # Could be refined by checking tensor dtype
             bytes_per_elem = 4
@@ -745,7 +745,7 @@ class MetricsEngine:
                 break
 
         # Try to infer sequence length from input shapes
-        for name, shape in graph_info.input_shapes.items():
+        for shape in graph_info.input_shapes.values():
             if len(shape) >= 2:
                 # Look for typical transformer input shape [batch, seq_len, ...] or [batch, seq_len]
                 for dim in shape[1:3]:
