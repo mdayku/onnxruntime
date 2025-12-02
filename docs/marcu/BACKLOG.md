@@ -18,8 +18,8 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 | Epic 3: Pattern Analysis | **Complete** | 2 | 9/9 |
 | Epic 4: CLI and Output | **Complete** | 4 | 18/18 |
 | Epic 4B: PyTorch Integration | In Progress | 2 | 12/14 |
-| Epic 5: Visualization | **Complete** | 3 | 12/12 |
-| Epic 6: Hardware/Compare | In Progress | 7 | 9/28 |
+| Epic 5: Visualization | **Complete** | 3 | 13/13 |
+| Epic 6: Hardware/Compare | In Progress | 7 | 27/28 |
 | Epic 7: LLM Integration | In Progress | 2 | 5/9 |
 | Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 |
 | Epic 9: Demo/Deliverables | Not Started | 3 | 0/13 |
@@ -161,11 +161,11 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 5.2.4**: Implement FLOPs distribution chart
 - [x] **Task 5.2.5**: Implement complexity summary dashboard (3-panel)
 
-### Story 5.3: Report Integration
+### Story 5.3: Report Integration - **COMPLETE**
 - [x] **Task 5.3.1**: Embed charts in Markdown output
 - [x] **Task 5.3.2**: Add chart captions and descriptions
 - [x] **Task 5.3.3**: Support HTML output with embedded images (base64, single shareable file)
-- [ ] **Task 5.3.4**: Support PDF output (optional weasyprint dependency, fallback to HTML)
+- [x] **Task 5.3.4**: Support PDF output (Playwright-based, --out-pdf flag)
 
 ---
 
@@ -200,29 +200,29 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [ ] **Task 6.4.2**: Create comparison Markdown table
 - [ ] **Task 6.4.3**: Add trade-off analysis section
 
-### Story 6.5: Expanded VRAM Variants
-- [ ] **Task 6.5.1**: Add all A100 variants (40GB PCIe, 80GB PCIe, 80GB SXM)
-- [ ] **Task 6.5.2**: Add H100 variants (80GB PCIe, 80GB SXM, 94GB NVL)
-- [ ] **Task 6.5.3**: Add V100 variants (16GB, 32GB, PCIe vs SXM)
-- [ ] **Task 6.5.4**: Add RTX 3080 variants (10GB, 12GB)
-- [ ] **Task 6.5.5**: Add RTX 3090 Ti (24GB)
-- [ ] **Task 6.5.6**: Add full RTX 40-series lineup (4090, 4080 Super, 4080, 4070 Ti Super, 4070 Ti, 4070, 4060 Ti 16GB/8GB, 4060)
-- [ ] **Task 6.5.7**: Add full RTX 30-series lineup (3090 Ti, 3080 Ti, 3070 Ti, 3070, 3060 Ti, 3060, 3050)
-- [ ] **Task 6.5.8**: Add laptop GPU variants (Mobile suffix, lower TDP/clocks)
+### Story 6.5: Expanded VRAM Variants - **COMPLETE**
+- [x] **Task 6.5.1**: Add all A100 variants (40GB PCIe, 80GB PCIe, 80GB SXM)
+- [x] **Task 6.5.2**: Add H100 variants (80GB PCIe, 80GB SXM, 94GB NVL)
+- [x] **Task 6.5.3**: Add V100 variants (16GB, 32GB, PCIe vs SXM)
+- [x] **Task 6.5.4**: Add RTX 3080 variants (10GB, 12GB)
+- [x] **Task 6.5.5**: Add RTX 3090 Ti (24GB)
+- [x] **Task 6.5.6**: Add full RTX 40-series lineup (4090, 4080 Super, 4080, 4070 Ti Super, 4070 Ti, 4070, 4060 Ti 16GB/8GB, 4060)
+- [x] **Task 6.5.7**: Add full RTX 30-series lineup (3090 Ti, 3080 Ti, 3070 Ti, 3070, 3060 Ti, 3060, 3050)
+- [x] **Task 6.5.8**: Add laptop GPU variants (Mobile suffix, lower TDP/clocks)
 
-### Story 6.6: Multi-GPU / Cluster Support
-- [ ] **Task 6.6.1**: Add multi-GPU profile multiplier (2x, 4x, 8x configurations)
-- [ ] **Task 6.6.2**: Model NVLink bandwidth for multi-GPU setups
-- [ ] **Task 6.6.3**: Estimate tensor parallelism overhead
-- [ ] **Task 6.6.4**: Add DGX system profiles (DGX A100, DGX H100)
-- [ ] **Task 6.6.5**: Add CLI flag `--gpu-count N` for multi-GPU estimates
-- [ ] **Task 6.6.6**: Estimate pipeline parallelism for models that don't fit on single GPU
+### Story 6.6: Multi-GPU / Cluster Support - **COMPLETE**
+- [x] **Task 6.6.1**: Add multi-GPU profile multiplier (2x, 4x, 8x configurations)
+- [x] **Task 6.6.2**: Model NVLink bandwidth for multi-GPU setups
+- [x] **Task 6.6.3**: Estimate tensor parallelism overhead
+- [x] **Task 6.6.4**: Add DGX system profiles (DGX A100, DGX H100)
+- [x] **Task 6.6.5**: Add CLI flag `--gpu-count N` for multi-GPU estimates
+- [x] **Task 6.6.6**: Estimate pipeline parallelism for models that don't fit on single GPU
 
-### Story 6.7: Cloud Instance Profiles
-- [ ] **Task 6.7.1**: Add AWS instance profiles (p4d, p5, g5, inf2)
-- [ ] **Task 6.7.2**: Add Azure instance profiles (NC, ND series)
-- [ ] **Task 6.7.3**: Add GCP instance profiles (a2, a3, g2)
-- [ ] **Task 6.7.4**: Include cost estimates per hour for cloud instances
+### Story 6.7: Cloud Instance Profiles - **COMPLETE**
+- [x] **Task 6.7.1**: Add AWS instance profiles (p4d, p5, g5, inf2)
+- [x] **Task 6.7.2**: Add Azure instance profiles (NC, ND series)
+- [x] **Task 6.7.3**: Add GCP instance profiles (a2, a3, g2)
+- [x] **Task 6.7.4**: Include cost estimates per hour for cloud instances
 
 ---
 

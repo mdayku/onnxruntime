@@ -715,7 +715,7 @@ for node in graph.node:
     print(f"{node.name}: {node.op_type}")
     print(f"  Inputs: {list(node.input)}")
     print(f"  Outputs: {list(node.output)}")
-    
+
 # Access initializers (weights)
 for init in graph.initializer:
     tensor = onnx.numpy_helper.to_array(init)
@@ -738,7 +738,7 @@ for vi in graph.input:
 
 The C++ API provides additional methods for graph traversal and mutation that aren't available in pure ONNX Python API:
 - `Graph::Nodes()` - iterator over all nodes
-- `Node::InputDefs()` / `OutputDefs()` - typed tensor access  
+- `Node::InputDefs()` / `OutputDefs()` - typed tensor access
 - `Graph::GetProducerNode()` / `GetConsumerNodes()` - dependency tracking
 
 ### 6.5 Extension Points and Patterns

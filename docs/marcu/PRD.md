@@ -936,3 +936,8 @@ The tool should always produce *some* output, even if partial:
 | Dec 2, 2025 | Shared Weights | Added fractional weight attribution (Option C) for shared weights - by_op_type sums correctly without over/under counting. Added shared_weights dict with details, num_shared_weights count | Task 2.2.4 edge case 1 |
 | Dec 2, 2025 | Quantized Params | Added quantization detection: QUANTIZED_OPS set (15 ops), QUANTIZED_DTYPES set, precision_breakdown dict, is_quantized bool, quantized_ops list. Updated JSON schema, MD/HTML reports | Task 2.2.4 edge case 2 |
 | Dec 2, 2025 | Tests | Added 8 new tests: TestSharedWeights (3 tests), TestQuantizedParams (5 tests) covering fractional attribution, precision breakdown, INT8/FP16 detection | Task 2.2.4 complete |
+| Dec 2, 2025 | GPU Variants | Added 50+ GPU profiles: H100 (SXM/PCIe/NVL), A100 (40/80GB x SXM/PCIe), V100 variants, RTX 40-series (4090-4060), RTX 30-series (3090Ti-3050), laptop variants | Story 6.5 complete |
+| Dec 2, 2025 | Multi-GPU | Added MultiGPUProfile dataclass, create_multi_gpu_profile(), NVLink bandwidth modeling, tensor/pipeline parallelism overhead estimation, DGX H100/A100 profiles | Story 6.6 complete |
+| Dec 2, 2025 | Cloud | Added CloudInstanceProfile dataclass, 17 cloud instances (AWS p5/p4d/g5/inf2, Azure NC/ND, GCP a3/a2/g2), hourly cost estimates, --cloud and --list-cloud CLI flags | Story 6.7 complete |
+| Dec 2, 2025 | CLI | Added --gpu-count N for multi-GPU scaling, --cloud for cloud instances, --list-cloud to list instances, --out-pdf for PDF reports | CLI enhancements |
+| Dec 2, 2025 | PDF | Added pdf_generator.py with Playwright-based PDF generation, PDFGenerator class, --out-pdf CLI flag, header/footer templates | Task 5.3.4 complete |

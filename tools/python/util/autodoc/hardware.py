@@ -76,7 +76,7 @@ class HardwareProfile:
 # Predefined Hardware Profiles
 # ============================================================================
 
-# NVIDIA Data Center GPUs
+# NVIDIA Data Center GPUs - H100 Series
 NVIDIA_H100_SXM = HardwareProfile(
     name="NVIDIA H100 SXM",
     vendor="nvidia",
@@ -90,8 +90,35 @@ NVIDIA_H100_SXM = HardwareProfile(
     tdp_watts=700,
 )
 
-NVIDIA_A100_80GB = HardwareProfile(
-    name="NVIDIA A100 80GB",
+NVIDIA_H100_PCIE = HardwareProfile(
+    name="NVIDIA H100 PCIe",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=80 * (1024**3),  # 80 GB HBM3
+    memory_bandwidth_bytes_per_s=2000 * (1024**3),  # 2.0 TB/s (lower than SXM)
+    peak_fp32_tflops=51.0,  # Lower than SXM
+    peak_fp16_tflops=1513.0,
+    peak_int8_tops=3026.0,
+    compute_capability="9.0",
+    tdp_watts=350,
+)
+
+NVIDIA_H100_NVL = HardwareProfile(
+    name="NVIDIA H100 NVL",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=94 * (1024**3),  # 94 GB HBM3 (dual-GPU module)
+    memory_bandwidth_bytes_per_s=3958 * (1024**3),  # 3.9 TB/s
+    peak_fp32_tflops=134.0,  # 2x H100 NVLink
+    peak_fp16_tflops=3958.0,
+    peak_int8_tops=7916.0,
+    compute_capability="9.0",
+    tdp_watts=800,
+)
+
+# NVIDIA Data Center GPUs - A100 Series
+NVIDIA_A100_80GB_SXM = HardwareProfile(
+    name="NVIDIA A100 80GB SXM",
     vendor="nvidia",
     device_type="gpu",
     vram_bytes=80 * (1024**3),  # 80 GB HBM2e
@@ -103,8 +130,24 @@ NVIDIA_A100_80GB = HardwareProfile(
     tdp_watts=400,
 )
 
-NVIDIA_A100_40GB = HardwareProfile(
-    name="NVIDIA A100 40GB",
+NVIDIA_A100_80GB_PCIE = HardwareProfile(
+    name="NVIDIA A100 80GB PCIe",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=80 * (1024**3),  # 80 GB HBM2e
+    memory_bandwidth_bytes_per_s=1935 * (1024**3),  # 1.9 TB/s
+    peak_fp32_tflops=19.5,
+    peak_fp16_tflops=312.0,
+    peak_int8_tops=624.0,
+    compute_capability="8.0",
+    tdp_watts=300,
+)
+
+# Alias for backward compatibility
+NVIDIA_A100_80GB = NVIDIA_A100_80GB_SXM
+
+NVIDIA_A100_40GB_SXM = HardwareProfile(
+    name="NVIDIA A100 40GB SXM",
     vendor="nvidia",
     device_type="gpu",
     vram_bytes=40 * (1024**3),
@@ -115,6 +158,22 @@ NVIDIA_A100_40GB = HardwareProfile(
     compute_capability="8.0",
     tdp_watts=400,
 )
+
+NVIDIA_A100_40GB_PCIE = HardwareProfile(
+    name="NVIDIA A100 40GB PCIe",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=40 * (1024**3),
+    memory_bandwidth_bytes_per_s=1555 * (1024**3),  # 1.6 TB/s
+    peak_fp32_tflops=19.5,
+    peak_fp16_tflops=312.0,
+    peak_int8_tops=624.0,
+    compute_capability="8.0",
+    tdp_watts=250,
+)
+
+# Alias for backward compatibility
+NVIDIA_A100_40GB = NVIDIA_A100_40GB_SXM
 
 NVIDIA_A10 = HardwareProfile(
     name="NVIDIA A10",
@@ -181,22 +240,51 @@ NVIDIA_L40S = HardwareProfile(
     tdp_watts=350,
 )
 
-# Older but still common datacenter GPUs
-NVIDIA_V100_32GB = HardwareProfile(
-    name="NVIDIA V100 32GB",
+# Older but still common datacenter GPUs - V100 Series
+NVIDIA_V100_32GB_SXM = HardwareProfile(
+    name="NVIDIA V100 32GB SXM2",
     vendor="nvidia",
     device_type="gpu",
     vram_bytes=32 * (1024**3),  # 32 GB HBM2
     memory_bandwidth_bytes_per_s=900 * (1024**3),  # 900 GB/s
-    peak_fp32_tflops=14.0,
-    peak_fp16_tflops=112.0,  # Tensor Core
+    peak_fp32_tflops=15.7,
+    peak_fp16_tflops=125.0,  # Tensor Core
     peak_int8_tops=0.0,  # No INT8 tensor cores
     compute_capability="7.0",
     tdp_watts=300,
 )
 
-NVIDIA_V100_16GB = HardwareProfile(
-    name="NVIDIA V100 16GB",
+NVIDIA_V100_32GB_PCIE = HardwareProfile(
+    name="NVIDIA V100 32GB PCIe",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=32 * (1024**3),  # 32 GB HBM2
+    memory_bandwidth_bytes_per_s=900 * (1024**3),  # 900 GB/s
+    peak_fp32_tflops=14.0,
+    peak_fp16_tflops=112.0,
+    peak_int8_tops=0.0,
+    compute_capability="7.0",
+    tdp_watts=250,
+)
+
+# Alias for backward compatibility
+NVIDIA_V100_32GB = NVIDIA_V100_32GB_SXM
+
+NVIDIA_V100_16GB_SXM = HardwareProfile(
+    name="NVIDIA V100 16GB SXM2",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=16 * (1024**3),  # 16 GB HBM2
+    memory_bandwidth_bytes_per_s=900 * (1024**3),  # 900 GB/s
+    peak_fp32_tflops=15.7,
+    peak_fp16_tflops=125.0,
+    peak_int8_tops=0.0,
+    compute_capability="7.0",
+    tdp_watts=300,
+)
+
+NVIDIA_V100_16GB_PCIE = HardwareProfile(
+    name="NVIDIA V100 16GB PCIe",
     vendor="nvidia",
     device_type="gpu",
     vram_bytes=16 * (1024**3),  # 16 GB HBM2
@@ -205,8 +293,11 @@ NVIDIA_V100_16GB = HardwareProfile(
     peak_fp16_tflops=112.0,
     peak_int8_tops=0.0,
     compute_capability="7.0",
-    tdp_watts=300,
+    tdp_watts=250,
 )
+
+# Alias for backward compatibility
+NVIDIA_V100_16GB = NVIDIA_V100_16GB_PCIE
 
 NVIDIA_P100 = HardwareProfile(
     name="NVIDIA P100",
@@ -425,7 +516,7 @@ NVIDIA_JETSON_NANO_2GB = HardwareProfile(
 )
 
 # ============================================================================
-# NVIDIA Consumer GPUs
+# NVIDIA Consumer GPUs - RTX 40 Series (Ada Lovelace)
 # ============================================================================
 
 NVIDIA_RTX_4090 = HardwareProfile(
@@ -441,6 +532,19 @@ NVIDIA_RTX_4090 = HardwareProfile(
     tdp_watts=450,
 )
 
+NVIDIA_RTX_4080_SUPER = HardwareProfile(
+    name="NVIDIA RTX 4080 SUPER",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=16 * (1024**3),  # 16 GB GDDR6X
+    memory_bandwidth_bytes_per_s=736 * (1024**3),  # 736 GB/s
+    peak_fp32_tflops=52.0,
+    peak_fp16_tflops=104.0,
+    peak_int8_tops=416.0,
+    compute_capability="8.9",
+    tdp_watts=320,
+)
+
 NVIDIA_RTX_4080 = HardwareProfile(
     name="NVIDIA RTX 4080",
     vendor="nvidia",
@@ -452,6 +556,114 @@ NVIDIA_RTX_4080 = HardwareProfile(
     peak_int8_tops=390.0,
     compute_capability="8.9",
     tdp_watts=320,
+)
+
+NVIDIA_RTX_4070_TI_SUPER = HardwareProfile(
+    name="NVIDIA RTX 4070 Ti SUPER",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=16 * (1024**3),  # 16 GB GDDR6X
+    memory_bandwidth_bytes_per_s=672 * (1024**3),  # 672 GB/s
+    peak_fp32_tflops=44.0,
+    peak_fp16_tflops=88.0,
+    peak_int8_tops=352.0,
+    compute_capability="8.9",
+    tdp_watts=285,
+)
+
+NVIDIA_RTX_4070_TI = HardwareProfile(
+    name="NVIDIA RTX 4070 Ti",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=12 * (1024**3),  # 12 GB GDDR6X
+    memory_bandwidth_bytes_per_s=504 * (1024**3),  # 504 GB/s
+    peak_fp32_tflops=40.1,
+    peak_fp16_tflops=80.0,
+    peak_int8_tops=320.0,
+    compute_capability="8.9",
+    tdp_watts=285,
+)
+
+NVIDIA_RTX_4070_SUPER = HardwareProfile(
+    name="NVIDIA RTX 4070 SUPER",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=12 * (1024**3),  # 12 GB GDDR6X
+    memory_bandwidth_bytes_per_s=504 * (1024**3),  # 504 GB/s
+    peak_fp32_tflops=35.5,
+    peak_fp16_tflops=71.0,
+    peak_int8_tops=284.0,
+    compute_capability="8.9",
+    tdp_watts=220,
+)
+
+NVIDIA_RTX_4070 = HardwareProfile(
+    name="NVIDIA RTX 4070",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=12 * (1024**3),  # 12 GB GDDR6X
+    memory_bandwidth_bytes_per_s=504 * (1024**3),  # 504 GB/s
+    peak_fp32_tflops=29.1,
+    peak_fp16_tflops=58.0,
+    peak_int8_tops=233.0,
+    compute_capability="8.9",
+    tdp_watts=200,
+)
+
+NVIDIA_RTX_4060_TI_16GB = HardwareProfile(
+    name="NVIDIA RTX 4060 Ti 16GB",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=16 * (1024**3),  # 16 GB GDDR6
+    memory_bandwidth_bytes_per_s=288 * (1024**3),  # 288 GB/s
+    peak_fp32_tflops=22.1,
+    peak_fp16_tflops=44.0,
+    peak_int8_tops=176.0,
+    compute_capability="8.9",
+    tdp_watts=165,
+)
+
+NVIDIA_RTX_4060_TI_8GB = HardwareProfile(
+    name="NVIDIA RTX 4060 Ti 8GB",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=8 * (1024**3),  # 8 GB GDDR6
+    memory_bandwidth_bytes_per_s=288 * (1024**3),  # 288 GB/s
+    peak_fp32_tflops=22.1,
+    peak_fp16_tflops=44.0,
+    peak_int8_tops=176.0,
+    compute_capability="8.9",
+    tdp_watts=160,
+)
+
+NVIDIA_RTX_4060 = HardwareProfile(
+    name="NVIDIA RTX 4060",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=8 * (1024**3),  # 8 GB GDDR6
+    memory_bandwidth_bytes_per_s=272 * (1024**3),  # 272 GB/s
+    peak_fp32_tflops=15.1,
+    peak_fp16_tflops=30.0,
+    peak_int8_tops=121.0,
+    compute_capability="8.9",
+    tdp_watts=115,
+)
+
+# ============================================================================
+# NVIDIA Consumer GPUs - RTX 30 Series (Ampere)
+# ============================================================================
+
+NVIDIA_RTX_3090_TI = HardwareProfile(
+    name="NVIDIA RTX 3090 Ti",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=24 * (1024**3),  # 24 GB GDDR6X
+    memory_bandwidth_bytes_per_s=1008 * (1024**3),  # 1008 GB/s
+    peak_fp32_tflops=40.0,
+    peak_fp16_tflops=80.0,
+    peak_int8_tops=320.0,
+    compute_capability="8.6",
+    tdp_watts=450,
 )
 
 NVIDIA_RTX_3090 = HardwareProfile(
@@ -467,8 +679,34 @@ NVIDIA_RTX_3090 = HardwareProfile(
     tdp_watts=350,
 )
 
-NVIDIA_RTX_3080 = HardwareProfile(
-    name="NVIDIA RTX 3080",
+NVIDIA_RTX_3080_TI = HardwareProfile(
+    name="NVIDIA RTX 3080 Ti",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=12 * (1024**3),  # 12 GB GDDR6X
+    memory_bandwidth_bytes_per_s=912 * (1024**3),  # 912 GB/s
+    peak_fp32_tflops=34.1,
+    peak_fp16_tflops=68.0,
+    peak_int8_tops=273.0,
+    compute_capability="8.6",
+    tdp_watts=350,
+)
+
+NVIDIA_RTX_3080_12GB = HardwareProfile(
+    name="NVIDIA RTX 3080 12GB",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=12 * (1024**3),  # 12 GB GDDR6X
+    memory_bandwidth_bytes_per_s=912 * (1024**3),  # 912 GB/s
+    peak_fp32_tflops=30.6,
+    peak_fp16_tflops=61.0,
+    peak_int8_tops=244.0,
+    compute_capability="8.6",
+    tdp_watts=350,
+)
+
+NVIDIA_RTX_3080_10GB = HardwareProfile(
+    name="NVIDIA RTX 3080 10GB",
     vendor="nvidia",
     device_type="gpu",
     vram_bytes=10 * (1024**3),  # 10 GB GDDR6X
@@ -478,6 +716,195 @@ NVIDIA_RTX_3080 = HardwareProfile(
     peak_int8_tops=238.0,
     compute_capability="8.6",
     tdp_watts=320,
+)
+
+# Alias for backward compatibility
+NVIDIA_RTX_3080 = NVIDIA_RTX_3080_10GB
+
+NVIDIA_RTX_3070_TI = HardwareProfile(
+    name="NVIDIA RTX 3070 Ti",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=8 * (1024**3),  # 8 GB GDDR6X
+    memory_bandwidth_bytes_per_s=608 * (1024**3),  # 608 GB/s
+    peak_fp32_tflops=21.8,
+    peak_fp16_tflops=43.0,
+    peak_int8_tops=174.0,
+    compute_capability="8.6",
+    tdp_watts=290,
+)
+
+NVIDIA_RTX_3070 = HardwareProfile(
+    name="NVIDIA RTX 3070",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=8 * (1024**3),  # 8 GB GDDR6
+    memory_bandwidth_bytes_per_s=448 * (1024**3),  # 448 GB/s
+    peak_fp32_tflops=20.3,
+    peak_fp16_tflops=40.0,
+    peak_int8_tops=163.0,
+    compute_capability="8.6",
+    tdp_watts=220,
+)
+
+NVIDIA_RTX_3060_TI = HardwareProfile(
+    name="NVIDIA RTX 3060 Ti",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=8 * (1024**3),  # 8 GB GDDR6
+    memory_bandwidth_bytes_per_s=448 * (1024**3),  # 448 GB/s
+    peak_fp32_tflops=16.2,
+    peak_fp16_tflops=32.0,
+    peak_int8_tops=130.0,
+    compute_capability="8.6",
+    tdp_watts=200,
+)
+
+NVIDIA_RTX_3060_12GB = HardwareProfile(
+    name="NVIDIA RTX 3060 12GB",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=12 * (1024**3),  # 12 GB GDDR6
+    memory_bandwidth_bytes_per_s=360 * (1024**3),  # 360 GB/s
+    peak_fp32_tflops=12.7,
+    peak_fp16_tflops=25.0,
+    peak_int8_tops=101.0,
+    compute_capability="8.6",
+    tdp_watts=170,
+)
+
+NVIDIA_RTX_3060_8GB = HardwareProfile(
+    name="NVIDIA RTX 3060 8GB",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=8 * (1024**3),  # 8 GB GDDR6
+    memory_bandwidth_bytes_per_s=360 * (1024**3),  # 360 GB/s
+    peak_fp32_tflops=12.7,
+    peak_fp16_tflops=25.0,
+    peak_int8_tops=101.0,
+    compute_capability="8.6",
+    tdp_watts=170,
+)
+
+NVIDIA_RTX_3050 = HardwareProfile(
+    name="NVIDIA RTX 3050",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=8 * (1024**3),  # 8 GB GDDR6
+    memory_bandwidth_bytes_per_s=224 * (1024**3),  # 224 GB/s
+    peak_fp32_tflops=9.1,
+    peak_fp16_tflops=18.0,
+    peak_int8_tops=73.0,
+    compute_capability="8.6",
+    tdp_watts=130,
+)
+
+# ============================================================================
+# NVIDIA Laptop GPUs (Mobile variants - lower TDP/clocks)
+# ============================================================================
+
+NVIDIA_RTX_4090_MOBILE = HardwareProfile(
+    name="NVIDIA RTX 4090 Mobile",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=16 * (1024**3),  # 16 GB GDDR6
+    memory_bandwidth_bytes_per_s=576 * (1024**3),  # 576 GB/s
+    peak_fp32_tflops=58.0,  # ~70% of desktop
+    peak_fp16_tflops=116.0,
+    peak_int8_tops=464.0,
+    compute_capability="8.9",
+    tdp_watts=150,  # 80-150W configurable
+)
+
+NVIDIA_RTX_4080_MOBILE = HardwareProfile(
+    name="NVIDIA RTX 4080 Mobile",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=12 * (1024**3),  # 12 GB GDDR6
+    memory_bandwidth_bytes_per_s=432 * (1024**3),  # 432 GB/s
+    peak_fp32_tflops=34.0,
+    peak_fp16_tflops=68.0,
+    peak_int8_tops=272.0,
+    compute_capability="8.9",
+    tdp_watts=150,
+)
+
+NVIDIA_RTX_4070_MOBILE = HardwareProfile(
+    name="NVIDIA RTX 4070 Mobile",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=8 * (1024**3),  # 8 GB GDDR6
+    memory_bandwidth_bytes_per_s=256 * (1024**3),  # 256 GB/s
+    peak_fp32_tflops=22.0,
+    peak_fp16_tflops=44.0,
+    peak_int8_tops=176.0,
+    compute_capability="8.9",
+    tdp_watts=115,
+)
+
+NVIDIA_RTX_4060_MOBILE = HardwareProfile(
+    name="NVIDIA RTX 4060 Mobile",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=8 * (1024**3),  # 8 GB GDDR6
+    memory_bandwidth_bytes_per_s=256 * (1024**3),  # 256 GB/s
+    peak_fp32_tflops=15.0,
+    peak_fp16_tflops=30.0,
+    peak_int8_tops=120.0,
+    compute_capability="8.9",
+    tdp_watts=115,
+)
+
+NVIDIA_RTX_4050_MOBILE = HardwareProfile(
+    name="NVIDIA RTX 4050 Mobile",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=6 * (1024**3),  # 6 GB GDDR6
+    memory_bandwidth_bytes_per_s=192 * (1024**3),  # 192 GB/s
+    peak_fp32_tflops=11.0,
+    peak_fp16_tflops=22.0,
+    peak_int8_tops=88.0,
+    compute_capability="8.9",
+    tdp_watts=75,
+)
+
+NVIDIA_RTX_3080_MOBILE = HardwareProfile(
+    name="NVIDIA RTX 3080 Mobile",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=16 * (1024**3),  # 16 GB GDDR6
+    memory_bandwidth_bytes_per_s=448 * (1024**3),  # 448 GB/s
+    peak_fp32_tflops=20.0,
+    peak_fp16_tflops=40.0,
+    peak_int8_tops=160.0,
+    compute_capability="8.6",
+    tdp_watts=150,
+)
+
+NVIDIA_RTX_3070_MOBILE = HardwareProfile(
+    name="NVIDIA RTX 3070 Mobile",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=8 * (1024**3),  # 8 GB GDDR6
+    memory_bandwidth_bytes_per_s=384 * (1024**3),  # 384 GB/s
+    peak_fp32_tflops=14.0,
+    peak_fp16_tflops=28.0,
+    peak_int8_tops=112.0,
+    compute_capability="8.6",
+    tdp_watts=125,
+)
+
+NVIDIA_RTX_3060_MOBILE = HardwareProfile(
+    name="NVIDIA RTX 3060 Mobile",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=6 * (1024**3),  # 6 GB GDDR6
+    memory_bandwidth_bytes_per_s=336 * (1024**3),  # 336 GB/s
+    peak_fp32_tflops=10.0,
+    peak_fp16_tflops=20.0,
+    peak_int8_tops=80.0,
+    compute_capability="8.6",
+    tdp_watts=115,
 )
 
 # Generic CPU profile (will be overridden by detection)
@@ -494,25 +921,358 @@ GENERIC_CPU = HardwareProfile(
     tdp_watts=65,
 )
 
+
+# ============================================================================
+# DGX Systems (Multi-GPU)
+# ============================================================================
+
+NVIDIA_DGX_H100 = HardwareProfile(
+    name="NVIDIA DGX H100",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=8 * 80 * (1024**3),  # 8x H100 80GB = 640 GB
+    memory_bandwidth_bytes_per_s=8 * 3350 * (1024**3),  # 8x 3.35 TB/s = 26.8 TB/s
+    peak_fp32_tflops=8 * 67.0,  # 536 TFLOPS
+    peak_fp16_tflops=8 * 1979.0,  # 15,832 TFLOPS
+    peak_int8_tops=8 * 3958.0,  # 31,664 TOPS
+    compute_capability="9.0",
+    tdp_watts=10200,  # System power
+)
+
+NVIDIA_DGX_A100_640GB = HardwareProfile(
+    name="NVIDIA DGX A100 640GB",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=8 * 80 * (1024**3),  # 8x A100 80GB = 640 GB
+    memory_bandwidth_bytes_per_s=8 * 2039 * (1024**3),  # 8x 2.0 TB/s = 16 TB/s
+    peak_fp32_tflops=8 * 19.5,  # 156 TFLOPS
+    peak_fp16_tflops=8 * 312.0,  # 2,496 TFLOPS
+    peak_int8_tops=8 * 624.0,  # 4,992 TOPS
+    compute_capability="8.0",
+    tdp_watts=6500,
+)
+
+NVIDIA_DGX_A100_320GB = HardwareProfile(
+    name="NVIDIA DGX A100 320GB",
+    vendor="nvidia",
+    device_type="gpu",
+    vram_bytes=8 * 40 * (1024**3),  # 8x A100 40GB = 320 GB
+    memory_bandwidth_bytes_per_s=8 * 1555 * (1024**3),  # 8x 1.6 TB/s = 12.4 TB/s
+    peak_fp32_tflops=8 * 19.5,  # 156 TFLOPS
+    peak_fp16_tflops=8 * 312.0,  # 2,496 TFLOPS
+    peak_int8_tops=8 * 624.0,  # 4,992 TOPS
+    compute_capability="8.0",
+    tdp_watts=6500,
+)
+
+
+# ============================================================================
+# Cloud Instance Profiles (with cost estimates)
+# ============================================================================
+
+
+@dataclass
+class CloudInstanceProfile:
+    """Cloud instance with GPU specs and pricing."""
+
+    name: str
+    provider: str  # "aws", "azure", "gcp"
+    instance_type: str
+    hardware: HardwareProfile
+    gpu_count: int
+    hourly_cost_usd: float  # On-demand pricing (approximate)
+    region: str = "us-east-1"  # Default region for pricing
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "provider": self.provider,
+            "instance_type": self.instance_type,
+            "gpu_count": self.gpu_count,
+            "total_vram_gb": round(
+                self.hardware.vram_bytes * self.gpu_count / (1024**3), 1
+            ),
+            "hourly_cost_usd": self.hourly_cost_usd,
+            "hardware": self.hardware.to_dict(),
+        }
+
+
+# AWS GPU Instances
+AWS_P5_48XLARGE = CloudInstanceProfile(
+    name="AWS p5.48xlarge (8x H100)",
+    provider="aws",
+    instance_type="p5.48xlarge",
+    hardware=NVIDIA_H100_SXM,
+    gpu_count=8,
+    hourly_cost_usd=98.32,
+)
+
+AWS_P4D_24XLARGE = CloudInstanceProfile(
+    name="AWS p4d.24xlarge (8x A100 40GB)",
+    provider="aws",
+    instance_type="p4d.24xlarge",
+    hardware=NVIDIA_A100_40GB,
+    gpu_count=8,
+    hourly_cost_usd=32.77,
+)
+
+AWS_P4DE_24XLARGE = CloudInstanceProfile(
+    name="AWS p4de.24xlarge (8x A100 80GB)",
+    provider="aws",
+    instance_type="p4de.24xlarge",
+    hardware=NVIDIA_A100_80GB,
+    gpu_count=8,
+    hourly_cost_usd=40.96,
+)
+
+AWS_G5_XLARGE = CloudInstanceProfile(
+    name="AWS g5.xlarge (1x A10G)",
+    provider="aws",
+    instance_type="g5.xlarge",
+    hardware=NVIDIA_A10,
+    gpu_count=1,
+    hourly_cost_usd=1.01,
+)
+
+AWS_G5_12XLARGE = CloudInstanceProfile(
+    name="AWS g5.12xlarge (4x A10G)",
+    provider="aws",
+    instance_type="g5.12xlarge",
+    hardware=NVIDIA_A10,
+    gpu_count=4,
+    hourly_cost_usd=5.67,
+)
+
+AWS_G5_48XLARGE = CloudInstanceProfile(
+    name="AWS g5.48xlarge (8x A10G)",
+    provider="aws",
+    instance_type="g5.48xlarge",
+    hardware=NVIDIA_A10,
+    gpu_count=8,
+    hourly_cost_usd=16.29,
+)
+
+AWS_G4DN_XLARGE = CloudInstanceProfile(
+    name="AWS g4dn.xlarge (1x T4)",
+    provider="aws",
+    instance_type="g4dn.xlarge",
+    hardware=NVIDIA_T4,
+    gpu_count=1,
+    hourly_cost_usd=0.526,
+)
+
+AWS_INF2_XLARGE = CloudInstanceProfile(
+    name="AWS inf2.xlarge (1x Inferentia2)",
+    provider="aws",
+    instance_type="inf2.xlarge",
+    hardware=HardwareProfile(
+        name="AWS Inferentia2",
+        vendor="aws",
+        device_type="npu",
+        vram_bytes=32 * (1024**3),
+        memory_bandwidth_bytes_per_s=190 * (1024**3),
+        peak_fp32_tflops=0.0,  # Optimized for inference, not FP32
+        peak_fp16_tflops=95.0,
+        peak_int8_tops=190.0,
+        compute_capability="",
+        tdp_watts=75,
+    ),
+    gpu_count=1,
+    hourly_cost_usd=0.758,
+)
+
+# Azure GPU Instances
+AZURE_NC_A100_V4 = CloudInstanceProfile(
+    name="Azure NC A100 v4 (1x A100 80GB)",
+    provider="azure",
+    instance_type="Standard_NC24ads_A100_v4",
+    hardware=NVIDIA_A100_80GB,
+    gpu_count=1,
+    hourly_cost_usd=3.67,
+)
+
+AZURE_ND_A100_V4 = CloudInstanceProfile(
+    name="Azure ND A100 v4 (8x A100 80GB)",
+    provider="azure",
+    instance_type="Standard_ND96amsr_A100_v4",
+    hardware=NVIDIA_A100_80GB,
+    gpu_count=8,
+    hourly_cost_usd=32.77,
+)
+
+AZURE_NC_H100_V5 = CloudInstanceProfile(
+    name="Azure NC H100 v5 (1x H100)",
+    provider="azure",
+    instance_type="Standard_NC40ads_H100_v5",
+    hardware=NVIDIA_H100_PCIE,
+    gpu_count=1,
+    hourly_cost_usd=7.35,
+)
+
+AZURE_ND_H100_V5 = CloudInstanceProfile(
+    name="Azure ND H100 v5 (8x H100)",
+    provider="azure",
+    instance_type="Standard_ND96isr_H100_v5",
+    hardware=NVIDIA_H100_SXM,
+    gpu_count=8,
+    hourly_cost_usd=65.93,
+)
+
+AZURE_NC_T4_V3 = CloudInstanceProfile(
+    name="Azure NC T4 v3 (1x T4)",
+    provider="azure",
+    instance_type="Standard_NC4as_T4_v3",
+    hardware=NVIDIA_T4,
+    gpu_count=1,
+    hourly_cost_usd=0.526,
+)
+
+AZURE_NV_A10_V5 = CloudInstanceProfile(
+    name="Azure NV A10 v5 (1x A10)",
+    provider="azure",
+    instance_type="Standard_NV36ads_A10_v5",
+    hardware=NVIDIA_A10,
+    gpu_count=1,
+    hourly_cost_usd=1.80,
+)
+
+# GCP GPU Instances
+GCP_A3_HIGHGPU_8G = CloudInstanceProfile(
+    name="GCP a3-highgpu-8g (8x H100)",
+    provider="gcp",
+    instance_type="a3-highgpu-8g",
+    hardware=NVIDIA_H100_SXM,
+    gpu_count=8,
+    hourly_cost_usd=101.22,
+)
+
+GCP_A2_HIGHGPU_1G = CloudInstanceProfile(
+    name="GCP a2-highgpu-1g (1x A100 40GB)",
+    provider="gcp",
+    instance_type="a2-highgpu-1g",
+    hardware=NVIDIA_A100_40GB,
+    gpu_count=1,
+    hourly_cost_usd=3.67,
+)
+
+GCP_A2_HIGHGPU_8G = CloudInstanceProfile(
+    name="GCP a2-highgpu-8g (8x A100 40GB)",
+    provider="gcp",
+    instance_type="a2-highgpu-8g",
+    hardware=NVIDIA_A100_40GB,
+    gpu_count=8,
+    hourly_cost_usd=29.39,
+)
+
+GCP_A2_ULTRAGPU_1G = CloudInstanceProfile(
+    name="GCP a2-ultragpu-1g (1x A100 80GB)",
+    provider="gcp",
+    instance_type="a2-ultragpu-1g",
+    hardware=NVIDIA_A100_80GB,
+    gpu_count=1,
+    hourly_cost_usd=5.00,
+)
+
+GCP_A2_ULTRAGPU_8G = CloudInstanceProfile(
+    name="GCP a2-ultragpu-8g (8x A100 80GB)",
+    provider="gcp",
+    instance_type="a2-ultragpu-8g",
+    hardware=NVIDIA_A100_80GB,
+    gpu_count=8,
+    hourly_cost_usd=40.04,
+)
+
+GCP_G2_STANDARD_4 = CloudInstanceProfile(
+    name="GCP g2-standard-4 (1x L4)",
+    provider="gcp",
+    instance_type="g2-standard-4",
+    hardware=NVIDIA_L4,
+    gpu_count=1,
+    hourly_cost_usd=0.84,
+)
+
+GCP_N1_T4 = CloudInstanceProfile(
+    name="GCP n1-standard-4 + T4 (1x T4)",
+    provider="gcp",
+    instance_type="n1-standard-4",
+    hardware=NVIDIA_T4,
+    gpu_count=1,
+    hourly_cost_usd=0.55,
+)
+
+
+# Cloud instance registry
+CLOUD_INSTANCES: dict[str, CloudInstanceProfile] = {
+    # AWS
+    "aws-p5-48xlarge": AWS_P5_48XLARGE,
+    "aws-p4d-24xlarge": AWS_P4D_24XLARGE,
+    "aws-p4de-24xlarge": AWS_P4DE_24XLARGE,
+    "aws-g5-xlarge": AWS_G5_XLARGE,
+    "aws-g5-12xlarge": AWS_G5_12XLARGE,
+    "aws-g5-48xlarge": AWS_G5_48XLARGE,
+    "aws-g4dn-xlarge": AWS_G4DN_XLARGE,
+    "aws-inf2-xlarge": AWS_INF2_XLARGE,
+    # Azure
+    "azure-nc-a100-v4": AZURE_NC_A100_V4,
+    "azure-nd-a100-v4": AZURE_ND_A100_V4,
+    "azure-nc-h100-v5": AZURE_NC_H100_V5,
+    "azure-nd-h100-v5": AZURE_ND_H100_V5,
+    "azure-nc-t4-v3": AZURE_NC_T4_V3,
+    "azure-nv-a10-v5": AZURE_NV_A10_V5,
+    # GCP
+    "gcp-a3-highgpu-8g": GCP_A3_HIGHGPU_8G,
+    "gcp-a2-highgpu-1g": GCP_A2_HIGHGPU_1G,
+    "gcp-a2-highgpu-8g": GCP_A2_HIGHGPU_8G,
+    "gcp-a2-ultragpu-1g": GCP_A2_ULTRAGPU_1G,
+    "gcp-a2-ultragpu-8g": GCP_A2_ULTRAGPU_8G,
+    "gcp-g2-standard-4": GCP_G2_STANDARD_4,
+    "gcp-n1-t4": GCP_N1_T4,
+}
+
+
 # Registry of all predefined profiles
 HARDWARE_PROFILES: dict[str, HardwareProfile] = {
     # -------------------------------------------------------------------------
-    # Data Center GPUs (Current Gen)
+    # Data Center GPUs - H100 Series
     # -------------------------------------------------------------------------
     "h100": NVIDIA_H100_SXM,
     "h100-sxm": NVIDIA_H100_SXM,
-    "a100": NVIDIA_A100_80GB,  # Default A100 is 80GB
-    "a100-80gb": NVIDIA_A100_80GB,
-    "a100-40gb": NVIDIA_A100_40GB,
+    "h100-80gb-sxm": NVIDIA_H100_SXM,
+    "h100-pcie": NVIDIA_H100_PCIE,
+    "h100-80gb-pcie": NVIDIA_H100_PCIE,
+    "h100-nvl": NVIDIA_H100_NVL,
+    "h100-94gb-nvl": NVIDIA_H100_NVL,
+    # -------------------------------------------------------------------------
+    # Data Center GPUs - A100 Series
+    # -------------------------------------------------------------------------
+    "a100": NVIDIA_A100_80GB,  # Default A100 is 80GB SXM
+    "a100-80gb": NVIDIA_A100_80GB_SXM,
+    "a100-80gb-sxm": NVIDIA_A100_80GB_SXM,
+    "a100-80gb-pcie": NVIDIA_A100_80GB_PCIE,
+    "a100-40gb": NVIDIA_A100_40GB_SXM,
+    "a100-40gb-sxm": NVIDIA_A100_40GB_SXM,
+    "a100-40gb-pcie": NVIDIA_A100_40GB_PCIE,
+    # -------------------------------------------------------------------------
+    # Data Center GPUs - Other Current Gen
+    # -------------------------------------------------------------------------
     "a10": NVIDIA_A10,
     "l4": NVIDIA_L4,
     "l40": NVIDIA_L40,
     "l40s": NVIDIA_L40S,
     "t4": NVIDIA_T4,
-    # Data Center GPUs (Previous Gen)
+    # -------------------------------------------------------------------------
+    # Data Center GPUs - V100 Series (Previous Gen)
+    # -------------------------------------------------------------------------
     "v100": NVIDIA_V100_32GB,
-    "v100-32gb": NVIDIA_V100_32GB,
-    "v100-16gb": NVIDIA_V100_16GB,
+    "v100-32gb": NVIDIA_V100_32GB_SXM,
+    "v100-32gb-sxm": NVIDIA_V100_32GB_SXM,
+    "v100-32gb-pcie": NVIDIA_V100_32GB_PCIE,
+    "v100-16gb": NVIDIA_V100_16GB_PCIE,
+    "v100-16gb-sxm": NVIDIA_V100_16GB_SXM,
+    "v100-16gb-pcie": NVIDIA_V100_16GB_PCIE,
+    # -------------------------------------------------------------------------
+    # Data Center GPUs - Legacy
+    # -------------------------------------------------------------------------
     "p100": NVIDIA_P100,
     "p40": NVIDIA_P40,
     # -------------------------------------------------------------------------
@@ -550,16 +1310,84 @@ HARDWARE_PROFILES: dict[str, HardwareProfile] = {
     "jetson-nano-2gb": NVIDIA_JETSON_NANO_2GB,
     "nano-2gb": NVIDIA_JETSON_NANO_2GB,
     # -------------------------------------------------------------------------
-    # Consumer GPUs
+    # Consumer GPUs - RTX 40 Series (Ada Lovelace)
     # -------------------------------------------------------------------------
     "rtx4090": NVIDIA_RTX_4090,
     "4090": NVIDIA_RTX_4090,
+    "rtx4080-super": NVIDIA_RTX_4080_SUPER,
+    "4080-super": NVIDIA_RTX_4080_SUPER,
     "rtx4080": NVIDIA_RTX_4080,
     "4080": NVIDIA_RTX_4080,
+    "rtx4070-ti-super": NVIDIA_RTX_4070_TI_SUPER,
+    "4070-ti-super": NVIDIA_RTX_4070_TI_SUPER,
+    "rtx4070-ti": NVIDIA_RTX_4070_TI,
+    "4070-ti": NVIDIA_RTX_4070_TI,
+    "rtx4070-super": NVIDIA_RTX_4070_SUPER,
+    "4070-super": NVIDIA_RTX_4070_SUPER,
+    "rtx4070": NVIDIA_RTX_4070,
+    "4070": NVIDIA_RTX_4070,
+    "rtx4060-ti-16gb": NVIDIA_RTX_4060_TI_16GB,
+    "4060-ti-16gb": NVIDIA_RTX_4060_TI_16GB,
+    "rtx4060-ti": NVIDIA_RTX_4060_TI_8GB,
+    "4060-ti": NVIDIA_RTX_4060_TI_8GB,
+    "rtx4060-ti-8gb": NVIDIA_RTX_4060_TI_8GB,
+    "4060-ti-8gb": NVIDIA_RTX_4060_TI_8GB,
+    "rtx4060": NVIDIA_RTX_4060,
+    "4060": NVIDIA_RTX_4060,
+    # -------------------------------------------------------------------------
+    # Consumer GPUs - RTX 30 Series (Ampere)
+    # -------------------------------------------------------------------------
+    "rtx3090-ti": NVIDIA_RTX_3090_TI,
+    "3090-ti": NVIDIA_RTX_3090_TI,
     "rtx3090": NVIDIA_RTX_3090,
     "3090": NVIDIA_RTX_3090,
+    "rtx3080-ti": NVIDIA_RTX_3080_TI,
+    "3080-ti": NVIDIA_RTX_3080_TI,
+    "rtx3080-12gb": NVIDIA_RTX_3080_12GB,
+    "3080-12gb": NVIDIA_RTX_3080_12GB,
     "rtx3080": NVIDIA_RTX_3080,
     "3080": NVIDIA_RTX_3080,
+    "rtx3080-10gb": NVIDIA_RTX_3080_10GB,
+    "3080-10gb": NVIDIA_RTX_3080_10GB,
+    "rtx3070-ti": NVIDIA_RTX_3070_TI,
+    "3070-ti": NVIDIA_RTX_3070_TI,
+    "rtx3070": NVIDIA_RTX_3070,
+    "3070": NVIDIA_RTX_3070,
+    "rtx3060-ti": NVIDIA_RTX_3060_TI,
+    "3060-ti": NVIDIA_RTX_3060_TI,
+    "rtx3060-12gb": NVIDIA_RTX_3060_12GB,
+    "rtx3060": NVIDIA_RTX_3060_12GB,  # Default to 12GB
+    "3060": NVIDIA_RTX_3060_12GB,
+    "rtx3060-8gb": NVIDIA_RTX_3060_8GB,
+    "3060-8gb": NVIDIA_RTX_3060_8GB,
+    "rtx3050": NVIDIA_RTX_3050,
+    "3050": NVIDIA_RTX_3050,
+    # -------------------------------------------------------------------------
+    # Laptop/Mobile GPUs
+    # -------------------------------------------------------------------------
+    "rtx4090-mobile": NVIDIA_RTX_4090_MOBILE,
+    "4090-mobile": NVIDIA_RTX_4090_MOBILE,
+    "rtx4080-mobile": NVIDIA_RTX_4080_MOBILE,
+    "4080-mobile": NVIDIA_RTX_4080_MOBILE,
+    "rtx4070-mobile": NVIDIA_RTX_4070_MOBILE,
+    "4070-mobile": NVIDIA_RTX_4070_MOBILE,
+    "rtx4060-mobile": NVIDIA_RTX_4060_MOBILE,
+    "4060-mobile": NVIDIA_RTX_4060_MOBILE,
+    "rtx4050-mobile": NVIDIA_RTX_4050_MOBILE,
+    "4050-mobile": NVIDIA_RTX_4050_MOBILE,
+    "rtx3080-mobile": NVIDIA_RTX_3080_MOBILE,
+    "3080-mobile": NVIDIA_RTX_3080_MOBILE,
+    "rtx3070-mobile": NVIDIA_RTX_3070_MOBILE,
+    "3070-mobile": NVIDIA_RTX_3070_MOBILE,
+    "rtx3060-mobile": NVIDIA_RTX_3060_MOBILE,
+    "3060-mobile": NVIDIA_RTX_3060_MOBILE,
+    # -------------------------------------------------------------------------
+    # DGX Systems (Multi-GPU)
+    # -------------------------------------------------------------------------
+    "dgx-h100": NVIDIA_DGX_H100,
+    "dgx-a100-640gb": NVIDIA_DGX_A100_640GB,
+    "dgx-a100-320gb": NVIDIA_DGX_A100_320GB,
+    "dgx-a100": NVIDIA_DGX_A100_640GB,  # Default to 640GB
     # -------------------------------------------------------------------------
     # Generic / Fallback
     # -------------------------------------------------------------------------
@@ -984,3 +1812,249 @@ def detect_local_hardware() -> HardwareProfile:
     """Convenience function to detect local hardware."""
     detector = HardwareDetector()
     return detector.detect()
+
+
+# ============================================================================
+# Multi-GPU Support
+# ============================================================================
+
+# NVLink bandwidth specifications (GB/s per direction)
+NVLINK_BANDWIDTH: dict[str, int] = {
+    "nvlink4": 900,  # H100 NVLink 4.0 (900 GB/s bidirectional)
+    "nvlink3": 600,  # A100 NVLink 3.0 (600 GB/s bidirectional)
+    "nvlink2": 300,  # V100 NVLink 2.0 (300 GB/s bidirectional)
+    "nvlink1": 160,  # P100 NVLink 1.0 (160 GB/s bidirectional)
+    "pcie4": 32,  # PCIe 4.0 x16 (32 GB/s)
+    "pcie5": 64,  # PCIe 5.0 x16 (64 GB/s)
+}
+
+
+@dataclass
+class MultiGPUProfile:
+    """Profile for multi-GPU configurations."""
+
+    name: str
+    base_profile: HardwareProfile
+    gpu_count: int
+    interconnect: str  # "nvlink4", "nvlink3", "pcie4", etc.
+
+    # Scaling factors (accounting for communication overhead)
+    compute_efficiency: float = 0.9  # 90% efficiency for tensor parallelism
+    memory_efficiency: float = 0.95  # 95% memory scaling
+
+    def get_effective_profile(self) -> HardwareProfile:
+        """Create an effective HardwareProfile for the multi-GPU setup."""
+        # Scale compute with efficiency factor
+        effective_compute = self.gpu_count * self.compute_efficiency
+
+        return HardwareProfile(
+            name=f"{self.gpu_count}x {self.base_profile.name} ({self.interconnect})",
+            vendor=self.base_profile.vendor,
+            device_type="multi-gpu",
+            vram_bytes=int(
+                self.base_profile.vram_bytes * self.gpu_count * self.memory_efficiency
+            ),
+            memory_bandwidth_bytes_per_s=int(
+                self.base_profile.memory_bandwidth_bytes_per_s * self.gpu_count
+            ),
+            peak_fp32_tflops=self.base_profile.peak_fp32_tflops * effective_compute,
+            peak_fp16_tflops=self.base_profile.peak_fp16_tflops * effective_compute,
+            peak_int8_tops=self.base_profile.peak_int8_tops * effective_compute,
+            compute_capability=self.base_profile.compute_capability,
+            tdp_watts=self.base_profile.tdp_watts * self.gpu_count,
+            is_detected=False,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        effective = self.get_effective_profile()
+        return {
+            "name": self.name,
+            "gpu_count": self.gpu_count,
+            "interconnect": self.interconnect,
+            "interconnect_bandwidth_gb_s": NVLINK_BANDWIDTH.get(self.interconnect, 0),
+            "compute_efficiency": self.compute_efficiency,
+            "memory_efficiency": self.memory_efficiency,
+            "effective_profile": effective.to_dict(),
+        }
+
+
+def create_multi_gpu_profile(
+    base_profile_name: str,
+    gpu_count: int,
+    interconnect: str | None = None,
+) -> MultiGPUProfile | None:
+    """
+    Create a multi-GPU profile from a base single-GPU profile.
+
+    Args:
+        base_profile_name: Name of the base GPU profile (e.g., "a100-80gb")
+        gpu_count: Number of GPUs (2, 4, 8, etc.)
+        interconnect: Interconnect type ("nvlink4", "nvlink3", "pcie4", etc.)
+                     If None, auto-selects based on GPU type.
+
+    Returns:
+        MultiGPUProfile or None if base profile not found.
+    """
+    base_profile = get_profile(base_profile_name)
+    if not base_profile:
+        return None
+
+    # Auto-select interconnect based on GPU
+    if interconnect is None:
+        if "h100" in base_profile_name.lower():
+            interconnect = "nvlink4"
+        elif "a100" in base_profile_name.lower():
+            interconnect = "nvlink3"
+        elif "v100" in base_profile_name.lower():
+            interconnect = "nvlink2"
+        else:
+            interconnect = "pcie4"  # Default to PCIe
+
+    # Adjust efficiency based on interconnect
+    if "nvlink" in interconnect:
+        compute_efficiency = 0.92  # NVLink has lower overhead
+        memory_efficiency = 0.98
+    else:
+        compute_efficiency = 0.85  # PCIe has more overhead
+        memory_efficiency = 0.95
+
+    return MultiGPUProfile(
+        name=f"{gpu_count}x {base_profile.name}",
+        base_profile=base_profile,
+        gpu_count=gpu_count,
+        interconnect=interconnect,
+        compute_efficiency=compute_efficiency,
+        memory_efficiency=memory_efficiency,
+    )
+
+
+def estimate_parallelism_overhead(
+    model_params: int,
+    num_layers: int,
+    gpu_count: int,
+    interconnect: str = "nvlink4",
+) -> dict[str, Any]:
+    """
+    Estimate overhead for tensor/pipeline parallelism.
+
+    Args:
+        model_params: Total model parameters
+        num_layers: Number of transformer layers (or similar)
+        gpu_count: Number of GPUs
+        interconnect: Interconnect type
+
+    Returns:
+        Dict with parallelism estimates
+    """
+    interconnect_bw = NVLINK_BANDWIDTH.get(interconnect, 32) * (1024**3)  # GB/s to B/s
+
+    # Tensor Parallelism overhead (all-reduce after each layer)
+    # Communication volume: 2 * hidden_dim * batch_size * seq_len per layer
+    # Estimate hidden_dim from params: sqrt(params / num_layers / 12) for transformers
+    est_hidden_dim = int((model_params / max(num_layers, 1) / 12) ** 0.5)
+
+    # All-reduce communication: 2 * (N-1)/N * message_size for ring all-reduce
+    comm_factor = 2 * (gpu_count - 1) / gpu_count
+    tensor_parallel_overhead_per_layer = (
+        comm_factor * est_hidden_dim * 4 / interconnect_bw * 1000
+    )  # ms
+
+    # Pipeline Parallelism overhead (bubble time)
+    # Bubble fraction: (P-1) / (P-1 + M) where P=pipeline stages, M=microbatches
+    micro_batches = max(gpu_count * 2, 4)  # Typical: 2x pipeline stages
+    bubble_fraction = (gpu_count - 1) / (gpu_count - 1 + micro_batches)
+
+    return {
+        "tensor_parallelism": {
+            "communication_overhead_ms_per_layer": round(
+                tensor_parallel_overhead_per_layer, 3
+            ),
+            "estimated_efficiency": round(
+                1 - (0.02 * gpu_count), 2
+            ),  # ~2% loss per GPU
+        },
+        "pipeline_parallelism": {
+            "bubble_fraction": round(bubble_fraction, 3),
+            "recommended_microbatches": micro_batches,
+            "estimated_efficiency": round(1 - bubble_fraction, 2),
+        },
+        "recommendation": (
+            "tensor_parallelism" if gpu_count <= 8 else "hybrid_parallelism"
+        ),
+    }
+
+
+def estimate_model_fit(
+    model_params: int,
+    precision: str,
+    hardware: HardwareProfile,
+    gpu_count: int = 1,
+) -> dict[str, Any]:
+    """
+    Estimate if a model fits on the given hardware configuration.
+
+    Args:
+        model_params: Total model parameters
+        precision: "fp32", "fp16", "int8", "bf16"
+        hardware: Hardware profile
+        gpu_count: Number of GPUs
+
+    Returns:
+        Dict with fit analysis
+    """
+    bytes_per_param = {"fp32": 4, "fp16": 2, "int8": 1, "bf16": 2}.get(precision, 4)
+
+    # Model weights
+    weights_bytes = model_params * bytes_per_param
+
+    # Optimizer states (for training): ~2x weights for Adam
+    optimizer_bytes = weights_bytes * 2
+
+    # Gradients: same size as weights
+    gradient_bytes = weights_bytes
+
+    # Activation memory (rough estimate: 2x weights for transformers)
+    activation_bytes = weights_bytes * 2
+
+    # Total for inference
+    inference_memory = int(weights_bytes * 1.2)  # 20% overhead
+
+    # Total for training
+    training_memory = int(
+        (weights_bytes + optimizer_bytes + gradient_bytes + activation_bytes) * 1.1
+    )
+
+    total_vram = hardware.vram_bytes * gpu_count
+
+    return {
+        "model_params": model_params,
+        "precision": precision,
+        "weights_gb": round(weights_bytes / (1024**3), 2),
+        "inference_memory_gb": round(inference_memory / (1024**3), 2),
+        "training_memory_gb": round(training_memory / (1024**3), 2),
+        "available_vram_gb": round(total_vram / (1024**3), 2),
+        "fits_for_inference": inference_memory <= total_vram,
+        "fits_for_training": training_memory <= total_vram,
+        "gpus_needed_for_inference": max(
+            1, int(inference_memory / hardware.vram_bytes) + 1
+        ),
+        "gpus_needed_for_training": max(
+            1, int(training_memory / hardware.vram_bytes) + 1
+        ),
+    }
+
+
+def list_cloud_instances(provider: str | None = None) -> list[str]:
+    """List available cloud instance profiles."""
+    instances = []
+    for name, instance in CLOUD_INSTANCES.items():
+        if provider is None or instance.provider == provider:
+            instances.append(
+                f"{name}: {instance.name} (${instance.hourly_cost_usd:.2f}/hr)"
+            )
+    return sorted(instances)
+
+
+def get_cloud_instance(name: str) -> CloudInstanceProfile | None:
+    """Get a cloud instance profile by name."""
+    return CLOUD_INSTANCES.get(name.lower())

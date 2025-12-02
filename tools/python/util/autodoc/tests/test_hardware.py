@@ -82,7 +82,7 @@ class TestHardwareProfileDataclass:
         profile = NVIDIA_A100_80GB
         data = profile.to_dict()
 
-        assert data["name"] == "NVIDIA A100 80GB"
+        assert data["name"] == "NVIDIA A100 80GB SXM"
         assert data["vendor"] == "nvidia"
         assert data["device_type"] == "gpu"
         assert data["vram_gb"] == 80.0

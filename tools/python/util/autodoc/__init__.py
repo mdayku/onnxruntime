@@ -41,6 +41,13 @@ from .llm_summarizer import (
     is_available as is_llm_available,
 )
 from .patterns import PatternAnalyzer
+from .pdf_generator import (
+    PDFGenerator,
+    generate_pdf,
+)
+from .pdf_generator import (
+    is_available as is_pdf_available,
+)
 from .report import InspectionReport, ModelInspector
 from .risks import RiskAnalyzer, RiskSignal, RiskThresholds
 from .schema import (
@@ -77,6 +84,8 @@ __all__ = [
     "MetricsEngine",
     "ModelInspector",
     "ONNXGraphLoader",
+    # PDF Generation
+    "PDFGenerator",
     "PatternAnalyzer",
     "RiskAnalyzer",
     "RiskSignal",
@@ -86,11 +95,13 @@ __all__ = [
     # Visualization
     "VisualizationGenerator",
     "detect_local_hardware",
+    "generate_pdf",
     "generate_visualizations",
     "get_profile",
     "get_schema",
     "has_llm_api_key",
     "is_llm_available",
+    "is_pdf_available",
     "is_visualization_available",
     "list_available_profiles",
     "summarize_report",

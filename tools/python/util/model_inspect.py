@@ -17,8 +17,11 @@ from typing import Any
 
 from .autodoc import ModelInspector
 from .autodoc.hardware import (
+    CLOUD_INSTANCES,
     HardwareEstimator,
+    create_multi_gpu_profile,
     detect_local_hardware,
+    get_cloud_instance,
     get_profile,
 )
 from .autodoc.llm_summarizer import (
@@ -29,6 +32,12 @@ from .autodoc.llm_summarizer import (
 )
 from .autodoc.llm_summarizer import (
     is_available as is_llm_available,
+)
+from .autodoc.pdf_generator import (
+    PDFGenerator,
+)
+from .autodoc.pdf_generator import (
+    is_available as is_pdf_available,
 )
 from .autodoc.visualizations import (
     VisualizationGenerator,
@@ -125,6 +134,13 @@ Examples:
         help="Output path for HTML report with embedded images. Single shareable file.",
     )
 
+    parser.add_argument(
+        "--out-pdf",
+        type=pathlib.Path,
+        default=None,
+        help="Output path for PDF report. Requires playwright: pip install playwright && playwright install chromium",
+    )
+
     # PyTorch conversion options
     pytorch_group = parser.add_argument_group("PyTorch Conversion Options")
     pytorch_group.add_argument(
@@ -192,6 +208,30 @@ Examples:
         type=int,
         default=1,
         help="Batch size for hardware estimates (default: 1).",
+    )
+
+    hardware_group.add_argument(
+        "--gpu-count",
+        type=int,
+        default=1,
+        metavar="N",
+        help="Number of GPUs for multi-GPU estimates (default: 1). "
+        "Scales compute and memory with efficiency factors for tensor parallelism.",
+    )
+
+    hardware_group.add_argument(
+        "--cloud",
+        type=str,
+        default=None,
+        metavar="INSTANCE",
+        help="Cloud instance type for cost/performance estimates. "
+        "E.g., 'aws-p4d-24xlarge', 'azure-nd-h100-v5'. Use --list-cloud to see options.",
+    )
+
+    hardware_group.add_argument(
+        "--list-cloud",
+        action="store_true",
+        help="List all available cloud instance profiles and exit.",
     )
 
     # Visualization options
@@ -540,16 +580,20 @@ def run_inspect():
         print("Available Hardware Profiles")
         print("=" * 70)
 
-        print("\nData Center GPUs (Current Gen):")
+        print("\nData Center GPUs - H100 Series:")
+        for name in ["h100-sxm", "h100-pcie", "h100-nvl"]:
+            profile = get_profile(name)
+            if profile:
+                print(
+                    f"  {name:20} {profile.name:30} {profile.vram_bytes // (1024**3):3} GB  {profile.peak_fp16_tflops:6.1f} TF16"
+                )
+
+        print("\nData Center GPUs - A100 Series:")
         for name in [
-            "h100",
-            "a100-80gb",
-            "a100-40gb",
-            "a10",
-            "l4",
-            "l40",
-            "l40s",
-            "t4",
+            "a100-80gb-sxm",
+            "a100-80gb-pcie",
+            "a100-40gb-sxm",
+            "a100-40gb-pcie",
         ]:
             profile = get_profile(name)
             if profile:
@@ -557,8 +601,29 @@ def run_inspect():
                     f"  {name:20} {profile.name:30} {profile.vram_bytes // (1024**3):3} GB  {profile.peak_fp16_tflops:6.1f} TF16"
                 )
 
-        print("\nData Center GPUs (Previous Gen):")
-        for name in ["v100-32gb", "v100-16gb", "p100", "p40"]:
+        print("\nData Center GPUs - Other:")
+        for name in ["a10", "l4", "l40", "l40s", "t4"]:
+            profile = get_profile(name)
+            if profile:
+                print(
+                    f"  {name:20} {profile.name:30} {profile.vram_bytes // (1024**3):3} GB  {profile.peak_fp16_tflops:6.1f} TF16"
+                )
+
+        print("\nData Center GPUs - V100 Series:")
+        for name in [
+            "v100-32gb-sxm",
+            "v100-32gb-pcie",
+            "v100-16gb-sxm",
+            "v100-16gb-pcie",
+        ]:
+            profile = get_profile(name)
+            if profile:
+                print(
+                    f"  {name:20} {profile.name:30} {profile.vram_bytes // (1024**3):3} GB  {profile.peak_fp16_tflops:6.1f} TF16"
+                )
+
+        print("\nDGX Systems (Multi-GPU):")
+        for name in ["dgx-h100", "dgx-a100-640gb", "dgx-a100-320gb"]:
             profile = get_profile(name)
             if profile:
                 print(
@@ -597,8 +662,51 @@ def run_inspect():
                     f"  {name:20} {profile.name:30} {vram_gb:3.0f} GB  {profile.peak_fp16_tflops:6.3f} TF16"
                 )
 
-        print("\nConsumer GPUs:")
-        for name in ["rtx4090", "rtx4080", "rtx3090", "rtx3080"]:
+        print("\nConsumer GPUs - RTX 40 Series:")
+        for name in [
+            "rtx4090",
+            "4080-super",
+            "rtx4080",
+            "4070-ti-super",
+            "4070-ti",
+            "4070-super",
+            "rtx4070",
+            "4060-ti-16gb",
+            "rtx4060",
+        ]:
+            profile = get_profile(name)
+            if profile:
+                print(
+                    f"  {name:20} {profile.name:30} {profile.vram_bytes // (1024**3):3} GB  {profile.peak_fp16_tflops:6.1f} TF16"
+                )
+
+        print("\nConsumer GPUs - RTX 30 Series:")
+        for name in [
+            "3090-ti",
+            "rtx3090",
+            "3080-ti",
+            "3080-12gb",
+            "rtx3080",
+            "3070-ti",
+            "rtx3070",
+            "3060-ti",
+            "rtx3060",
+            "rtx3050",
+        ]:
+            profile = get_profile(name)
+            if profile:
+                print(
+                    f"  {name:20} {profile.name:30} {profile.vram_bytes // (1024**3):3} GB  {profile.peak_fp16_tflops:6.1f} TF16"
+                )
+
+        print("\nLaptop/Mobile GPUs:")
+        for name in [
+            "4090-mobile",
+            "4080-mobile",
+            "4070-mobile",
+            "3080-mobile",
+            "3070-mobile",
+        ]:
             profile = get_profile(name)
             if profile:
                 print(
@@ -611,7 +719,44 @@ def run_inspect():
 
         print("\n" + "-" * 70)
         print("TF16 = Peak FP16 TFLOPS (higher = faster)")
-        print("Jetson uses unified memory (shared between CPU and GPU)")
+        print("Use --gpu-count N for multi-GPU estimates")
+        print("Use --list-cloud for cloud instance options")
+        print("=" * 70 + "\n")
+        sys.exit(0)
+
+    # Handle --list-cloud
+    if args.list_cloud:
+        print("\n" + "=" * 70)
+        print("Available Cloud Instance Profiles")
+        print("=" * 70)
+
+        print("\nAWS GPU Instances:")
+        for name, instance in CLOUD_INSTANCES.items():
+            if instance.provider == "aws":
+                vram_gb = instance.hardware.vram_bytes * instance.gpu_count // (1024**3)
+                print(
+                    f"  {name:25} {instance.gpu_count}x GPU  {vram_gb:4} GB  ${instance.hourly_cost_usd:6.2f}/hr"
+                )
+
+        print("\nAzure GPU Instances:")
+        for name, instance in CLOUD_INSTANCES.items():
+            if instance.provider == "azure":
+                vram_gb = instance.hardware.vram_bytes * instance.gpu_count // (1024**3)
+                print(
+                    f"  {name:25} {instance.gpu_count}x GPU  {vram_gb:4} GB  ${instance.hourly_cost_usd:6.2f}/hr"
+                )
+
+        print("\nGCP GPU Instances:")
+        for name, instance in CLOUD_INSTANCES.items():
+            if instance.provider == "gcp":
+                vram_gb = instance.hardware.vram_bytes * instance.gpu_count // (1024**3)
+                print(
+                    f"  {name:25} {instance.gpu_count}x GPU  {vram_gb:4} GB  ${instance.hourly_cost_usd:6.2f}/hr"
+                )
+
+        print("\n" + "-" * 70)
+        print("Prices are approximate on-demand rates (us-east-1 or equivalent)")
+        print("Use --cloud <instance> to get cost estimates for your model")
         print("=" * 70 + "\n")
         sys.exit(0)
 
@@ -648,7 +793,23 @@ def run_inspect():
 
     # Determine hardware profile
     hardware_profile = None
-    if args.hardware:
+    cloud_instance = None
+
+    if args.cloud:
+        # Cloud instance takes precedence
+        cloud_instance = get_cloud_instance(args.cloud)
+        if cloud_instance is None:
+            logger.error(f"Unknown cloud instance: {args.cloud}")
+            logger.error("Use --list-cloud to see available instances.")
+            sys.exit(1)
+        hardware_profile = cloud_instance.hardware
+        # Override gpu_count from cloud instance
+        args.gpu_count = cloud_instance.gpu_count
+        logger.info(
+            f"Using cloud instance: {cloud_instance.name} "
+            f"({cloud_instance.gpu_count}x GPU, ${cloud_instance.hourly_cost_usd:.2f}/hr)"
+        )
+    elif args.hardware:
         if args.hardware.lower() == "auto":
             logger.info("Auto-detecting local hardware...")
             hardware_profile = detect_local_hardware()
@@ -660,6 +821,16 @@ def run_inspect():
                 logger.error("Use --list-hardware to see available profiles.")
                 sys.exit(1)
             logger.info(f"Using hardware profile: {hardware_profile.name}")
+
+    # Apply multi-GPU scaling if requested
+    if hardware_profile and args.gpu_count > 1 and not args.cloud:
+        multi_gpu = create_multi_gpu_profile(args.hardware or "auto", args.gpu_count)
+        if multi_gpu:
+            hardware_profile = multi_gpu.get_effective_profile()
+            logger.info(
+                f"Multi-GPU: {args.gpu_count}x scaling with "
+                f"{multi_gpu.compute_efficiency:.0%} efficiency"
+            )
 
     # Setup progress indicator
     progress = ProgressIndicator(enabled=args.progress, quiet=args.quiet)
@@ -765,7 +936,7 @@ def run_inspect():
         report._llm_summary = llm_summary  # type: ignore
 
     # Output results
-    has_output = args.out_json or args.out_md or args.out_html
+    has_output = args.out_json or args.out_md or args.out_html or args.out_pdf
     if has_output:
         progress.step("Writing output files")
 
@@ -829,27 +1000,54 @@ def run_inspect():
             logger.error(f"Failed to write Markdown report: {e}")
             sys.exit(1)
 
-    if args.out_html:
-        try:
-            args.out_html.parent.mkdir(parents=True, exist_ok=True)
-            # Add LLM summary to report if available
-            if llm_summary and llm_summary.success:
-                report.llm_summary = {
-                    "success": True,
-                    "short_summary": llm_summary.short_summary,
-                    "detailed_summary": llm_summary.detailed_summary,
-                    "model": args.llm_model,
-                }
-            # Generate HTML with embedded images
-            html_content = report.to_html(image_paths=viz_paths)
-            args.out_html.write_text(html_content, encoding="utf-8")
-            logger.info(f"HTML report written to: {args.out_html}")
-        except Exception as e:
-            logger.error(f"Failed to write HTML report: {e}")
-            sys.exit(1)
+    if args.out_html or args.out_pdf:
+        # Add LLM summary to report if available
+        if llm_summary and llm_summary.success:
+            report.llm_summary = {
+                "success": True,
+                "short_summary": llm_summary.short_summary,
+                "detailed_summary": llm_summary.detailed_summary,
+                "model": args.llm_model,
+            }
+        # Generate HTML with embedded images
+        html_content = report.to_html(image_paths=viz_paths)
+
+        if args.out_html:
+            try:
+                args.out_html.parent.mkdir(parents=True, exist_ok=True)
+                args.out_html.write_text(html_content, encoding="utf-8")
+                logger.info(f"HTML report written to: {args.out_html}")
+            except Exception as e:
+                logger.error(f"Failed to write HTML report: {e}")
+                sys.exit(1)
+
+        if args.out_pdf:
+            if not is_pdf_available():
+                logger.error(
+                    "Playwright not installed. Install with: pip install playwright && playwright install chromium"
+                )
+                sys.exit(1)
+            try:
+                args.out_pdf.parent.mkdir(parents=True, exist_ok=True)
+                pdf_gen = PDFGenerator(logger=logger)
+                success = pdf_gen.generate_from_html(html_content, args.out_pdf)
+                if success:
+                    logger.info(f"PDF report written to: {args.out_pdf}")
+                else:
+                    logger.error("PDF generation failed")
+                    sys.exit(1)
+            except Exception as e:
+                logger.error(f"Failed to write PDF report: {e}")
+                sys.exit(1)
 
     # Console output
-    if not args.quiet and not args.out_json and not args.out_md and not args.out_html:
+    if (
+        not args.quiet
+        and not args.out_json
+        and not args.out_md
+        and not args.out_html
+        and not args.out_pdf
+    ):
         # No output files specified - print summary to console
         print("\n" + "=" * 60)
         print(f"Model: {model_path.name}")
@@ -917,6 +1115,8 @@ def run_inspect():
             print(f"  Markdown card: {args.out_md}")
         if args.out_html:
             print(f"  HTML report: {args.out_html}")
+        if args.out_pdf:
+            print(f"  PDF report: {args.out_pdf}")
 
     # Finish progress indicator
     progress.finish("Analysis complete!")
