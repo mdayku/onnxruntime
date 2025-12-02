@@ -312,15 +312,22 @@ class MetricsEngine:
         "Sqrt": "elementwise",
         "Exp": "elementwise",
         "Log": "elementwise",
+        "Gelu": "elementwise",
+        "Silu": "elementwise",
         # Softmax: ~5N (exp, sum, div)
         "Softmax": "softmax",
         # Reduction ops: N elements
         "ReduceMean": "elementwise",
         "ReduceSum": "elementwise",
         "ReduceMax": "elementwise",
-        # Attention-related (rough estimates)
+        # Normalization layers
         "LayerNormalization": "layernorm",
         "BatchNormalization": "batchnorm",
+        # Attention ops (ONNX contrib / custom)
+        "Attention": "attention",
+        "MultiHeadAttention": "attention",
+        "com.microsoft.Attention": "attention",
+        "com.microsoft.MultiHeadAttention": "attention",
     }
 
     def __init__(self, logger: logging.Logger | None = None):
@@ -407,6 +414,8 @@ class MetricsEngine:
             return self._estimate_elementwise_flops(node, graph_info) * 5
         elif formula_type == "batchnorm":
             return self._estimate_elementwise_flops(node, graph_info) * 2
+        elif formula_type == "attention":
+            return self._estimate_attention_flops(node, graph_info)
         else:
             # Unknown op - estimate based on output size
             return self._estimate_elementwise_flops(node, graph_info)
@@ -531,6 +540,71 @@ class MetricsEngine:
                 return int(np.prod(shape))
 
         return 0
+
+    def _estimate_attention_flops(self, node: NodeInfo, graph_info: GraphInfo) -> int:
+        """
+        Estimate FLOPs for attention operations.
+
+        Standard multi-head attention FLOPs:
+        - QKV projections: 3 * batch * seq_len * d_model * d_model
+        - Attention scores (Q @ K^T): batch * num_heads * seq_len * seq_len * d_head
+        - Softmax: batch * num_heads * seq_len * seq_len * 5
+        - Attention output (scores @ V): batch * num_heads * seq_len * seq_len * d_head
+        - Output projection: batch * seq_len * d_model * d_model
+
+        Simplified formula: 4 * seq_len * d_model^2 + 2 * num_heads * seq_len^2 * d_head
+        """
+        # Try to get dimensions from node attributes or input shapes
+        num_heads = 1
+        seq_len = 512  # Default assumption
+        d_model = 768  # Default assumption
+
+        # Try to extract from node attributes (ONNX Attention op)
+        for attr in node.attributes:
+            if attr.name == "num_heads":
+                num_heads = attr.i if hasattr(attr, "i") else num_heads
+            elif attr.name == "hidden_size":
+                d_model = attr.i if hasattr(attr, "i") else d_model
+
+        # Try to infer from input shapes
+        if node.inputs and node.inputs[0] in graph_info.value_shapes:
+            input_shape = graph_info.value_shapes[node.inputs[0]]
+            if input_shape and len(input_shape) >= 2:
+                # Shape is typically [batch, seq_len, d_model] or [batch, seq_len, ...]
+                if len(input_shape) >= 3:
+                    if isinstance(input_shape[1], int):
+                        seq_len = input_shape[1]
+                    if isinstance(input_shape[2], int):
+                        d_model = input_shape[2]
+                elif len(input_shape) == 2:
+                    if isinstance(input_shape[0], int):
+                        seq_len = input_shape[0]
+                    if isinstance(input_shape[1], int):
+                        d_model = input_shape[1]
+
+        d_head = d_model // num_heads if num_heads > 0 else d_model
+
+        # Compute FLOPs using standard attention formula
+        # QKV projections: 3 * seq * d_model * d_model
+        qkv_flops = 3 * seq_len * d_model * d_model
+
+        # Attention scores and output: 2 * num_heads * seq^2 * d_head
+        attention_flops = 2 * num_heads * seq_len * seq_len * d_head
+
+        # Output projection: seq * d_model * d_model
+        output_flops = seq_len * d_model * d_model
+
+        # Softmax on attention scores: 5 * num_heads * seq^2
+        softmax_flops = 5 * num_heads * seq_len * seq_len
+
+        total_flops = qkv_flops + attention_flops + output_flops + softmax_flops
+
+        self.logger.debug(
+            f"Attention FLOPs: seq={seq_len}, d_model={d_model}, "
+            f"heads={num_heads}, total={total_flops:,}"
+        )
+
+        return total_flops
 
     def estimate_memory(self, graph_info: GraphInfo) -> MemoryEstimates:
         """

@@ -66,7 +66,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 ### Story 2.3: FLOP Estimation
 - [x] **Task 2.3.1**: Implement Conv2D FLOP calculation
 - [x] **Task 2.3.2**: Implement MatMul/Gemm FLOP calculation
-- [ ] **Task 2.3.3**: Implement attention pattern FLOP calculation
+- [x] **Task 2.3.3**: Implement attention pattern FLOP calculation
 - [x] **Task 2.3.4**: Add fallback estimation for unknown ops (elementwise)
 - [x] **Task 2.3.5**: Identify and flag FLOP hotspots
 
@@ -128,7 +128,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 4B.1.4**: Implement torch.onnx.export wrapper with sensible defaults
 - [x] **Task 4B.1.5**: Generate temp ONNX file for analysis (or --keep-onnx to save)
 - [x] **Task 4B.1.6**: Support TorchScript models (.pt from torch.jit.save)
-- [ ] **Task 4B.1.7**: Add tests for PyTorch conversion flow
+- [x] **Task 4B.1.7**: Add tests for PyTorch conversion flow (9 tests)
 - [x] **Task 4B.1.8**: Handle conversion errors gracefully (missing torch, export failures)
 
 ### Story 4B.2: Dataset/Class Metadata Extraction
