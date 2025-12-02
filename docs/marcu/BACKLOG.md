@@ -31,7 +31,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 1.1.1**: Fork microsoft/onnxruntime repository
 - [x] **Task 1.1.2**: Set up local development environment (Python 3.10+, CMake, etc.)
 - [x] **Task 1.1.3**: Successfully build ONNX Runtime from source (C++ complete, CUDA provider built)
-- [ ] **Task 1.1.4**: Build Python wheel *(in progress)*
+- [x] **Task 1.1.4**: Build Python wheel (with CUDA provider) *(complete)*
 - [ ] **Task 1.1.5**: Run existing test suite to verify build
 
 ### Story 1.2: Codebase Familiarization
@@ -136,7 +136,8 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 ### Story 5.3: Report Integration
 - [x] **Task 5.3.1**: Embed charts in Markdown output
 - [x] **Task 5.3.2**: Add chart captions and descriptions
-- [ ] **Task 5.3.3**: Support HTML output with embedded images
+- [x] **Task 5.3.3**: Support HTML output with embedded images (base64, single shareable file)
+- [ ] **Task 5.3.4**: Support PDF output (optional weasyprint dependency, fallback to HTML)
 
 ---
 

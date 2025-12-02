@@ -79,6 +79,13 @@ Examples:
         help="Output path for Markdown model card. If not specified, no Markdown is written.",
     )
 
+    parser.add_argument(
+        "--out-html",
+        type=pathlib.Path,
+        default=None,
+        help="Output path for HTML report with embedded images. Single shareable file.",
+    )
+
     # Hardware options
     hardware_group = parser.add_argument_group("Hardware Options")
     hardware_group.add_argument(
@@ -453,6 +460,9 @@ def run_inspect():
             # Determine assets directory
             if args.assets_dir:
                 assets_dir = args.assets_dir
+            elif args.out_html:
+                # HTML embeds images, but we still generate them for the file
+                assets_dir = args.out_html.parent / "assets"
             elif args.out_md:
                 assets_dir = args.out_md.parent / "assets"
             elif args.out_json:
@@ -489,8 +499,27 @@ def run_inspect():
             logger.error(f"Failed to write Markdown report: {e}")
             sys.exit(1)
 
+    if args.out_html:
+        try:
+            args.out_html.parent.mkdir(parents=True, exist_ok=True)
+            # Add LLM summary to report if available
+            if llm_summary and llm_summary.success:
+                report.llm_summary = {
+                    "success": True,
+                    "short_summary": llm_summary.short_summary,
+                    "detailed_summary": llm_summary.detailed_summary,
+                    "model": args.llm_model,
+                }
+            # Generate HTML with embedded images
+            html_content = report.to_html(image_paths=viz_paths)
+            args.out_html.write_text(html_content, encoding="utf-8")
+            logger.info(f"HTML report written to: {args.out_html}")
+        except Exception as e:
+            logger.error(f"Failed to write HTML report: {e}")
+            sys.exit(1)
+
     # Console output
-    if not args.quiet and not args.out_json and not args.out_md:
+    if not args.quiet and not args.out_json and not args.out_md and not args.out_html:
         # No output files specified - print summary to console
         print("\n" + "=" * 60)
         print(f"Model: {model_path.name}")
@@ -556,6 +585,8 @@ def run_inspect():
             print(f"  JSON report: {args.out_json}")
         if args.out_md:
             print(f"  Markdown card: {args.out_md}")
+        if args.out_html:
+            print(f"  HTML report: {args.out_html}")
 
 
 if __name__ == "__main__":
