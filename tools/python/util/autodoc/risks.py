@@ -72,9 +72,7 @@ class RiskAnalyzer:
     def __init__(self, logger: logging.Logger | None = None):
         self.logger = logger or logging.getLogger("autodoc.risks")
 
-    def analyze(
-        self, graph_info: GraphInfo, blocks: list[Block]
-    ) -> list[RiskSignal]:
+    def analyze(self, graph_info: GraphInfo, blocks: list[Block]) -> list[RiskSignal]:
         """
         Run all risk heuristics and return detected signals.
 

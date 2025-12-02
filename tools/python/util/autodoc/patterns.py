@@ -276,9 +276,7 @@ class PatternAnalyzer:
 
         return blocks
 
-    def classify_architecture(
-        self, graph_info: GraphInfo, blocks: list[Block]
-    ) -> str:
+    def classify_architecture(self, graph_info: GraphInfo, blocks: list[Block]) -> str:
         """
         Classify the overall architecture type.
 

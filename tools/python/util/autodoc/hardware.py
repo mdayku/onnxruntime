@@ -607,7 +607,8 @@ class HardwareDetector:
                     "--query-gpu=name,memory.total,compute_cap",
                     "--format=csv,noheader,nounits",
                 ],
-                check=False, capture_output=True,
+                check=False,
+                capture_output=True,
                 text=True,
                 timeout=5,
             )
