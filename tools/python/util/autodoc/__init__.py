@@ -29,6 +29,17 @@ from .hardware import (
     get_profile,
     list_available_profiles,
 )
+from .llm_summarizer import (
+    LLMSummarizer,
+    LLMSummary,
+    summarize_report,
+)
+from .llm_summarizer import (
+    has_api_key as has_llm_api_key,
+)
+from .llm_summarizer import (
+    is_available as is_llm_available,
+)
 from .patterns import PatternAnalyzer
 from .report import InspectionReport, ModelInspector
 from .risks import RiskAnalyzer, RiskSignal
@@ -37,43 +48,38 @@ from .visualizations import (
     ChartTheme,
     VisualizationGenerator,
     generate_visualizations,
-    is_available as is_visualization_available,
 )
-from .llm_summarizer import (
-    LLMSummarizer,
-    LLMSummary,
-    summarize_report,
-    is_available as is_llm_available,
-    has_api_key as has_llm_api_key,
+from .visualizations import (
+    is_available as is_visualization_available,
 )
 
 __all__ = [
-    "ModelInspector",
+    "HARDWARE_PROFILES",
+    "THEME",
+    "ChartTheme",
+    "HardwareDetector",
+    "HardwareEstimates",
+    "HardwareEstimator",
+    # Hardware
+    "HardwareProfile",
     "InspectionReport",
+    # LLM Summarization
+    "LLMSummarizer",
+    "LLMSummary",
     "MetricsEngine",
+    "ModelInspector",
     "ONNXGraphLoader",
     "PatternAnalyzer",
     "RiskAnalyzer",
     "RiskSignal",
-    # Hardware
-    "HardwareProfile",
-    "HardwareDetector",
-    "HardwareEstimator",
-    "HardwareEstimates",
-    "HARDWARE_PROFILES",
-    "detect_local_hardware",
-    "get_profile",
-    "list_available_profiles",
     # Visualization
     "VisualizationGenerator",
-    "ChartTheme",
-    "THEME",
+    "detect_local_hardware",
     "generate_visualizations",
-    "is_visualization_available",
-    # LLM Summarization
-    "LLMSummarizer",
-    "LLMSummary",
-    "summarize_report",
-    "is_llm_available",
+    "get_profile",
     "has_llm_api_key",
+    "is_llm_available",
+    "is_visualization_available",
+    "list_available_profiles",
+    "summarize_report",
 ]

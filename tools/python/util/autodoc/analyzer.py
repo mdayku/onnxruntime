@@ -443,7 +443,7 @@ class MetricsEngine:
         else:
             h_out, w_out = 1, 1
 
-        groups = node.attributes.get("group", 1)
+        node.attributes.get("group", 1)
         flops = 2 * k_h * k_w * c_in_per_group * c_out * h_out * w_out
 
         # Add bias if present

@@ -6,6 +6,7 @@ Unit tests for the patterns module (block detection, architecture classification
 """
 from __future__ import annotations
 
+import sys
 import tempfile
 from pathlib import Path
 
@@ -14,11 +15,9 @@ import onnx
 import pytest
 from onnx import TensorProto, helper
 
-import sys
-
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-from autodoc.analyzer import ONNXGraphLoader
-from autodoc.patterns import PatternAnalyzer
+from ..analyzer import ONNXGraphLoader
+from ..patterns import PatternAnalyzer
 
 
 def create_conv_bn_relu_model() -> onnx.ModelProto:

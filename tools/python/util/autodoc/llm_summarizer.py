@@ -149,7 +149,7 @@ class LLMSummarizer:
         """Check if the summarizer is properly configured and ready to use."""
         return self.client is not None
 
-    def summarize(self, report: "InspectionReport") -> LLMSummary:
+    def summarize(self, report: InspectionReport) -> LLMSummary:
         """
         Generate both short and detailed summaries for a model report.
 
@@ -211,7 +211,7 @@ class LLMSummarizer:
             error_message=error_message if not success else None,
         )
 
-    def generate_short_summary(self, report: "InspectionReport") -> str:
+    def generate_short_summary(self, report: InspectionReport) -> str:
         """Generate only a short summary (1-2 sentences)."""
         if not self.is_configured():
             return ""
@@ -226,7 +226,7 @@ class LLMSummarizer:
             self.logger.error(f"Failed to generate short summary: {e}")
             return ""
 
-    def generate_detailed_summary(self, report: "InspectionReport") -> str:
+    def generate_detailed_summary(self, report: InspectionReport) -> str:
         """Generate only a detailed summary (paragraph)."""
         if not self.is_configured():
             return ""
@@ -286,7 +286,7 @@ class LLMSummarizer:
             self.logger.error(f"Unexpected error calling OpenAI API: {e}")
             raise
 
-    def _prepare_report_for_prompt(self, report: "InspectionReport") -> str:
+    def _prepare_report_for_prompt(self, report: InspectionReport) -> str:
         """
         Prepare a condensed version of the report for LLM consumption.
 
@@ -370,7 +370,7 @@ class LLMSummarizer:
 
 
 def summarize_report(
-    report: "InspectionReport",
+    report: InspectionReport,
     api_key: str | None = None,
     model: str | None = None,
     logger: logging.Logger | None = None,

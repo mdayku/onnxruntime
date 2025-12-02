@@ -7,6 +7,7 @@ Unit tests for the report module (ModelInspector, InspectionReport).
 from __future__ import annotations
 
 import json
+import sys
 import tempfile
 from pathlib import Path
 
@@ -15,10 +16,8 @@ import onnx
 import pytest
 from onnx import TensorProto, helper
 
-import sys
-
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-from autodoc.report import InspectionReport, ModelInspector, ModelMetadata
+from ..report import InspectionReport, ModelInspector
 
 
 def create_simple_model() -> onnx.ModelProto:

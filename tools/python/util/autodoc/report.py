@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import logging
 import pathlib
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
@@ -78,22 +78,22 @@ class InspectionReport:
     graph_summary: GraphSummary | None = None
 
     # Metrics
-    param_counts: "ParamCounts | None" = None
-    flop_counts: "FlopCounts | None" = None
-    memory_estimates: "MemoryEstimates | None" = None
+    param_counts: ParamCounts | None = None
+    flop_counts: FlopCounts | None = None
+    memory_estimates: MemoryEstimates | None = None
 
     # Patterns
-    detected_blocks: list["Block"] = field(default_factory=list)
+    detected_blocks: list[Block] = field(default_factory=list)
     architecture_type: str = (
         "unknown"  # "transformer", "cnn", "mlp", "hybrid", "unknown"
     )
 
     # Risks
-    risk_signals: list["RiskSignal"] = field(default_factory=list)
+    risk_signals: list[RiskSignal] = field(default_factory=list)
 
     # Hardware estimates (optional, set by CLI if --hardware specified)
-    hardware_profile: "HardwareProfile | None" = None
-    hardware_estimates: "HardwareEstimates | None" = None
+    hardware_profile: HardwareProfile | None = None
+    hardware_estimates: HardwareEstimates | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert report to a JSON-serializable dictionary."""
@@ -157,7 +157,7 @@ class InspectionReport:
         # Metadata section
         lines.append("## Metadata")
         lines.append("")
-        lines.append(f"| Property | Value |")
+        lines.append("| Property | Value |")
         lines.append("|----------|-------|")
         lines.append(f"| IR Version | {self.metadata.ir_version} |")
         lines.append(
@@ -358,10 +358,10 @@ class ModelInspector:
 
     def __init__(
         self,
-        loader: "ONNXGraphLoader | None" = None,
-        metrics: "MetricsEngine | None" = None,
-        patterns: "PatternAnalyzer | None" = None,
-        risks: "RiskAnalyzer | None" = None,
+        loader: ONNXGraphLoader | None = None,
+        metrics: MetricsEngine | None = None,
+        patterns: PatternAnalyzer | None = None,
+        risks: RiskAnalyzer | None = None,
         logger: logging.Logger | None = None,
     ):
         """

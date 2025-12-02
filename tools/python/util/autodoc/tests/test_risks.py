@@ -6,6 +6,7 @@ Unit tests for the risks module (risk signal detection).
 """
 from __future__ import annotations
 
+import sys
 import tempfile
 from pathlib import Path
 
@@ -14,12 +15,10 @@ import onnx
 import pytest
 from onnx import TensorProto, helper
 
-import sys
-
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-from autodoc.analyzer import MetricsEngine, ONNXGraphLoader
-from autodoc.patterns import PatternAnalyzer
-from autodoc.risks import RiskAnalyzer
+from ..analyzer import MetricsEngine, ONNXGraphLoader
+from ..patterns import PatternAnalyzer
+from ..risks import RiskAnalyzer
 
 
 def create_deep_no_skip_model(num_layers: int = 60) -> onnx.ModelProto:

@@ -73,7 +73,7 @@ class RiskAnalyzer:
         self.logger = logger or logging.getLogger("autodoc.risks")
 
     def analyze(
-        self, graph_info: "GraphInfo", blocks: list["Block"]
+        self, graph_info: GraphInfo, blocks: list[Block]
     ) -> list[RiskSignal]:
         """
         Run all risk heuristics and return detected signals.
@@ -120,7 +120,7 @@ class RiskAnalyzer:
         return signals
 
     def check_deep_without_skips(
-        self, graph_info: "GraphInfo", blocks: list["Block"]
+        self, graph_info: GraphInfo, blocks: list[Block]
     ) -> RiskSignal | None:
         """
         Flag deep networks that lack skip connections.
@@ -155,7 +155,7 @@ class RiskAnalyzer:
 
         return None
 
-    def check_oversized_dense(self, graph_info: "GraphInfo") -> RiskSignal | None:
+    def check_oversized_dense(self, graph_info: GraphInfo) -> RiskSignal | None:
         """
         Flag excessively large fully-connected layers.
 
@@ -192,7 +192,7 @@ class RiskAnalyzer:
 
         return None
 
-    def check_dynamic_shapes(self, graph_info: "GraphInfo") -> RiskSignal | None:
+    def check_dynamic_shapes(self, graph_info: GraphInfo) -> RiskSignal | None:
         """
         Flag inputs with dynamic shapes.
 
@@ -225,7 +225,7 @@ class RiskAnalyzer:
         return None
 
     def check_missing_normalization(
-        self, graph_info: "GraphInfo", blocks: list["Block"]
+        self, graph_info: GraphInfo, blocks: list[Block]
     ) -> RiskSignal | None:
         """
         Flag deep networks without normalization layers.
@@ -269,7 +269,7 @@ class RiskAnalyzer:
 
         return None
 
-    def check_compute_bottleneck(self, graph_info: "GraphInfo") -> RiskSignal | None:
+    def check_compute_bottleneck(self, graph_info: GraphInfo) -> RiskSignal | None:
         """
         Flag single operations that dominate compute.
 
@@ -310,7 +310,7 @@ class RiskAnalyzer:
         return None
 
     def check_large_embedding(
-        self, graph_info: "GraphInfo", blocks: list["Block"]
+        self, graph_info: GraphInfo, blocks: list[Block]
     ) -> RiskSignal | None:
         """
         Flag very large embedding tables.
@@ -351,7 +351,7 @@ class RiskAnalyzer:
 
         return None
 
-    def check_unusual_activations(self, graph_info: "GraphInfo") -> RiskSignal | None:
+    def check_unusual_activations(self, graph_info: GraphInfo) -> RiskSignal | None:
         """
         Flag unusual activation function patterns.
 

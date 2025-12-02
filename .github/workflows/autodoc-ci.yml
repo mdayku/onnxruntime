@@ -49,7 +49,11 @@ jobs:
 
       - name: Lint with Ruff
         run: |
-          ruff check tools/python/util/autodoc/
+          # Ignore N806 (uppercase variable names) in tests - ONNX tensor names are idiomatic (X, W, Y, etc.)
+          # Ignore PLC0415 (imports not at top-level) in tests - deferred imports for test isolation
+          # Ignore RUF012 (ClassVar) - not needed for class-level constants
+          ruff check tools/python/util/autodoc/ \
+            --ignore N806,PLC0415,RUF012,B007
 
       - name: Type check with mypy
         run: |

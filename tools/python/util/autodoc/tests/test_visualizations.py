@@ -6,12 +6,15 @@ Unit tests for the visualization module.
 
 Tests chart generation, theming, and graceful fallback behavior.
 """
+from __future__ import annotations
+
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
+from ..analyzer import FlopCounts, MemoryEstimates, ParamCounts
+from ..report import GraphSummary, InspectionReport, ModelMetadata
 from ..visualizations import (
     THEME,
     ChartTheme,
@@ -180,9 +183,6 @@ class TestChartGeneration:
 
     def test_generate_all_creates_multiple_charts(self):
         """generate_all should create multiple chart files."""
-        from ..analyzer import FlopCounts, MemoryEstimates, ParamCounts
-        from ..report import GraphSummary, InspectionReport, ModelMetadata
-
         # Create a mock report
         metadata = ModelMetadata(
             path="test.onnx",
@@ -250,9 +250,6 @@ class TestConvenienceFunction:
 
     def test_generate_visualizations_function(self):
         """Convenience function should work correctly."""
-        from ..analyzer import FlopCounts, MemoryEstimates, ParamCounts
-        from ..report import GraphSummary, InspectionReport, ModelMetadata
-
         metadata = ModelMetadata(
             path="test.onnx",
             ir_version=8,
@@ -305,8 +302,6 @@ class TestGracefulDegradation:
         gen = VisualizationGenerator()
 
         # Even with matplotlib, empty data should return empty dict
-        from ..report import InspectionReport, ModelMetadata
-
         metadata = ModelMetadata(
             path="test.onnx",
             ir_version=8,

@@ -7,11 +7,13 @@ Unit tests for the LLM summarizer module.
 Tests API client, prompt templates, and graceful error handling.
 Note: Most tests mock the OpenAI API to avoid actual API calls.
 """
+from __future__ import annotations
+
 import os
-from unittest.mock import MagicMock, patch
 
 import pytest
 
+from ..analyzer import FlopCounts, MemoryEstimates, ParamCounts
 from ..llm_summarizer import (
     DETAILED_SUMMARY_PROMPT,
     SHORT_SUMMARY_PROMPT,
@@ -22,6 +24,7 @@ from ..llm_summarizer import (
     is_available,
     summarize_report,
 )
+from ..report import GraphSummary, InspectionReport, ModelMetadata
 
 
 class TestLLMAvailability:
@@ -149,9 +152,6 @@ class TestLLMSummarizer:
             del os.environ["OPENAI_API_KEY"]
 
         try:
-            from ..analyzer import FlopCounts, MemoryEstimates, ParamCounts
-            from ..report import GraphSummary, InspectionReport, ModelMetadata
-
             metadata = ModelMetadata(
                 path="test.onnx",
                 ir_version=8,
@@ -180,9 +180,6 @@ class TestReportPreparation:
 
     def test_prepare_report_for_prompt(self):
         """_prepare_report_for_prompt should create valid JSON."""
-        from ..analyzer import FlopCounts, MemoryEstimates, ParamCounts
-        from ..report import GraphSummary, InspectionReport, ModelMetadata
-
         metadata = ModelMetadata(
             path="models/test.onnx",
             ir_version=8,
@@ -249,8 +246,6 @@ class TestConvenienceFunction:
 
     def test_summarize_report_function(self):
         """summarize_report should work as convenience function."""
-        from ..report import InspectionReport, ModelMetadata
-
         # Save and clear env var
         original = os.environ.get("OPENAI_API_KEY")
         if "OPENAI_API_KEY" in os.environ:
@@ -287,9 +282,6 @@ class TestLLMIntegration:
 
     def test_real_summarization(self):
         """Test actual LLM summarization with real API."""
-        from ..analyzer import FlopCounts, MemoryEstimates, ParamCounts
-        from ..report import GraphSummary, InspectionReport, ModelMetadata
-
         metadata = ModelMetadata(
             path="resnet50.onnx",
             ir_version=8,

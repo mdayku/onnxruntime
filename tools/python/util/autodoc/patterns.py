@@ -77,7 +77,7 @@ class PatternAnalyzer:
     def __init__(self, logger: logging.Logger | None = None):
         self.logger = logger or logging.getLogger("autodoc.patterns")
 
-    def group_into_blocks(self, graph_info: "GraphInfo") -> list[Block]:
+    def group_into_blocks(self, graph_info: GraphInfo) -> list[Block]:
         """
         Detect all architectural blocks in the graph.
 
@@ -98,7 +98,7 @@ class PatternAnalyzer:
         self.logger.debug(f"Detected {len(blocks)} blocks")
         return blocks
 
-    def detect_conv_bn_relu(self, graph_info: "GraphInfo") -> list[Block]:
+    def detect_conv_bn_relu(self, graph_info: GraphInfo) -> list[Block]:
         """
         Find Conv-BatchNorm-ReLU sequences.
 
@@ -153,7 +153,7 @@ class PatternAnalyzer:
 
         return blocks
 
-    def detect_residual_blocks(self, graph_info: "GraphInfo") -> list[Block]:
+    def detect_residual_blocks(self, graph_info: GraphInfo) -> list[Block]:
         """
         Find residual/skip connection patterns.
 
@@ -187,7 +187,7 @@ class PatternAnalyzer:
 
         return blocks
 
-    def detect_transformer_blocks(self, graph_info: "GraphInfo") -> list[Block]:
+    def detect_transformer_blocks(self, graph_info: GraphInfo) -> list[Block]:
         """
         Find transformer attention patterns.
 
@@ -222,7 +222,7 @@ class PatternAnalyzer:
                     after_nodes.append(consumer.name)
 
             if before_nodes and after_nodes:
-                all_nodes = before_nodes + [softmax.name] + after_nodes
+                all_nodes = [*before_nodes, softmax.name, *after_nodes]
                 blocks.append(
                     Block(
                         block_type="Attention",
@@ -245,7 +245,7 @@ class PatternAnalyzer:
 
         return blocks
 
-    def detect_embedding_layers(self, graph_info: "GraphInfo") -> list[Block]:
+    def detect_embedding_layers(self, graph_info: GraphInfo) -> list[Block]:
         """
         Find embedding lookup patterns.
 
@@ -277,7 +277,7 @@ class PatternAnalyzer:
         return blocks
 
     def classify_architecture(
-        self, graph_info: "GraphInfo", blocks: list[Block]
+        self, graph_info: GraphInfo, blocks: list[Block]
     ) -> str:
         """
         Classify the overall architecture type.
@@ -314,8 +314,8 @@ class PatternAnalyzer:
             return "unknown"
 
     def _find_consumer(
-        self, output_name: str, graph_info: "GraphInfo"
-    ) -> "NodeInfo | None":
+        self, output_name: str, graph_info: GraphInfo
+    ) -> NodeInfo | None:
         """Find the first node that consumes a given output."""
         for node in graph_info.nodes:
             if output_name in node.inputs:

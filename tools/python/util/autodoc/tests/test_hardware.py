@@ -6,20 +6,19 @@ Unit tests for the hardware module (profiles, detection, estimation).
 """
 from __future__ import annotations
 
-import pytest
-
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-from autodoc.hardware import (
+from ..hardware import (
     HARDWARE_PROFILES,
     NVIDIA_A100_80GB,
     NVIDIA_JETSON_NANO,
     NVIDIA_RTX_4090,
     HardwareEstimates,
     HardwareEstimator,
-    HardwareProfile,
     get_profile,
     list_available_profiles,
 )

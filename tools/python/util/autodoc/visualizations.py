@@ -86,7 +86,7 @@ class ChartTheme:
 THEME = ChartTheme()
 
 
-def _apply_theme(fig: "Figure", ax, title: str) -> None:
+def _apply_theme(fig: Figure, ax, title: str) -> None:
     """Apply consistent theme to a matplotlib figure and axes."""
     if not _MATPLOTLIB_AVAILABLE:
         return
@@ -142,7 +142,7 @@ class VisualizationGenerator:
 
     def generate_all(
         self,
-        report: "InspectionReport",
+        report: InspectionReport,
         output_dir: Path,
     ) -> dict[str, Path]:
         """
@@ -262,7 +262,7 @@ class VisualizationGenerator:
         ax.invert_yaxis()  # Largest at top
 
         # Add value labels on bars
-        for bar, count in zip(bars, counts):
+        for bar, count in zip(bars, counts, strict=False):
             ax.text(
                 bar.get_width() + max(counts) * 0.01,
                 bar.get_y() + bar.get_height() / 2,
@@ -323,7 +323,7 @@ class VisualizationGenerator:
             figsize=(THEME.figure_height, THEME.figure_height), dpi=THEME.figure_dpi
         )
 
-        wedges, texts, autotexts = ax.pie(
+        _wedges, _texts, autotexts = ax.pie(
             sizes,
             labels=labels,
             colors=colors,
@@ -401,7 +401,7 @@ class VisualizationGenerator:
         ax.set_ylabel("FLOPs")
 
         # Add value labels on bars
-        for bar, value in zip(bars, values):
+        for bar, value in zip(bars, values, strict=False):
             ax.text(
                 bar.get_x() + bar.get_width() / 2,
                 bar.get_height() + max(values) * 0.02,
@@ -427,7 +427,7 @@ class VisualizationGenerator:
 
     def complexity_summary(
         self,
-        report: "InspectionReport",
+        report: InspectionReport,
         output_path: Path,
     ) -> Path | None:
         """
@@ -459,7 +459,7 @@ class VisualizationGenerator:
             ),
         ]
 
-        for ax, (label, value, color) in zip(axes, metrics):
+        for ax, (label, value, color) in zip(axes, metrics, strict=False):
             ax.set_facecolor(THEME.background)
 
             # Large centered value
@@ -515,9 +515,9 @@ class VisualizationGenerator:
 
     def layer_depth_profile(
         self,
-        graph_info: "GraphInfo",
-        param_counts: "ParamCounts",
-        flop_counts: "FlopCounts",
+        graph_info: GraphInfo,
+        param_counts: ParamCounts,
+        flop_counts: FlopCounts,
         output_path: Path,
     ) -> Path | None:
         """
@@ -559,7 +559,7 @@ class VisualizationGenerator:
         ax2 = ax1.twinx()
 
         # Plot cumulative params
-        line1 = ax1.fill_between(x, cum_params, alpha=0.3, color=THEME.accent_primary)
+        ax1.fill_between(x, cum_params, alpha=0.3, color=THEME.accent_primary)
         ax1.plot(
             x, cum_params, color=THEME.accent_primary, linewidth=2, label="Parameters"
         )
@@ -567,7 +567,7 @@ class VisualizationGenerator:
         ax1.tick_params(axis="y", labelcolor=THEME.accent_primary)
 
         # Plot cumulative FLOPs
-        line2 = ax2.fill_between(x, cum_flops, alpha=0.3, color=THEME.accent_secondary)
+        ax2.fill_between(x, cum_flops, alpha=0.3, color=THEME.accent_secondary)
         ax2.plot(x, cum_flops, color=THEME.accent_secondary, linewidth=2, label="FLOPs")
         ax2.set_ylabel("Cumulative FLOPs", color=THEME.accent_secondary)
         ax2.tick_params(axis="y", labelcolor=THEME.accent_secondary)
@@ -622,7 +622,7 @@ class VisualizationGenerator:
 
 
 def generate_visualizations(
-    report: "InspectionReport",
+    report: InspectionReport,
     output_dir: Path | str,
     logger: logging.Logger | None = None,
 ) -> dict[str, Path]:

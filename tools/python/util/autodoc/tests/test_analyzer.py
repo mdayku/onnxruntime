@@ -9,6 +9,8 @@ reproducible test results without external dependencies.
 """
 from __future__ import annotations
 
+# Import the modules under test
+import sys
 import tempfile
 from pathlib import Path
 
@@ -17,12 +19,9 @@ import onnx
 import pytest
 from onnx import TensorProto, helper
 
-# Import the modules under test
-import sys
-
 # Add parent directories to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-from autodoc.analyzer import MetricsEngine, ONNXGraphLoader
+from ..analyzer import MetricsEngine, ONNXGraphLoader
 
 
 def create_simple_conv_model() -> onnx.ModelProto:
@@ -221,7 +220,7 @@ class TestONNXGraphLoader:
 
         try:
             loader = ONNXGraphLoader()
-            loaded_model, graph_info = loader.load(model_path)
+            _loaded_model, graph_info = loader.load(model_path)
 
             assert graph_info.num_nodes == 1
             assert len(graph_info.inputs) == 1
