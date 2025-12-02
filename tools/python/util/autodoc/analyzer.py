@@ -121,6 +121,35 @@ class FlopCounts:
 
 
 @dataclass
+class MemoryBreakdown:
+    """Detailed memory breakdown by component type."""
+
+    # Weights by operation type
+    weights_by_op_type: dict[str, int] = field(default_factory=dict)  # op -> bytes
+    # Top weight tensors
+    largest_weights: list[tuple[str, int]] = field(
+        default_factory=list
+    )  # (name, bytes)
+    # Activation breakdown
+    activations_by_op_type: dict[str, int] = field(default_factory=dict)  # op -> bytes
+    largest_activations: list[tuple[str, int]] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return {
+            "weights_by_op_type": self.weights_by_op_type,
+            "largest_weights": [
+                {"name": name, "bytes": size}
+                for name, size in self.largest_weights[:10]
+            ],
+            "activations_by_op_type": self.activations_by_op_type,
+            "largest_activations": [
+                {"name": name, "bytes": size}
+                for name, size in self.largest_activations[:10]
+            ],
+        }
+
+
+@dataclass
 class MemoryEstimates:
     """Memory usage estimates."""
 
@@ -133,6 +162,8 @@ class MemoryEstimates:
     kv_cache_config: dict[str, int] = field(
         default_factory=dict
     )  # num_layers, hidden_dim, etc.
+    # Detailed breakdown
+    breakdown: MemoryBreakdown | None = None
 
     def to_dict(self) -> dict:
         result = {
@@ -143,6 +174,8 @@ class MemoryEstimates:
             result["kv_cache_bytes_per_token"] = self.kv_cache_bytes_per_token
             result["kv_cache_bytes_full_context"] = self.kv_cache_bytes_full_context
             result["kv_cache_config"] = self.kv_cache_config
+        if self.breakdown:
+            result["breakdown"] = self.breakdown.to_dict()
         return result
 
 
@@ -621,21 +654,29 @@ class MetricsEngine:
         """
         Estimate memory usage for the model.
 
-        Computes model size (parameters), peak activation memory, and
-        KV cache size for transformer models.
+        Computes model size (parameters), peak activation memory,
+        KV cache size for transformer models, and detailed breakdown.
 
         Args:
             graph_info: Parsed graph information.
 
         Returns:
-            MemoryEstimates with size, activation memory, and KV cache estimates.
+            MemoryEstimates with size, activation memory, KV cache, and breakdown.
         """
         estimates = MemoryEstimates()
+        breakdown = MemoryBreakdown()
 
-        # Model size: sum of initializer sizes
-        for tensor in graph_info.initializers.values():
-            # Assume float32 (4 bytes) for now
-            # Could be refined by checking tensor dtype
+        # Build mapping: initializer name -> op type that uses it
+        init_to_op: dict[str, str] = {}
+        for node in graph_info.nodes:
+            for inp in node.inputs:
+                if inp in graph_info.initializers and inp not in init_to_op:
+                    init_to_op[inp] = node.op_type
+
+        # Model size: sum of initializer sizes with breakdown by op type
+        weight_sizes: list[tuple[str, int]] = []
+        for name, tensor in graph_info.initializers.items():
+            # Determine bytes per element based on dtype
             bytes_per_elem = 4
             if hasattr(tensor, "dtype"):
                 if tensor.dtype == np.float16:
@@ -653,10 +694,25 @@ class MetricsEngine:
                 else bytes_per_elem
             )
             estimates.model_size_bytes += tensor_bytes
+            weight_sizes.append((name, tensor_bytes))
+
+            # Categorize by op type
+            op_type = init_to_op.get(name, "Other")
+            breakdown.weights_by_op_type[op_type] = (
+                breakdown.weights_by_op_type.get(op_type, 0) + tensor_bytes
+            )
+
+        # Store top 10 largest weights
+        breakdown.largest_weights = sorted(weight_sizes, key=lambda x: -x[1])[:10]
 
         # Peak activation memory: rough estimate based on intermediate tensor sizes
-        # This is a simplified model - actual memory depends on execution order
-        activation_sizes = []
+        # Build mapping: activation name -> op type that produces it
+        activation_to_op: dict[str, str] = {}
+        for node in graph_info.nodes:
+            for out in node.outputs:
+                activation_to_op[out] = node.op_type
+
+        activation_sizes: list[tuple[str, int]] = []
         for name, shape in graph_info.value_shapes.items():
             # Skip initializers (they're counted in model size)
             if name in graph_info.initializers:
@@ -668,14 +724,25 @@ class MetricsEngine:
                 activation_sizes.append((name, tensor_bytes))
                 estimates.per_layer_activation_bytes[name] = tensor_bytes
 
+                # Categorize by producing op type
+                op_type = activation_to_op.get(name, "Input")
+                breakdown.activations_by_op_type[op_type] = (
+                    breakdown.activations_by_op_type.get(op_type, 0) + tensor_bytes
+                )
+
         # Peak is approximate: sum of largest activations that might coexist
-        # A more accurate estimate would require analyzing the execution graph
         sorted_activations = sorted(activation_sizes, key=lambda x: -x[1])
         # Rough heuristic: top 3 largest activations might coexist
         top_n = min(3, len(sorted_activations))
         estimates.peak_activation_bytes = sum(
             size for _, size in sorted_activations[:top_n]
         )
+
+        # Store top 10 largest activations
+        breakdown.largest_activations = sorted_activations[:10]
+
+        # Store breakdown
+        estimates.breakdown = breakdown
 
         # Estimate KV cache for transformer models
         kv_config = self._estimate_kv_cache_config(graph_info)

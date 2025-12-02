@@ -13,24 +13,63 @@ import logging
 import os
 import pathlib
 import sys
+from typing import Any
 
 from .autodoc import ModelInspector
 from .autodoc.hardware import (
-    HARDWARE_PROFILES,
     HardwareEstimator,
     detect_local_hardware,
     get_profile,
-    list_available_profiles,
-)
-from .autodoc.visualizations import (
-    VisualizationGenerator,
-    is_available as is_viz_available,
 )
 from .autodoc.llm_summarizer import (
     LLMSummarizer,
-    is_available as is_llm_available,
+)
+from .autodoc.llm_summarizer import (
     has_api_key as has_llm_api_key,
 )
+from .autodoc.llm_summarizer import (
+    is_available as is_llm_available,
+)
+from .autodoc.visualizations import (
+    VisualizationGenerator,
+)
+from .autodoc.visualizations import (
+    is_available as is_viz_available,
+)
+
+
+class ProgressIndicator:
+    """Simple progress indicator for CLI operations."""
+
+    def __init__(self, enabled: bool = True, quiet: bool = False):
+        self.enabled = enabled and not quiet
+        self._current_step = 0
+        self._total_steps = 0
+
+    def start(self, total_steps: int, description: str = "Processing"):
+        """Start progress tracking."""
+        self._total_steps = total_steps
+        self._current_step = 0
+        if self.enabled:
+            print(f"\n{description}...")
+
+    def step(self, message: str):
+        """Mark completion of a step."""
+        self._current_step += 1
+        if self.enabled:
+            pct = (
+                (self._current_step / self._total_steps * 100)
+                if self._total_steps
+                else 0
+            )
+            print(
+                f"  [{self._current_step}/{self._total_steps}] {message} ({pct:.0f}%)"
+            )
+
+    def finish(self, message: str = "Done"):
+        """Mark completion of all steps."""
+        if self.enabled:
+            print(f"  {message}\n")
 
 
 def parse_args():
@@ -198,6 +237,12 @@ Examples:
         "--quiet",
         action="store_true",
         help="Suppress console output. Only write to files if --out-json or --out-md specified.",
+    )
+
+    parser.add_argument(
+        "--progress",
+        action="store_true",
+        help="Show progress indicators during analysis (useful for large models).",
     )
 
     return parser.parse_args()
@@ -616,10 +661,28 @@ def run_inspect():
                 sys.exit(1)
             logger.info(f"Using hardware profile: {hardware_profile.name}")
 
+    # Setup progress indicator
+    progress = ProgressIndicator(enabled=args.progress, quiet=args.quiet)
+
+    # Calculate total steps based on what will be done
+    total_steps = 2  # Load + Analyze always
+    if hardware_profile:
+        total_steps += 1
+    if args.with_plots and is_viz_available():
+        total_steps += 1
+    if args.llm_summary and is_llm_available() and has_llm_api_key():
+        total_steps += 1
+    if args.out_json or args.out_md or args.out_html:
+        total_steps += 1
+
+    progress.start(total_steps, f"Analyzing {model_path.name}")
+
     # Run inspection
     try:
+        progress.step("Loading model and extracting graph structure")
         inspector = ModelInspector(logger=logger)
         report = inspector.inspect(model_path)
+        progress.step("Computing metrics (params, FLOPs, memory)")
 
         # Add hardware estimates if profile specified
         if (
@@ -628,6 +691,7 @@ def run_inspect():
             and report.flop_counts
             and report.memory_estimates
         ):
+            progress.step(f"Estimating performance on {hardware_profile.name}")
             estimator = HardwareEstimator(logger=logger)
             hw_estimates = estimator.estimate(
                 model_params=report.param_counts.total,
@@ -680,6 +744,7 @@ def run_inspect():
             logger.warning("OPENAI_API_KEY not set. Skipping LLM summaries.")
         else:
             try:
+                progress.step(f"Generating LLM summary with {args.llm_model}")
                 logger.info(f"Generating LLM summaries with {args.llm_model}...")
                 summarizer = LLMSummarizer(model=args.llm_model, logger=logger)
                 llm_summary = summarizer.summarize(report)
@@ -700,6 +765,10 @@ def run_inspect():
         report._llm_summary = llm_summary  # type: ignore
 
     # Output results
+    has_output = args.out_json or args.out_md or args.out_html
+    if has_output:
+        progress.step("Writing output files")
+
     if args.out_json:
         try:
             args.out_json.parent.mkdir(parents=True, exist_ok=True)
@@ -717,6 +786,7 @@ def run_inspect():
                 "matplotlib not installed. Skipping visualizations. Install with: pip install matplotlib"
             )
         else:
+            progress.step("Generating visualizations")
             # Determine assets directory
             if args.assets_dir:
                 assets_dir = args.assets_dir
@@ -847,6 +917,9 @@ def run_inspect():
             print(f"  Markdown card: {args.out_md}")
         if args.out_html:
             print(f"  HTML report: {args.out_html}")
+
+    # Finish progress indicator
+    progress.finish("Analysis complete!")
 
     # Cleanup temp ONNX file if we created one
     if temp_onnx_file is not None:

@@ -288,6 +288,21 @@ class InspectionReport:
                         lines.append(f"- **Layers**: {config['num_layers']}")
                     if config.get("hidden_dim"):
                         lines.append(f"- **Hidden Dim**: {config['hidden_dim']}")
+
+                # Memory breakdown by component
+                if self.memory_estimates.breakdown:
+                    bd = self.memory_estimates.breakdown
+                    if bd.weights_by_op_type:
+                        lines.append("")
+                        lines.append("### Memory Breakdown by Op Type")
+                        lines.append("")
+                        lines.append("| Component | Size |")
+                        lines.append("|-----------|------|")
+                        sorted_weights = sorted(
+                            bd.weights_by_op_type.items(), key=lambda x: -x[1]
+                        )
+                        for op_type, size in sorted_weights[:8]:
+                            lines.append(f"| {op_type} | {self._format_bytes(size)} |")
                 lines.append("")
 
         # Architecture

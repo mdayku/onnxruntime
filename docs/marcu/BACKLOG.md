@@ -14,9 +14,9 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 | Epic | Status | Stories | Tasks Complete |
 |------|--------|---------|----------------|
 | Epic 1: Environment Setup | In Progress | 3 | 7/12 |
-| Epic 2: Core Analysis Engine | In Progress | 4 | 13/17 |
+| Epic 2: Core Analysis Engine | In Progress | 4 | 14/17 |
 | Epic 3: Pattern Analysis | In Progress | 2 | 8/9 |
-| Epic 4: CLI and Output | In Progress | 3 | 12/14 |
+| Epic 4: CLI and Output | In Progress | 3 | 13/14 |
 | Epic 4B: PyTorch Integration | In Progress | 1 | 7/8 |
 | Epic 5: Visualization | **Complete** | 3 | 12/12 |
 | Epic 6: Hardware/Compare | In Progress | 7 | 9/28 |
@@ -74,7 +74,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 2.4.1**: Calculate activation tensor sizes
 - [x] **Task 2.4.2**: Implement peak memory estimation (heuristic, top-3 activations)
 - [x] **Task 2.4.3**: Estimate KV cache size for attention models (formula: 2*layers*hidden*bytes per token)
-- [ ] **Task 2.4.4**: Add memory breakdown by component
+- [x] **Task 2.4.4**: Add memory breakdown by component (MemoryBreakdown dataclass with weights/activations by op type)
 
 ---
 
@@ -100,7 +100,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 ### Story 4.1: CLI Implementation
 - [x] **Task 4.1.1**: Implement argument parser with all flags
 - [x] **Task 4.1.2**: Wire CLI to analysis engine
-- [ ] **Task 4.1.3**: Add progress indicators for large models
+- [x] **Task 4.1.3**: Add progress indicators for large models (--progress flag with step-by-step display)
 - [x] **Task 4.1.4**: Implement error handling and exit codes
 
 ### Story 4.2: JSON Output
