@@ -17,7 +17,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 | Epic 2: Core Analysis Engine | In Progress | 4 | 12/17 |
 | Epic 3: Pattern Analysis | In Progress | 2 | 4/9 |
 | Epic 4: CLI and Output | In Progress | 3 | 9/13 |
-| Epic 5: Visualization | Not Started | 3 | 0/11 |
+| Epic 5: Visualization | Complete | 3 | 10/11 |
 | Epic 6: Hardware/Compare | In Progress | 7 | 8/28 |
 | Epic 7: LLM Integration | Not Started | 1 | 0/5 |
 | Epic 8: Testing & CI/CD | In Progress | 4 | 10/18 |
@@ -119,20 +119,21 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 ## Epic 5: Visualization Module
 
 ### Story 5.1: Chart Infrastructure
-- [ ] **Task 5.1.1**: Set up matplotlib with Agg backend
-- [ ] **Task 5.1.2**: Create consistent chart styling/theme
-- [ ] **Task 5.1.3**: Implement asset directory management
-- [ ] **Task 5.1.4**: Add graceful fallback when matplotlib unavailable
+- [x] **Task 5.1.1**: Set up matplotlib with Agg backend
+- [x] **Task 5.1.2**: Create consistent chart styling/theme (ChartTheme dataclass, dark theme)
+- [x] **Task 5.1.3**: Implement asset directory management
+- [x] **Task 5.1.4**: Add graceful fallback when matplotlib unavailable
 
 ### Story 5.2: Individual Charts
-- [ ] **Task 5.2.1**: Implement operator type histogram
-- [ ] **Task 5.2.2**: Implement layer depth profile
-- [ ] **Task 5.2.3**: Implement parameter distribution chart
-- [ ] **Task 5.2.4**: Implement shape evolution chart
+- [x] **Task 5.2.1**: Implement operator type histogram
+- [x] **Task 5.2.2**: Implement layer depth profile (cumulative params/FLOPs)
+- [x] **Task 5.2.3**: Implement parameter distribution chart (pie chart)
+- [x] **Task 5.2.4**: Implement FLOPs distribution chart
+- [x] **Task 5.2.5**: Implement complexity summary dashboard (3-panel)
 
 ### Story 5.3: Report Integration
-- [ ] **Task 5.3.1**: Embed charts in Markdown output
-- [ ] **Task 5.3.2**: Add chart captions and descriptions
+- [x] **Task 5.3.1**: Embed charts in Markdown output
+- [x] **Task 5.3.2**: Add chart captions and descriptions
 - [ ] **Task 5.3.3**: Support HTML output with embedded images
 
 ---

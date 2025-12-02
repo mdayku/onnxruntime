@@ -22,6 +22,10 @@ from .autodoc.hardware import (
     get_profile,
     list_available_profiles,
 )
+from .autodoc.visualizations import (
+    VisualizationGenerator,
+    is_available as is_viz_available,
+)
 
 
 def parse_args():
@@ -101,6 +105,22 @@ Examples:
         help="Batch size for hardware estimates (default: 1).",
     )
 
+    # Visualization options
+    viz_group = parser.add_argument_group("Visualization Options")
+    viz_group.add_argument(
+        "--with-plots",
+        action="store_true",
+        help="Generate visualization assets (requires matplotlib).",
+    )
+
+    viz_group.add_argument(
+        "--assets-dir",
+        type=pathlib.Path,
+        default=None,
+        metavar="PATH",
+        help="Directory for plot PNG files (default: same directory as output files, or 'assets/').",
+    )
+
     parser.add_argument(
         "--log-level",
         choices=["debug", "info", "warning", "error"],
@@ -132,6 +152,51 @@ def setup_logging(log_level: str) -> logging.Logger:
     )
 
     return logging.getLogger("autodoc")
+
+
+def _generate_markdown_with_plots(report, viz_paths: dict, report_dir: pathlib.Path) -> str:
+    """Generate markdown with embedded visualization images."""
+    lines = []
+    base_md = report.to_markdown()
+
+    # Split the markdown at the Graph Summary section to insert plots
+    sections = base_md.split("## Complexity Metrics")
+
+    if len(sections) < 2:
+        # No complexity section found, just append plots at end
+        lines.append(base_md)
+    else:
+        lines.append(sections[0])
+
+        # Insert visualizations section before Complexity Metrics
+        if viz_paths:
+            lines.append("## Visualizations\n")
+
+            if "complexity_summary" in viz_paths:
+                rel_path = viz_paths["complexity_summary"].relative_to(report_dir) if viz_paths["complexity_summary"].is_relative_to(report_dir) else viz_paths["complexity_summary"]
+                lines.append(f"### Complexity Overview\n")
+                lines.append(f"![Complexity Summary]({rel_path})\n")
+
+            if "op_histogram" in viz_paths:
+                rel_path = viz_paths["op_histogram"].relative_to(report_dir) if viz_paths["op_histogram"].is_relative_to(report_dir) else viz_paths["op_histogram"]
+                lines.append(f"### Operator Distribution\n")
+                lines.append(f"![Operator Histogram]({rel_path})\n")
+
+            if "param_distribution" in viz_paths:
+                rel_path = viz_paths["param_distribution"].relative_to(report_dir) if viz_paths["param_distribution"].is_relative_to(report_dir) else viz_paths["param_distribution"]
+                lines.append(f"### Parameter Distribution\n")
+                lines.append(f"![Parameter Distribution]({rel_path})\n")
+
+            if "flops_distribution" in viz_paths:
+                rel_path = viz_paths["flops_distribution"].relative_to(report_dir) if viz_paths["flops_distribution"].is_relative_to(report_dir) else viz_paths["flops_distribution"]
+                lines.append(f"### FLOPs Distribution\n")
+                lines.append(f"![FLOPs Distribution]({rel_path})\n")
+
+            lines.append("")
+
+        lines.append("## Complexity Metrics" + sections[1])
+
+    return "\n".join(lines)
 
 
 def run_inspect():
@@ -258,10 +323,41 @@ def run_inspect():
             logger.error(f"Failed to write JSON report: {e}")
             sys.exit(1)
 
+    # Generate visualizations if requested
+    viz_paths = {}
+    if args.with_plots:
+        if not is_viz_available():
+            logger.warning("matplotlib not installed. Skipping visualizations. Install with: pip install matplotlib")
+        else:
+            # Determine assets directory
+            if args.assets_dir:
+                assets_dir = args.assets_dir
+            elif args.out_md:
+                assets_dir = args.out_md.parent / "assets"
+            elif args.out_json:
+                assets_dir = args.out_json.parent / "assets"
+            else:
+                assets_dir = pathlib.Path("assets")
+
+            try:
+                viz_gen = VisualizationGenerator(logger=logger)
+                viz_paths = viz_gen.generate_all(report, assets_dir)
+                logger.info(f"Generated {len(viz_paths)} visualization assets in {assets_dir}")
+            except Exception as e:
+                logger.warning(f"Failed to generate some visualizations: {e}")
+                if args.log_level == "debug":
+                    import traceback
+                    traceback.print_exc()
+
     if args.out_md:
         try:
             args.out_md.parent.mkdir(parents=True, exist_ok=True)
-            args.out_md.write_text(report.to_markdown(), encoding="utf-8")
+            # Generate markdown with or without embedded visualizations
+            if viz_paths:
+                md_content = _generate_markdown_with_plots(report, viz_paths, args.out_md.parent)
+            else:
+                md_content = report.to_markdown()
+            args.out_md.write_text(md_content, encoding="utf-8")
             logger.info(f"Markdown model card written to: {args.out_md}")
         except Exception as e:
             logger.error(f"Failed to write Markdown report: {e}")

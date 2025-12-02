@@ -32,6 +32,13 @@ from .hardware import (
 from .patterns import PatternAnalyzer
 from .report import InspectionReport, ModelInspector
 from .risks import RiskAnalyzer, RiskSignal
+from .visualizations import (
+    THEME,
+    ChartTheme,
+    VisualizationGenerator,
+    generate_visualizations,
+    is_available as is_visualization_available,
+)
 
 __all__ = [
     "ModelInspector",
@@ -50,4 +57,10 @@ __all__ = [
     "detect_local_hardware",
     "get_profile",
     "list_available_profiles",
+    # Visualization
+    "VisualizationGenerator",
+    "ChartTheme",
+    "THEME",
+    "generate_visualizations",
+    "is_visualization_available",
 ]
