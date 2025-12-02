@@ -561,6 +561,56 @@ class InspectionReport:
             )
         html_parts.append("</section>")
 
+        # Complexity Metrics Details (KV Cache + Memory Breakdown)
+        if self.memory_estimates:
+            # KV Cache section (Task 4.4.2)
+            if self.memory_estimates.kv_cache_bytes_per_token > 0:
+                html_parts.append('<section class="kv-cache">')
+                html_parts.append("<h2>KV Cache (Transformer Inference)</h2>")
+                config = self.memory_estimates.kv_cache_config
+                html_parts.append("<table>")
+                html_parts.append("<tr><th>Metric</th><th>Value</th></tr>")
+                html_parts.append(
+                    f"<tr><td>Per Token</td><td>{self._format_bytes(self.memory_estimates.kv_cache_bytes_per_token)}</td></tr>"
+                )
+                if config.get("seq_len"):
+                    html_parts.append(
+                        f"<tr><td>Full Context (seq={config['seq_len']})</td>"
+                        f"<td>{self._format_bytes(self.memory_estimates.kv_cache_bytes_full_context)}</td></tr>"
+                    )
+                if config.get("num_layers"):
+                    html_parts.append(
+                        f"<tr><td>Layers</td><td>{config['num_layers']}</td></tr>"
+                    )
+                if config.get("hidden_dim"):
+                    html_parts.append(
+                        f"<tr><td>Hidden Dim</td><td>{config['hidden_dim']}</td></tr>"
+                    )
+                html_parts.append("</table></section>")
+
+            # Memory Breakdown by Op Type (Task 4.4.3)
+            if self.memory_estimates.breakdown:
+                bd = self.memory_estimates.breakdown
+                if bd.weights_by_op_type:
+                    html_parts.append('<section class="memory-breakdown">')
+                    html_parts.append("<h2>Memory Breakdown by Op Type</h2>")
+                    html_parts.append("<table>")
+                    html_parts.append("<tr><th>Component</th><th>Size</th></tr>")
+                    sorted_weights = sorted(
+                        bd.weights_by_op_type.items(), key=lambda x: -x[1]
+                    )
+                    for op_type, size in sorted_weights[:8]:
+                        html_parts.append(
+                            f"<tr><td>{op_type}</td><td>{self._format_bytes(size)}</td></tr>"
+                        )
+                    if len(sorted_weights) > 8:
+                        remaining = sum(s for _, s in sorted_weights[8:])
+                        html_parts.append(
+                            f"<tr><td>Other ({len(sorted_weights) - 8} types)</td>"
+                            f"<td>{self._format_bytes(remaining)}</td></tr>"
+                        )
+                    html_parts.append("</table></section>")
+
         # Visualizations
         if images:
             html_parts.append('<section class="visualizations">')
@@ -636,6 +686,22 @@ class InspectionReport:
                 for name, shape in self.graph_summary.output_shapes.items():
                     html_parts.append(f"<li><code>{name}</code>: {shape}</li>")
                 html_parts.append("</ul>")
+
+            # Operator Distribution (Task 4.4.1)
+            if self.graph_summary.op_type_counts:
+                html_parts.append("<h3>Operator Distribution</h3>")
+                html_parts.append("<table>")
+                html_parts.append("<tr><th>Operator</th><th>Count</th></tr>")
+                sorted_ops = sorted(
+                    self.graph_summary.op_type_counts.items(), key=lambda x: -x[1]
+                )
+                for op, count in sorted_ops[:15]:
+                    html_parts.append(f"<tr><td>{op}</td><td>{count}</td></tr>")
+                if len(sorted_ops) > 15:
+                    html_parts.append(
+                        f"<tr><td>...</td><td>({len(sorted_ops) - 15} more)</td></tr>"
+                    )
+                html_parts.append("</table>")
 
         html_parts.append("</section>")
 
@@ -1028,6 +1094,26 @@ class InspectionReport:
             font-family: 'SF Mono', Monaco, 'Courier New', monospace;
             font-size: 0.9em;
             color: var(--accent-coral);
+        }}
+
+        /* KV Cache Section */
+        .kv-cache {{
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent-green);
+        }}
+
+        .kv-cache h2 {{
+            color: var(--accent-green);
+            border-bottom-color: var(--accent-green);
+        }}
+
+        /* Memory Breakdown Section */
+        .memory-breakdown {{
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 12px;
         }}
 
         /* Architecture Section */

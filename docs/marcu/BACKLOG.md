@@ -16,7 +16,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 | Epic 1: Environment Setup | In Progress | 3 | 7/12 |
 | Epic 2: Core Analysis Engine | **Complete** | 4 | 17/17 |
 | Epic 3: Pattern Analysis | **Complete** | 2 | 9/9 |
-| Epic 4: CLI and Output | In Progress | 4 | 14/18 |
+| Epic 4: CLI and Output | In Progress | 4 | 17/18 |
 | Epic 4B: PyTorch Integration | In Progress | 2 | 12/14 |
 | Epic 5: Visualization | **Complete** | 3 | 12/12 |
 | Epic 6: Hardware/Compare | In Progress | 7 | 9/28 |
@@ -118,10 +118,10 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 4.3.6**: Add executive summary section (matches HTML, shows LLM summary)
 
 ### Story 4.4: HTML Report Parity
-- [ ] **Task 4.4.1**: Add Operator Distribution table to HTML (op counts)
-- [ ] **Task 4.4.2**: Add KV Cache section to HTML (per-token, full-context, layers, hidden_dim)
-- [ ] **Task 4.4.3**: Add Memory Breakdown by Op Type table to HTML
-- [ ] **Task 4.4.4**: Add Architecture section to HTML (detected type + detected blocks)
+- [x] **Task 4.4.1**: Add Operator Distribution table to HTML (op counts)
+- [x] **Task 4.4.2**: Add KV Cache section to HTML (per-token, full-context, layers, hidden_dim)
+- [x] **Task 4.4.3**: Add Memory Breakdown by Op Type table to HTML
+- [x] **Task 4.4.4**: Add Architecture section to HTML (detected type + detected blocks)
 
 ---
 
