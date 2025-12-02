@@ -20,7 +20,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 | Epic 5: Visualization | Not Started | 3 | 0/11 |
 | Epic 6: Hardware/Compare | In Progress | 7 | 8/28 |
 | Epic 7: LLM Integration | Not Started | 1 | 0/5 |
-| Epic 8: Testing & CI/CD | Not Started | 4 | 0/18 |
+| Epic 8: Testing & CI/CD | In Progress | 4 | 10/18 |
 | Epic 9: Demo/Deliverables | Not Started | 3 | 0/13 |
 
 ---
@@ -207,10 +207,10 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 ## Epic 8: Testing, CI/CD, and Quality
 
 ### Story 8.1: Unit Tests
-- [ ] **Task 8.1.1**: Test param counting with known models
-- [ ] **Task 8.1.2**: Test FLOP estimation accuracy
-- [ ] **Task 8.1.3**: Test risk heuristic detection
-- [ ] **Task 8.1.4**: Test JSON schema compliance
+- [x] **Task 8.1.1**: Test param counting with known models
+- [x] **Task 8.1.2**: Test FLOP estimation accuracy
+- [x] **Task 8.1.3**: Test risk heuristic detection
+- [x] **Task 8.1.4**: Test JSON schema compliance
 
 ### Story 8.2: Integration Tests
 - [ ] **Task 8.2.1**: Test CLI end-to-end with ResNet
@@ -219,18 +219,18 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [ ] **Task 8.2.4**: Test visualization generation
 
 ### Story 8.3: Documentation
-- [ ] **Task 8.3.1**: Write tool README
+- [x] **Task 8.3.1**: Write tool README
 - [ ] **Task 8.3.2**: Add inline code documentation
 - [ ] **Task 8.3.3**: Create example scripts
 - [ ] **Task 8.3.4**: Document JSON schemas
 
 ### Story 8.4: CI/CD Pipeline (GitHub Actions)
-- [ ] **Task 8.4.1**: Create `.github/workflows/autodoc-ci.yml` workflow file
-- [ ] **Task 8.4.2**: Add Python linting step (ruff/flake8)
-- [ ] **Task 8.4.3**: Add type checking step (mypy)
-- [ ] **Task 8.4.4**: Add unit test step (pytest) with coverage reporting
-- [ ] **Task 8.4.5**: Add integration test step with sample ONNX models
-- [ ] **Task 8.4.6**: Cache pip dependencies for faster CI runs
+- [x] **Task 8.4.1**: Create `.github/workflows/autodoc-ci.yml` workflow file
+- [x] **Task 8.4.2**: Add Python linting step (ruff/flake8)
+- [x] **Task 8.4.3**: Add type checking step (mypy)
+- [x] **Task 8.4.4**: Add unit test step (pytest) with coverage reporting
+- [x] **Task 8.4.5**: Add integration test step with sample ONNX models
+- [x] **Task 8.4.6**: Cache pip dependencies for faster CI runs
 
 ---
 
