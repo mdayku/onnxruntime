@@ -18,8 +18,10 @@ It provides:
 - **FLOP estimates** - Identify compute hotspots
 - **Memory analysis** - Peak activation memory and VRAM requirements
 - **Risk signals** - Detect problematic architecture patterns
-- **Hardware estimates** - Static GPU utilization predictions for 30+ NVIDIA profiles
-- **Model cards** - Human-readable Markdown documentation
+- **Hardware estimates** - GPU utilization predictions for 30+ NVIDIA profiles (including Jetson)
+- **Visualizations** - Operator histograms, parameter/FLOPs distribution charts
+- **LLM Summaries** - AI-generated executive summaries (optional, requires OpenAI API key)
+- **Shareable Reports** - HTML (single file), Markdown, and JSON output formats
 
 ---
 
@@ -42,6 +44,15 @@ python model_inspect.py model.onnx --out-json report.json
 
 # Generate Markdown model card
 python model_inspect.py model.onnx --out-md model_card.md
+
+# Generate shareable HTML report (single file with embedded images)
+python model_inspect.py model.onnx --out-html report.html --with-plots
+
+# Add AI-generated executive summary (requires OPENAI_API_KEY)
+python model_inspect.py model.onnx --llm-summary --out-html report.html
+
+# Full report with everything
+python model_inspect.py model.onnx --hardware auto --with-plots --llm-summary --out-html full_report.html
 
 # Specify precision and batch size for hardware estimates
 python model_inspect.py model.onnx --hardware rtx4090 --precision fp16 --batch-size 8
@@ -165,7 +176,8 @@ Risk Signals: 1
 ### Optional
 
 - `psutil` - For CPU memory detection (auto-detect mode)
-- `matplotlib` - For visualization support (coming soon)
+- `matplotlib` - For visualization charts (`--with-plots`)
+- `openai` - For LLM-powered summaries (`--llm-summary`)
 
 ### Installation
 
@@ -177,8 +189,24 @@ cd onnxruntime
 # Install dependencies
 pip install onnx numpy protobuf
 
-# Optional: for auto-detection of CPU info
-pip install psutil
+# Optional: for full feature set
+pip install psutil matplotlib openai
+```
+
+### LLM Summary Setup (Optional)
+
+To enable AI-generated executive summaries:
+
+```bash
+# Set your OpenAI API key
+# Linux/macOS:
+export OPENAI_API_KEY="sk-your-key-here"
+
+# Windows PowerShell:
+$env:OPENAI_API_KEY = "sk-your-key-here"
+
+# Windows (Permanent):
+[System.Environment]::SetEnvironmentVariable("OPENAI_API_KEY", "sk-your-key", "User")
 ```
 
 ---
@@ -198,7 +226,10 @@ onnxruntime/
           hardware.py               # 30+ hardware profiles, auto-detection
           patterns.py               # Block detection (Conv-BN-Relu, Attention, etc.)
           risks.py                  # Risk signal heuristics
-          report.py                 # ModelInspector orchestrator, JSON/Markdown output
+          report.py                 # ModelInspector orchestrator, JSON/Markdown/HTML output
+          visualizations.py         # Chart generation (matplotlib)
+          llm_summarizer.py         # LLM-powered summaries (OpenAI)
+          tests/                    # Unit and integration tests
 
 docs/marcu/
   README.md                         # This file

@@ -95,6 +95,9 @@ class InspectionReport:
     hardware_profile: HardwareProfile | None = None
     hardware_estimates: HardwareEstimates | None = None
 
+    # LLM summary (optional, set by CLI if --llm-summary specified)
+    llm_summary: dict[str, Any] | None = None
+
     def to_dict(self) -> dict[str, Any]:
         """Convert report to a JSON-serializable dictionary."""
         import numpy as np
@@ -565,7 +568,7 @@ class InspectionReport:
 
             # Device specs
             html_parts.append("<h3>Device Specifications</h3>")
-            html_parts.append(f"<ul>")
+            html_parts.append("<ul>")
             html_parts.append(
                 f"<li><strong>VRAM:</strong> {self._format_bytes(self.hardware_profile.vram_bytes)}</li>"
             )

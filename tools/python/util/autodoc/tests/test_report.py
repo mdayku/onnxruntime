@@ -175,6 +175,103 @@ class TestInspectionReport:
         finally:
             model_path.unlink()
 
+    def test_to_html_basic(self):
+        """Test HTML generation produces valid HTML structure."""
+        model = create_simple_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            inspector = ModelInspector()
+            report = inspector.inspect(model_path)
+
+            html = report.to_html()
+            assert isinstance(html, str)
+            assert "<!DOCTYPE html>" in html
+            assert "<html" in html
+            assert "</html>" in html
+            assert "ONNX Autodoc" in html
+        finally:
+            model_path.unlink()
+
+    def test_to_html_contains_sections(self):
+        """Test HTML contains expected sections."""
+        model = create_simple_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            inspector = ModelInspector()
+            report = inspector.inspect(model_path)
+
+            html = report.to_html()
+            # Should have key sections
+            assert "Model Details" in html
+            assert "Metadata" in html
+            assert "Graph Summary" in html
+        finally:
+            model_path.unlink()
+
+    def test_to_html_with_llm_summary(self):
+        """Test HTML includes LLM summary when provided."""
+        model = create_simple_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            inspector = ModelInspector()
+            report = inspector.inspect(model_path)
+
+            # Add mock LLM summary
+            report.llm_summary = {
+                "success": True,
+                "short_summary": "Test short summary.",
+                "detailed_summary": "Test detailed summary paragraph.",
+                "model": "test-model",
+            }
+
+            html = report.to_html()
+            assert "Executive Summary" in html
+            assert "Test short summary" in html
+            assert "Test detailed summary" in html
+        finally:
+            model_path.unlink()
+
+    def test_to_html_embeds_images(self):
+        """Test HTML embeds images as base64 when provided."""
+        model = create_simple_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            inspector = ModelInspector()
+            report = inspector.inspect(model_path)
+
+            # Create a temp image file
+            with tempfile.TemporaryDirectory() as tmpdir:
+                # Create a minimal PNG (1x1 pixel)
+                import base64
+
+                # Minimal valid PNG
+                png_data = base64.b64decode(
+                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+                )
+                img_path = Path(tmpdir) / "test.png"
+                img_path.write_bytes(png_data)
+
+                html = report.to_html(image_paths={"test_chart": img_path})
+                assert "data:image/png;base64," in html
+        finally:
+            model_path.unlink()
+
     def test_format_number(self):
         """Test number formatting utility."""
         assert InspectionReport._format_number(1_000) == "1.00K"

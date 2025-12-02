@@ -16,11 +16,11 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 | Epic 1: Environment Setup | In Progress | 3 | 7/12 |
 | Epic 2: Core Analysis Engine | In Progress | 4 | 12/17 |
 | Epic 3: Pattern Analysis | In Progress | 2 | 7/9 |
-| Epic 4: CLI and Output | In Progress | 3 | 10/13 |
-| Epic 5: Visualization | **Complete** | 3 | 11/12 |
-| Epic 6: Hardware/Compare | In Progress | 7 | 8/28 |
-| Epic 7: LLM Integration | Not Started | 1 | 0/5 |
-| Epic 8: Testing & CI/CD | In Progress | 4 | 11/18 |
+| Epic 4: CLI and Output | In Progress | 3 | 11/14 |
+| Epic 5: Visualization | **Complete** | 3 | 12/12 |
+| Epic 6: Hardware/Compare | In Progress | 7 | 9/28 |
+| Epic 7: LLM Integration | **Complete** | 1 | 5/5 |
+| Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 |
 | Epic 9: Demo/Deliverables | Not Started | 3 | 0/13 |
 
 ---
@@ -31,7 +31,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 1.1.1**: Fork microsoft/onnxruntime repository
 - [x] **Task 1.1.2**: Set up local development environment (Python 3.10+, CMake, etc.)
 - [x] **Task 1.1.3**: Successfully build ONNX Runtime from source (C++ complete, CUDA provider built)
-- [x] **Task 1.1.4**: Build Python wheel (with CUDA provider) *(complete)*
+- [ ] **Task 1.1.4**: Build Python wheel (requires cuDNN install, deferred - Autodoc works without it)
 - [ ] **Task 1.1.5**: Run existing test suite to verify build
 
 ### Story 1.2: Codebase Familiarization
@@ -198,14 +198,14 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 
 ---
 
-## Epic 7: LLM Integration (Optional)
+## Epic 7: LLM Integration (Optional) - **COMPLETE**
 
 ### Story 7.1: LLM Summarizer
-- [ ] **Task 7.1.1**: Implement API client abstraction
-- [ ] **Task 7.1.2**: Create prompt templates for model summarization
-- [ ] **Task 7.1.3**: Generate short summary (1-2 sentences)
-- [ ] **Task 7.1.4**: Generate detailed summary (paragraph)
-- [ ] **Task 7.1.5**: Handle API failures gracefully
+- [x] **Task 7.1.1**: Implement API client abstraction (OpenAI client in llm_summarizer.py)
+- [x] **Task 7.1.2**: Create prompt templates for model summarization
+- [x] **Task 7.1.3**: Generate short summary (1-2 sentences)
+- [x] **Task 7.1.4**: Generate detailed summary (paragraph)
+- [x] **Task 7.1.5**: Handle API failures gracefully
 
 ---
 
