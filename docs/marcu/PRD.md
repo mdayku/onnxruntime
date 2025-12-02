@@ -7,8 +7,8 @@
 | Project | ONNX Autodoc / Model Architecture Inspector |
 | Author | Marcus |
 | Version | 1.0 |
-| Last Updated | December 2025 |
-| Status | Draft |
+| Last Updated | December 2, 2025 |
+| Status | In Development |
 
 **Related Documents:**
 - [BACKLOG.md](BACKLOG.md) - Epic/Story/Task tracking
@@ -920,3 +920,4 @@ The tool should always produce *some* output, even if partial:
 | Dec 2, 2025 | Testing | Created comprehensive unit test suite: test_analyzer.py, test_patterns.py, test_risks.py, test_hardware.py, test_report.py | Code quality and regression prevention |
 | Dec 2, 2025 | CI/CD | Added `.github/workflows/autodoc-ci.yml` with lint, type check, unit tests, and integration tests | Automated quality gates |
 | Dec 2, 2025 | Visualization | Added `visualizations.py` with matplotlib Agg backend, dark theme, 4 chart types, CLI `--with-plots`/`--assets-dir`, Markdown embedding, 17 tests | Epic 5 complete |
+| Dec 2, 2025 | Build | C++ ONNX Runtime build complete with CUDA provider (357MB); Python wheel build in progress | Environment setup milestone |

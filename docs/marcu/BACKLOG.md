@@ -13,14 +13,14 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 
 | Epic | Status | Stories | Tasks Complete |
 |------|--------|---------|----------------|
-| Epic 1: Environment Setup | In Progress | 3 | 5/12 |
+| Epic 1: Environment Setup | In Progress | 3 | 7/12 |
 | Epic 2: Core Analysis Engine | In Progress | 4 | 12/17 |
-| Epic 3: Pattern Analysis | In Progress | 2 | 4/9 |
-| Epic 4: CLI and Output | In Progress | 3 | 9/13 |
-| Epic 5: Visualization | Complete | 3 | 10/11 |
+| Epic 3: Pattern Analysis | In Progress | 2 | 7/9 |
+| Epic 4: CLI and Output | In Progress | 3 | 10/13 |
+| Epic 5: Visualization | **Complete** | 3 | 11/12 |
 | Epic 6: Hardware/Compare | In Progress | 7 | 8/28 |
 | Epic 7: LLM Integration | Not Started | 1 | 0/5 |
-| Epic 8: Testing & CI/CD | In Progress | 4 | 10/18 |
+| Epic 8: Testing & CI/CD | In Progress | 4 | 11/18 |
 | Epic 9: Demo/Deliverables | Not Started | 3 | 0/13 |
 
 ---
@@ -30,8 +30,9 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 ### Story 1.1: Fork and Build ONNX Runtime
 - [x] **Task 1.1.1**: Fork microsoft/onnxruntime repository
 - [x] **Task 1.1.2**: Set up local development environment (Python 3.10+, CMake, etc.)
-- [ ] **Task 1.1.3**: Successfully build ONNX Runtime from source *(in progress - CUDA kernels)*
-- [ ] **Task 1.1.4**: Run existing test suite to verify build
+- [x] **Task 1.1.3**: Successfully build ONNX Runtime from source (C++ complete, CUDA provider built)
+- [ ] **Task 1.1.4**: Build Python wheel *(in progress)*
+- [ ] **Task 1.1.5**: Run existing test suite to verify build
 
 ### Story 1.2: Codebase Familiarization
 - [x] **Task 1.2.1**: Map key directories and their purposes
@@ -112,7 +113,8 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 4.3.2**: Implement model card header section
 - [x] **Task 4.3.3**: Generate metrics tables
 - [x] **Task 4.3.4**: Generate risk signals section
-- [ ] **Task 4.3.5**: Add executive summary section
+- [x] **Task 4.3.5**: Add hardware estimates section
+- [ ] **Task 4.3.6**: Add executive summary section
 
 ---
 
@@ -217,7 +219,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [ ] **Task 8.2.1**: Test CLI end-to-end with ResNet
 - [ ] **Task 8.2.2**: Test CLI end-to-end with BERT
 - [ ] **Task 8.2.3**: Test compare mode with quantized variants
-- [ ] **Task 8.2.4**: Test visualization generation
+- [x] **Task 8.2.4**: Test visualization generation (17 tests, all passing)
 
 ### Story 8.3: Documentation
 - [x] **Task 8.3.1**: Write tool README
