@@ -214,6 +214,7 @@ class TestHardwareEstimatesDataclass:
             fits_in_vram=True,
             theoretical_latency_ms=5.5,
             compute_utilization_estimate=0.75,
+            gpu_saturation=0.000001,  # Tiny model on big GPU
             bottleneck="compute",
             model_flops=1_000_000_000,
             hardware_peak_tflops=312.0,
@@ -228,6 +229,7 @@ class TestHardwareEstimatesDataclass:
         assert data["fits_in_vram"] is True
         assert data["theoretical_latency_ms"] == 5.5
         assert data["bottleneck"] == "compute"
+        assert data["gpu_saturation"] == 0.000001
 
 
 if __name__ == "__main__":

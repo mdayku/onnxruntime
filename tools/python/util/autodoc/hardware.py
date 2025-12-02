@@ -831,7 +831,10 @@ class HardwareEstimates:
 
     # Performance
     theoretical_latency_ms: float
-    compute_utilization_estimate: float  # 0.0 - 1.0
+    compute_utilization_estimate: (
+        float  # 0.0 - 1.0, roofline (compute_time/memory_time)
+    )
+    gpu_saturation: float  # 0.0 - 1.0, model_flops / gpu_capacity per inference
     bottleneck: str  # "compute", "memory_bandwidth", "vram"
 
     # Context
@@ -847,6 +850,7 @@ class HardwareEstimates:
             "fits_in_vram": self.fits_in_vram,
             "theoretical_latency_ms": round(self.theoretical_latency_ms, 2),
             "compute_utilization_estimate": round(self.compute_utilization_estimate, 2),
+            "gpu_saturation": round(self.gpu_saturation, 6),
             "bottleneck": self.bottleneck,
         }
 
@@ -938,6 +942,10 @@ class HardwareEstimator:
             theoretical_latency = compute_time_ms
             utilization = 0.7  # Assume 70% compute utilization in compute-bound case
 
+        # GPU Saturation: what fraction of GPU's 1-second capacity does this model use?
+        # model_flops / (peak_tflops * 1e12) = fraction of 1 second of GPU compute
+        gpu_saturation = total_flops / (peak_tflops * 1e12) if peak_tflops > 0 else 0.0
+
         return HardwareEstimates(
             device=hardware.name,
             precision=precision,
@@ -946,6 +954,7 @@ class HardwareEstimator:
             fits_in_vram=fits_in_vram,
             theoretical_latency_ms=theoretical_latency,
             compute_utilization_estimate=min(utilization, 1.0),
+            gpu_saturation=gpu_saturation,
             bottleneck=bottleneck,
             model_flops=model_flops,
             hardware_peak_tflops=peak_tflops,

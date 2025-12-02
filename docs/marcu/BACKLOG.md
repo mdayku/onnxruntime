@@ -156,8 +156,9 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 ### Story 6.2: Hardware Estimates
 - [x] **Task 6.2.1**: Implement VRAM requirement estimation
 - [x] **Task 6.2.2**: Implement theoretical latency bounds
-- [x] **Task 6.2.3**: Estimate compute utilization
+- [x] **Task 6.2.3**: Estimate compute utilization (roofline-based: compute_time/memory_time)
 - [x] **Task 6.2.4**: Identify bottleneck (compute vs memory vs vram)
+- [x] **Task 6.2.5**: Add GPU Saturation metric (model_flops / gpu_peak_capacity) - shows % of GPU compute used per inference
 
 ### Story 6.3: Compare Mode CLI
 - [ ] **Task 6.3.1**: Implement multi-model argument parsing

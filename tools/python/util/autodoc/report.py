@@ -285,6 +285,10 @@ class InspectionReport:
                 lines.append(
                     f"| Compute Utilization | {hw.compute_utilization_estimate:.0%} |"
                 )
+                # GPU Saturation: what % of GPU's 1-second capacity this inference uses
+                lines.append(
+                    f"| GPU Saturation | {hw.gpu_saturation:.2e} ({hw.gpu_saturation * 100:.4f}%) |"
+                )
             lines.append("")
 
             # Add device specs
