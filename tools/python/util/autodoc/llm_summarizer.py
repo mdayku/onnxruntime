@@ -107,7 +107,10 @@ class LLMSummarizer:
     """
 
     DEFAULT_MODEL: ClassVar[str] = "gpt-4o-mini"  # Cost-effective, fast, good quality
-    FALLBACK_MODELS: ClassVar[list[str]] = ["gpt-3.5-turbo", "gpt-4o"]  # Fallbacks if primary fails
+    FALLBACK_MODELS: ClassVar[list[str]] = [
+        "gpt-3.5-turbo",
+        "gpt-4o",
+    ]  # Fallbacks if primary fails
 
     def __init__(
         self,
