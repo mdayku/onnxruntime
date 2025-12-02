@@ -373,19 +373,25 @@ mypy tools/python/util/autodoc/
 ## Roadmap
 
 ### Implemented
-- [x] Core analysis engine (param counting, FLOP estimation)
+- [x] Core analysis engine (param counting, FLOP estimation, memory breakdown)
 - [x] Pattern detection (Conv-BN-Relu, Attention, Residual)
-- [x] Risk signal heuristics
+- [x] Risk signal heuristics with configurable thresholds
 - [x] 30+ hardware profiles (data center, Jetson, consumer)
 - [x] Auto-detection of local NVIDIA GPUs
-- [x] JSON and Markdown output
-- [x] CLI with hardware options
+- [x] JSON, Markdown, and HTML report output
+- [x] CLI with hardware options and progress indicators
+- [x] Visualization module (matplotlib charts: op histogram, param/FLOP distribution, layer depth)
+- [x] LLM-powered executive summaries (OpenAI integration)
+- [x] PyTorch-to-ONNX conversion (--from-pytorch)
+- [x] Ultralytics/YOLO metadata extraction (class names, task type)
+- [x] KV cache estimation for transformer models
+- [x] Attention FLOP calculation (Q/K/V projections, softmax, output)
 
 ### Coming Soon
-- [ ] Visualization module (matplotlib charts)
-- [ ] Compare mode for quantized variants
-- [ ] LLM-powered summaries
-- [ ] HTML report output
+- [ ] Compare mode for quantized variants (fp32/fp16/int8 side-by-side)
+- [ ] HTML report parity (add Operator Distribution, KV Cache, Architecture sections)
+- [ ] Integration tests with ResNet and BERT
+- [ ] Cloud instance profiles (AWS p4d/g5, Azure NC/ND, GCP a2/g2)
 
 ---
 
