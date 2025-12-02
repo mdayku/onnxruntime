@@ -130,7 +130,9 @@ class MemoryEstimates:
     # KV cache estimates for transformer models
     kv_cache_bytes_per_token: int = 0  # KV cache per token (for streaming inference)
     kv_cache_bytes_full_context: int = 0  # Total KV cache at max seq length
-    kv_cache_config: dict[str, int] = field(default_factory=dict)  # num_layers, hidden_dim, etc.
+    kv_cache_config: dict[str, int] = field(
+        default_factory=dict
+    )  # num_layers, hidden_dim, etc.
 
     def to_dict(self) -> dict:
         result = {
@@ -713,10 +715,9 @@ class MetricsEngine:
 
         # Count attention ops to estimate number of layers
         # Each transformer layer typically has one attention block
-        mha_count = (
-            graph_info.op_type_counts.get("Attention", 0)
-            + graph_info.op_type_counts.get("MultiHeadAttention", 0)
-        )
+        mha_count = graph_info.op_type_counts.get(
+            "Attention", 0
+        ) + graph_info.op_type_counts.get("MultiHeadAttention", 0)
         softmax_count = graph_info.op_type_counts.get("Softmax", 0)
 
         # Use MHA count if available, otherwise estimate from Softmax

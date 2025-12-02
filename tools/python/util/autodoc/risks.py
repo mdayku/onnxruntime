@@ -57,7 +57,9 @@ class RiskThresholds:
 
     # Minimum thresholds - don't bother analyzing tiny models
     min_params_for_analysis: int = 100_000  # 100K params minimum
-    min_flops_for_bottleneck: int = 1_000_000_000  # 1B FLOPs before flagging bottlenecks
+    min_flops_for_bottleneck: int = (
+        1_000_000_000  # 1B FLOPs before flagging bottlenecks
+    )
     min_nodes_for_depth_check: int = 20  # At least 20 nodes before checking depth
 
     # Thresholds for risk detection

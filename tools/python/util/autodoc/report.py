@@ -175,9 +175,7 @@ class InspectionReport:
             lines.append("## Executive Summary")
             lines.append("")
             if self.llm_summary.get("short_summary"):
-                lines.append(
-                    f"**TL;DR:** {self.llm_summary['short_summary']}"
-                )
+                lines.append(f"**TL;DR:** {self.llm_summary['short_summary']}")
                 lines.append("")
             if self.llm_summary.get("detailed_summary"):
                 lines.append("")
