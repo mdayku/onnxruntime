@@ -688,6 +688,157 @@ jobs:
           path: reports/
 ```
 
+### 6.4 ONNX Graph Representation Classes
+
+Understanding the ONNX graph data structures is essential for extending the autodoc tool.
+
+#### 6.4.1 ONNX Python API (used by Autodoc)
+
+| Class | Purpose | Key Attributes |
+|-------|---------|----------------|
+| `onnx.ModelProto` | Top-level model container | `graph`, `ir_version`, `producer_name`, `opset_import` |
+| `onnx.GraphProto` | Computational graph | `node`, `input`, `output`, `initializer`, `value_info` |
+| `onnx.NodeProto` | Single operation | `op_type`, `name`, `input`, `output`, `attribute`, `domain` |
+| `onnx.TensorProto` | Weight/initializer tensor | `dims`, `data_type`, `raw_data`, `name` |
+| `onnx.ValueInfoProto` | Input/output tensor info | `name`, `type` (includes shape via `tensor_type.shape`) |
+| `onnx.AttributeProto` | Node attribute | `name`, `type`, `i`, `f`, `s`, `ints`, `floats`, etc. |
+
+#### 6.4.2 How Autodoc Uses These Classes
+
+```python
+# Loading and traversing the graph
+model = onnx.load("model.onnx")
+graph = model.graph
+
+# Iterate over nodes
+for node in graph.node:
+    print(f"{node.name}: {node.op_type}")
+    print(f"  Inputs: {list(node.input)}")
+    print(f"  Outputs: {list(node.output)}")
+    
+# Access initializers (weights)
+for init in graph.initializer:
+    tensor = onnx.numpy_helper.to_array(init)
+    print(f"{init.name}: shape={tensor.shape}, dtype={tensor.dtype}")
+
+# Get input/output shapes
+for vi in graph.input:
+    shape = [d.dim_value or d.dim_param for d in vi.type.tensor_type.shape.dim]
+    print(f"{vi.name}: {shape}")
+```
+
+#### 6.4.3 ONNX Runtime C++ Classes (for reference)
+
+| C++ Class | Python Equivalent | Location |
+|-----------|-------------------|----------|
+| `onnxruntime::Graph` | `onnx.GraphProto` | `onnxruntime/core/graph/graph.h` |
+| `onnxruntime::Node` | `onnx.NodeProto` | `onnxruntime/core/graph/graph.h` |
+| `onnxruntime::NodeArg` | Input/output tensor | `onnxruntime/core/graph/graph.h` |
+| `ONNX_NAMESPACE::TensorProto` | `onnx.TensorProto` | Uses ONNX proto directly |
+
+The C++ API provides additional methods for graph traversal and mutation that aren't available in pure ONNX Python API:
+- `Graph::Nodes()` - iterator over all nodes
+- `Node::InputDefs()` / `OutputDefs()` - typed tensor access  
+- `Graph::GetProducerNode()` / `GetConsumerNodes()` - dependency tracking
+
+### 6.5 Extension Points and Patterns
+
+#### 6.5.1 Adding New Operator Analysis
+
+To add FLOP estimation for a new operator in `analyzer.py`:
+
+```python
+# In MetricsEngine._estimate_flops_for_node()
+def _estimate_flops_for_node(self, node: NodeInfo, graph_info: GraphInfo) -> int:
+    if node.op_type == "MyNewOp":
+        return self._estimate_mynewop_flops(node, graph_info)
+    # ... existing handlers
+
+def _estimate_mynewop_flops(self, node: NodeInfo, graph_info: GraphInfo) -> int:
+    # Extract shapes from graph_info.value_shapes
+    # Calculate FLOPs based on operator semantics
+    return flops
+```
+
+#### 6.5.2 Adding New Pattern Detection
+
+To detect a new architectural pattern in `patterns.py`:
+
+```python
+# In PatternAnalyzer.group_into_blocks()
+def group_into_blocks(self, graph_info: GraphInfo) -> list[Block]:
+    blocks = []
+    blocks.extend(self.detect_conv_bn_relu(graph_info))
+    blocks.extend(self.detect_my_new_pattern(graph_info))  # Add here
+    # ...
+
+def detect_my_new_pattern(self, graph_info: GraphInfo) -> list[Block]:
+    blocks: list[Block] = []
+    for node in graph_info.nodes:
+        if self._matches_my_pattern(node, graph_info):
+            blocks.append(Block(
+                block_type="MyPattern",
+                name=f"mypattern_{len(blocks)}",
+                nodes=[node.name],
+                # ...
+            ))
+    return blocks
+```
+
+#### 6.5.3 Adding New Hardware Profiles
+
+To add a new GPU profile in `hardware.py`:
+
+```python
+HARDWARE_PROFILES["my-new-gpu"] = HardwareProfile(
+    name="My New GPU",
+    vram_bytes=16 * 1024**3,           # 16 GB
+    peak_fp32_tflops=20.0,              # 20 TFLOPS FP32
+    peak_fp16_tflops=40.0,              # 40 TFLOPS FP16
+    memory_bandwidth_gbps=500,          # 500 GB/s
+    tdp_watts=200,                      # 200W TDP
+)
+```
+
+#### 6.5.4 Adding New Risk Signals
+
+To add a new risk heuristic in `risks.py`:
+
+```python
+# In RiskAnalyzer.analyze()
+def analyze(self, graph_info: GraphInfo, blocks: list[Block]) -> list[RiskSignal]:
+    signals = []
+    # ... existing checks
+    signal = self.check_my_new_risk(graph_info, blocks)
+    if signal:
+        signals.append(signal)
+    return signals
+
+def check_my_new_risk(self, graph_info: GraphInfo, blocks: list[Block]) -> RiskSignal | None:
+    # Implement detection logic
+    if detected:
+        return RiskSignal(
+            id="my_new_risk",
+            severity="warning",  # info | warning | high
+            description="Description of what was detected",
+            nodes=affected_node_names,
+            recommendation="What the user should do",
+        )
+    return None
+```
+
+#### 6.5.5 Key Integration Files
+
+| File | Extension Point |
+|------|-----------------|
+| `analyzer.py` | New operators, metrics, memory estimation |
+| `patterns.py` | New architectural patterns, block detection |
+| `risks.py` | New risk heuristics, severity thresholds |
+| `hardware.py` | New GPU profiles, estimation formulas |
+| `report.py` | New output sections, report formats |
+| `visualizations.py` | New chart types, themes |
+| `llm_summarizer.py` | New LLM providers, prompt templates |
+
 ---
 
 ## 7. Deployment Architecture

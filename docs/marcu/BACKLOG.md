@@ -13,7 +13,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 
 | Epic | Status | Stories | Tasks Complete |
 |------|--------|---------|----------------|
-| Epic 1: Environment Setup | In Progress | 3 | 7/12 |
+| Epic 1: Environment Setup | In Progress | 3 | 9/12 |
 | Epic 2: Core Analysis Engine | **Complete** | 4 | 17/17 |
 | Epic 3: Pattern Analysis | **Complete** | 2 | 9/9 |
 | Epic 4: CLI and Output | **Complete** | 4 | 18/18 |
@@ -35,11 +35,11 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [ ] **Task 1.1.4**: Build Python wheel (requires cuDNN install, deferred - Autodoc works without it)
 - [ ] **Task 1.1.5**: Run existing test suite to verify build
 
-### Story 1.2: Codebase Familiarization
+### Story 1.2: Codebase Familiarization - **COMPLETE**
 - [x] **Task 1.2.1**: Map key directories and their purposes
 - [x] **Task 1.2.2**: Study existing Python tools (`check_onnx_model_mobile_usability`, etc.)
-- [ ] **Task 1.2.3**: Understand graph representation classes (C++ and Python)
-- [ ] **Task 1.2.4**: Document extension points and integration patterns
+- [x] **Task 1.2.3**: Understand graph representation classes (C++ and Python) - documented in Architecture.md 6.4
+- [x] **Task 1.2.4**: Document extension points and integration patterns - documented in Architecture.md 6.5
 
 ### Story 1.3: Project Scaffolding
 - [x] **Task 1.3.1**: Create `tools/python/util/autodoc/` directory structure
