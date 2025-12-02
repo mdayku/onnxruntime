@@ -370,27 +370,26 @@ class InspectionReport:
                     if b.block_type in ("ResidualConcat", "ResidualGate", "ResidualSub")
                 ]
                 if nonstandard_residuals:
+                    # Group by type for summary
+                    by_type: dict[str, int] = {}
+                    for block in nonstandard_residuals:
+                        by_type[block.block_type] = by_type.get(block.block_type, 0) + 1
+
+                    type_labels = {
+                        "ResidualConcat": "Concat-based (DenseNet-style)",
+                        "ResidualGate": "Gated skip (Highway/attention)",
+                        "ResidualSub": "Subtraction-based",
+                    }
+
                     lines.append("### Non-Standard Skip Connections")
                     lines.append("")
                     lines.append(
-                        "This model uses non-standard residual/skip connection patterns:"
+                        f"This model uses {len(nonstandard_residuals)} non-standard skip connection(s):"
                     )
                     lines.append("")
-                    for block in nonstandard_residuals:
-                        if block.block_type == "ResidualConcat":
-                            depth_diff = block.attributes.get("depth_diff", "?")
-                            lines.append(
-                                f"- **{block.name}**: Concat-based (DenseNet-style), "
-                                f"depth difference: {depth_diff} layers"
-                            )
-                        elif block.block_type == "ResidualGate":
-                            lines.append(
-                                f"- **{block.name}**: Gated skip (Highway/attention gate)"
-                            )
-                        elif block.block_type == "ResidualSub":
-                            lines.append(
-                                f"- **{block.name}**: Subtraction-based residual"
-                            )
+                    for block_type, count in by_type.items():
+                        label = type_labels.get(block_type, block_type)
+                        lines.append(f"- **{label}**: {count}")
                     lines.append("")
 
         # Dataset info (if available)
@@ -773,28 +772,45 @@ class InspectionReport:
                     if b.block_type in ("ResidualConcat", "ResidualGate", "ResidualSub")
                 ]
                 if nonstandard_residuals:
+                    # Group by type
+                    by_type: dict[str, list] = {}
+                    for block in nonstandard_residuals:
+                        if block.block_type not in by_type:
+                            by_type[block.block_type] = []
+                        by_type[block.block_type].append(block)
+
+                    type_labels = {
+                        "ResidualConcat": "Concat-based (DenseNet-style)",
+                        "ResidualGate": "Gated skip (Highway/attention)",
+                        "ResidualSub": "Subtraction-based",
+                    }
+
                     html_parts.append('<div class="nonstandard-residuals">')
                     html_parts.append("<h3>Non-Standard Skip Connections</h3>")
                     html_parts.append(
-                        "<p>This model uses non-standard residual/skip connection patterns:</p>"
+                        f"<p>This model uses {len(nonstandard_residuals)} non-standard skip connection(s):</p>"
                     )
-                    html_parts.append("<ul>")
-                    for block in nonstandard_residuals:
-                        if block.block_type == "ResidualConcat":
-                            depth_diff = block.attributes.get("depth_diff", "?")
-                            html_parts.append(
-                                f"<li><strong>{block.name}</strong>: Concat-based (DenseNet-style), "
-                                f"depth difference: {depth_diff} layers</li>"
-                            )
-                        elif block.block_type == "ResidualGate":
-                            html_parts.append(
-                                f"<li><strong>{block.name}</strong>: Gated skip (Highway/attention gate)</li>"
-                            )
-                        elif block.block_type == "ResidualSub":
-                            html_parts.append(
-                                f"<li><strong>{block.name}</strong>: Subtraction-based residual</li>"
-                            )
-                    html_parts.append("</ul></div>")
+
+                    # Create collapsible section for each type
+                    for block_type, blocks in by_type.items():
+                        label = type_labels.get(block_type, block_type)
+                        html_parts.append(
+                            f"<details><summary>{label} ({len(blocks)})</summary>"
+                        )
+                        html_parts.append('<div class="skip-connections-grid">')
+                        for block in blocks:
+                            if block_type == "ResidualConcat":
+                                depth_diff = block.attributes.get("depth_diff", "?")
+                                html_parts.append(
+                                    f'<div class="skip-item">{block.name} '
+                                    f'<span class="skip-detail">depth: {depth_diff}</span></div>'
+                                )
+                            else:
+                                html_parts.append(
+                                    f'<div class="skip-item">{block.name}</div>'
+                                )
+                        html_parts.append("</div></details>")
+                    html_parts.append("</div>")
 
             html_parts.append("</section>")
 
@@ -811,11 +827,17 @@ class InspectionReport:
                     f"<p><strong>Number of Classes:</strong> {self.dataset_info.num_classes}</p>"
                 )
             if self.dataset_info.class_names:
-                html_parts.append("<h3>Class Names</h3>")
-                html_parts.append('<div class="class-list"><ul>')
+                num_classes = len(self.dataset_info.class_names)
+                html_parts.append(
+                    f'<details class="class-names-details">'
+                    f"<summary>Class Names ({num_classes} classes) - click to expand</summary>"
+                )
+                html_parts.append('<div class="class-grid">')
                 for idx, name in enumerate(self.dataset_info.class_names):
-                    html_parts.append(f"<li><code>{idx}</code>: {name}</li>")
-                html_parts.append("</ul></div>")
+                    html_parts.append(
+                        f'<div class="class-item"><code>{idx}</code> {name}</div>'
+                    )
+                html_parts.append("</div></details>")
             if self.dataset_info.source:
                 html_parts.append(
                     f'<p class="metadata-source"><em>Source: {self.dataset_info.source}</em></p>'
@@ -1134,6 +1156,60 @@ class InspectionReport:
             color: var(--accent-coral);
         }}
 
+        /* Collapsible Details */
+        details {{
+            background: var(--bg-card);
+            border-radius: 8px;
+            margin: 1rem 0;
+            border: 1px solid var(--border);
+        }}
+
+        details summary {{
+            padding: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            user-select: none;
+            transition: background 0.2s;
+        }}
+
+        details summary:hover {{
+            background: var(--bg-secondary);
+        }}
+
+        details[open] summary {{
+            border-bottom: 1px solid var(--border);
+        }}
+
+        details summary::marker {{
+            color: var(--accent-cyan);
+        }}
+
+        /* Class Names Grid */
+        .class-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 0.5rem;
+            padding: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }}
+
+        .class-item {{
+            padding: 0.4rem 0.6rem;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }}
+
+        .class-item code {{
+            margin-right: 0.3rem;
+            font-size: 0.75rem;
+        }}
+
         /* KV Cache Section */
         .kv-cache {{
             background: var(--bg-secondary);
@@ -1171,6 +1247,38 @@ class InspectionReport:
         .nonstandard-residuals h3 {{
             color: var(--accent-yellow);
             margin-top: 0;
+        }}
+
+        .nonstandard-residuals details {{
+            margin: 0.5rem 0;
+            background: var(--bg-primary);
+        }}
+
+        .nonstandard-residuals summary {{
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+        }}
+
+        .skip-connections-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.5rem;
+            padding: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }}
+
+        .skip-item {{
+            padding: 0.4rem 0.6rem;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-family: 'SF Mono', Monaco, monospace;
+        }}
+
+        .skip-detail {{
+            color: var(--text-secondary);
+            font-size: 0.7rem;
         }}
 
         /* Hardware Section */
