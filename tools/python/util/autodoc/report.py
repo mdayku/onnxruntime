@@ -254,6 +254,9 @@ class InspectionReport:
     # Dataset info (optional, extracted from model metadata)
     dataset_info: DatasetInfo | None = None
 
+    # Extra data (profiling results, GPU metrics, etc.)
+    extra_data: dict[str, Any] | None = None
+
     def to_dict(self) -> dict[str, Any]:
         """Convert report to a JSON-serializable dictionary."""
         import numpy as np

@@ -1136,8 +1136,8 @@ class OperationalProfiler:
 
         # Estimate memory transfer time
         # Rough estimate: assume model params + activations need to be read
-        # Memory bandwidth in GB/s -> convert to bytes/ms
-        mem_bandwidth_bytes_per_ms = hardware.mem_bandwidth_gbps * 1e6  # GB/s -> B/ms
+        # Memory bandwidth in bytes/s -> convert to bytes/ms
+        mem_bandwidth_bytes_per_ms = hardware.memory_bandwidth_bytes_per_s / 1000  # B/s -> B/ms
 
         # Estimate memory footprint accessed per inference
         # This is a rough estimate - actual depends on caching, batch size, etc.
