@@ -33,6 +33,10 @@
 11. [Dependencies](#11-dependencies)
 12. [Error Handling](#12-error-handling)
 13. [Implementation Timeline](#13-implementation-timeline)
+14. [SaaS Architecture and Distribution](#14-saas-architecture-and-distribution)
+15. [Inference Platform](#15-inference-platform-wide-hole-architecture)
+16. [Future Vision: MLOps Platform](#16-future-vision-mlops-platform-p5)
+17. [LLM-Scale Analysis (Epics 26-30)](#17-llm-scale-analysis-epics-26-30)
 
 ---
 
@@ -1556,6 +1560,103 @@ If ONNX Autodoc gains traction, the natural evolution is a full MLOps platform:
 
 ---
 
+## 17. LLM-Scale Analysis (Epics 26-30)
+
+### 17.1 Overview
+
+Models like Opus 4.5, GPT-4, LLaMA-70B, and Mixtral require analysis capabilities beyond traditional CNN/transformer inspection. These models have:
+
+- **70B+ parameters** requiring multi-GPU deployment
+- **80+ transformer layers** with complex attention patterns
+- **20,000+ ONNX operations** in the computational graph
+- **Advanced quantization** (INT4, NF4, GPTQ, AWQ)
+- **Sparse architectures** (Mixture of Experts)
+- **Complex memory patterns** (KV cache, activation checkpointing)
+
+### 17.2 Epic 26: Advanced Quantization Analysis
+
+Modern LLMs use sophisticated quantization beyond simple INT8/FP16:
+
+| Scheme | Description | Memory Reduction |
+|--------|-------------|------------------|
+| **GPTQ** | Group-wise quantization with activation order | 4x (INT4) |
+| **AWQ** | Activation-aware weight quantization | 4x (INT4) |
+| **GGML/GGUF** | llama.cpp formats (Q4_0, Q4_K_M, etc.) | 3-8x |
+| **bitsandbytes** | NF4/FP4 with fp16 activations | 4x |
+
+**Key Capabilities:**
+- Detect mixed precision (INT4 weights + FP16 activations + FP32 accumulation)
+- Identify quantization scheme from model patterns
+- Estimate accuracy degradation per scheme
+- Recommend layers to keep at higher precision
+
+### 17.3 Epic 27: Attention Variant Detection
+
+LLMs have evolved beyond vanilla multi-head attention:
+
+| Variant | Example Models | KV Cache Savings |
+|---------|---------------|------------------|
+| **MHA** | BERT, GPT-2 | Baseline |
+| **MQA** | PaLM, Falcon | ~8x |
+| **GQA** | LLaMA 2/3, Mistral | ~4x |
+| **Sliding Window** | Mistral | Bounded cache |
+
+**Key Capabilities:**
+- Detect attention architecture (MHA/MQA/GQA)
+- Identify positional encoding (RoPE, ALiBi, learned)
+- Detect FlashAttention/memory-efficient patterns
+- Report effective context length and O(n²) impact
+
+### 17.4 Epic 28: Memory Pattern Analysis
+
+LLM deployment is memory-bound. Understanding memory patterns is critical:
+
+| Memory Consumer | 70B Model @ FP16 | Optimization |
+|-----------------|------------------|--------------|
+| Weights | 140 GB | Quantization |
+| KV Cache (8k ctx) | 16 GB/batch | GQA, INT8 KV |
+| Activations | 4 GB/batch | Checkpointing |
+
+**Key Capabilities:**
+- Calculate KV cache for variable context lengths
+- Detect activation checkpointing patterns
+- Identify tensor/pipeline parallelism
+- Generate memory waterfall charts
+
+### 17.5 Epic 29: Sparse and Efficient Architectures
+
+Mixture of Experts and sparsity enable larger models:
+
+| Pattern | Example | Characteristics |
+|---------|---------|-----------------|
+| **MoE** | Mixtral, GPT-4 | 8 experts, top-2 routing |
+| **Speculative Decoding** | Many | Draft + verify pattern |
+| **Weight Sparsity** | Various | 50%+ weights pruned |
+
+**Key Capabilities:**
+- Detect MoE routing and expert count
+- Calculate effective vs total parameters
+- Identify speculative decoding patterns
+- Report sparsity levels and hardware requirements
+
+### 17.6 Epic 30: LLM Deployment Analysis
+
+Production LLM inference has unique characteristics:
+
+| Phase | Characteristics | Bottleneck |
+|-------|-----------------|------------|
+| **Prefill** | Process prompt | Compute-bound |
+| **Decode** | Generate tokens | Memory-bound |
+
+**Key Capabilities:**
+- Calculate time-to-first-token (TTFT)
+- Estimate tokens-per-second decode rate
+- Analyze continuous batching compatibility
+- Generate context length scaling curves
+- Report serving framework compatibility (vLLM, TRT-LLM, llama.cpp)
+
+---
+
 ## Appendix: Delta Log
 
 *Use this section to track changes to the PRD over time.*
@@ -1603,3 +1704,7 @@ If ONNX Autodoc gains traction, the natural evolution is a full MLOps platform:
 | Dec 3, 2025 | Git | Merged feature/onnx-autodoc to main branch, now working on main | This is our IP, not a Microsoft contribution |
 | Dec 3, 2025 | Backlog | Removed Epic 9 (Demo/Deliverables), reordered to original epic numbers | User preference: feature work tonight, deployment tomorrow |
 | Dec 3, 2025 | Epic 4C | **COMPLETE**: TensorFlow/Keras/JAX to ONNX conversion. --from-tensorflow (SavedModel), --from-keras (.h5/.keras), --from-frozen-graph (.pb), --from-jax (Flax). 15/15 tasks, 17 tests | ONNX as universal hub: any format -> ONNX -> any format (max 2 hops) |
+| Dec 3, 2025 | CI/CD | Removed 42 Microsoft ORT workflows, kept only autodoc-ci.yml. Fixed Black formatting. | Avoid spam from fork's inherited CI |
+| Dec 3, 2025 | Epic 5 | Expanded visualization for LLM-scale: 5.4 (patterns), 5.5 (icons), 5.6 (edges), 5.7 (graph, BLOCKED), 5.8 (table). 13/47 tasks | Must handle 70B+ param models with 20k+ ops |
+| Dec 3, 2025 | Section 17 | Added LLM-Scale Analysis section covering Epics 26-30 | Gap analysis for Opus 4.5-class models |
+| Dec 3, 2025 | Epics 26-30 | Added: 26 (Quantization), 27 (Attention Variants), 28 (Memory Patterns), 29 (Sparse/Efficient), 30 (LLM Deployment). 88 new tasks | Complete LLM analysis capability |

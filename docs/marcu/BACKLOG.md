@@ -36,6 +36,12 @@
 | Epic 23: OpenVINO | Not Started | 2 | 0/8 | P3 |
 | Epic 24: GGUF | Not Started | 2 | 0/6 | P3 |
 | Epic 25: Privacy/Trust | Not Started | 3 | 0/9 | P1 |
+| **LLM-SCALE ANALYSIS** ||||
+| Epic 26: Advanced Quantization | Not Started | 3 | 0/16 | P3 |
+| Epic 27: Attention Variants | Not Started | 4 | 0/19 | P3 |
+| Epic 28: Memory Patterns | Not Started | 4 | 0/18 | P3 |
+| Epic 29: Sparse/Efficient | Not Started | 4 | 0/16 | P3 |
+| Epic 30: LLM Deployment | Not Started | 4 | 0/19 | P3 |
 
 ---
 
@@ -176,7 +182,7 @@
 - [ ] **Task 5.6.2**: Map edge thickness to tensor size (log scale for LLMs)
 - [ ] **Task 5.6.3**: Color edges by precision (fp32=blue, fp16=green, int8=yellow, bf16=purple)
 - [ ] **Task 5.6.4**: Highlight memory bottleneck edges (red for largest tensors)
-- [ ] **Task 5.6.5**: Show tensor shape on hover: "[batch, seq, hidden]" 
+- [ ] **Task 5.6.5**: Show tensor shape on hover: "[batch, seq, hidden]"
 - [ ] **Task 5.6.6**: Detect and highlight skip connections (dashed lines)
 - [ ] **Task 5.6.7**: Calculate peak memory point in graph (where activations are largest)
 - [ ] **Task 5.6.8**: For attention: show O(seq²) edges prominently (this is why FlashAttention matters)
@@ -580,3 +586,171 @@
 - [ ] **Task 25.3.2**: Document open-source audit path ("read our code")
 
 *Future: Confidential Computing (TEE) for cloud analysis - see Epic 10 SaaS.*
+
+---
+
+# LLM-SCALE ANALYSIS (P3+)
+
+*Epics 26-30: Handle models like Opus 4.5, GPT-4, LLaMA-70B, Mixtral*
+
+---
+
+## Epic 26: Advanced Quantization Analysis (P3)
+
+*Modern LLMs use complex quantization beyond simple int8/fp16.*
+
+### Story 26.1: Mixed Precision Detection
+- [ ] **Task 26.1.1**: Detect per-layer precision (weights vs activations vs accumulation)
+- [ ] **Task 26.1.2**: Identify INT4 weights with FP16 activations pattern
+- [ ] **Task 26.1.3**: Detect FP32 accumulation in quantized MatMuls
+- [ ] **Task 26.1.4**: Report precision breakdown by layer type (attention vs FFN vs embed)
+- [ ] **Task 26.1.5**: Visualize precision transitions in graph (where fp16→int8 happens)
+
+### Story 26.2: Quantization Scheme Detection
+- [ ] **Task 26.2.1**: Detect GPTQ quantization patterns (group-wise, act_order)
+- [ ] **Task 26.2.2**: Detect AWQ quantization patterns (activation-aware)
+- [ ] **Task 26.2.3**: Detect GGML/GGUF quantization types (Q4_0, Q4_K_M, Q5_K_S, etc.)
+- [ ] **Task 26.2.4**: Detect bitsandbytes NF4/FP4 quantization
+- [ ] **Task 26.2.5**: Report expected accuracy degradation per scheme
+- [ ] **Task 26.2.6**: Compare memory vs accuracy tradeoffs between schemes
+
+### Story 26.3: Calibration Analysis
+- [ ] **Task 26.3.1**: Detect if model has calibration metadata
+- [ ] **Task 26.3.2**: Estimate quantization error per layer
+- [ ] **Task 26.3.3**: Identify sensitive layers (high quantization error)
+- [ ] **Task 26.3.4**: Recommend layers to keep at higher precision
+
+---
+
+## Epic 27: Attention Variant Detection (P3)
+
+*Modern LLMs use many attention optimizations beyond vanilla self-attention.*
+
+### Story 27.1: Attention Architecture Detection
+- [ ] **Task 27.1.1**: Detect Multi-Head Attention (MHA) - standard pattern
+- [ ] **Task 27.1.2**: Detect Multi-Query Attention (MQA) - single KV head
+- [ ] **Task 27.1.3**: Detect Grouped-Query Attention (GQA) - fewer KV heads than Q
+- [ ] **Task 27.1.4**: Report num_q_heads, num_kv_heads, head_dim
+- [ ] **Task 27.1.5**: Calculate KV cache savings for GQA/MQA vs MHA
+
+### Story 27.2: Attention Pattern Detection
+- [ ] **Task 27.2.1**: Detect sliding window attention (Mistral-style)
+- [ ] **Task 27.2.2**: Detect local + global attention (Longformer-style)
+- [ ] **Task 27.2.3**: Detect sparse attention patterns (BigBird, etc.)
+- [ ] **Task 27.2.4**: Detect cross-attention (encoder-decoder models)
+- [ ] **Task 27.2.5**: Report effective context length and attention complexity
+
+### Story 27.3: Position Encoding Detection
+- [ ] **Task 27.3.1**: Detect RoPE (Rotary Position Embedding)
+- [ ] **Task 27.3.2**: Detect ALiBi (Attention with Linear Biases)
+- [ ] **Task 27.3.3**: Detect learned positional embeddings
+- [ ] **Task 27.3.4**: Detect sinusoidal positional encoding
+- [ ] **Task 27.3.5**: Report max context length and extrapolation capability
+
+### Story 27.4: Fused Attention Patterns
+- [ ] **Task 27.4.1**: Detect FlashAttention-style fused patterns
+- [ ] **Task 27.4.2**: Detect xFormers memory-efficient attention
+- [ ] **Task 27.4.3**: Detect cuDNN fused multi-head attention
+- [ ] **Task 27.4.4**: Report theoretical vs actual memory usage
+
+---
+
+## Epic 28: Memory Pattern Analysis (P3)
+
+*LLM deployment is memory-bound. Understand where memory goes.*
+
+### Story 28.1: Activation Checkpointing Detection
+- [ ] **Task 28.1.1**: Detect activation checkpointing patterns (recompute on backward)
+- [ ] **Task 28.1.2**: Identify checkpoint boundaries
+- [ ] **Task 28.1.3**: Calculate memory savings vs compute overhead
+- [ ] **Task 28.1.4**: Recommend optimal checkpoint granularity
+
+### Story 28.2: KV Cache Analysis
+- [ ] **Task 28.2.1**: Calculate KV cache size per layer per token
+- [ ] **Task 28.2.2**: Project KV cache for variable context lengths (1k, 4k, 8k, 32k, 128k)
+- [ ] **Task 28.2.3**: Detect KV cache quantization (INT8 KV cache)
+- [ ] **Task 28.2.4**: Calculate max context length for given VRAM
+- [ ] **Task 28.2.5**: Detect PagedAttention patterns (vLLM-style)
+- [ ] **Task 28.2.6**: Report KV cache as % of total memory
+
+### Story 28.3: Parallelism Strategy Detection
+- [ ] **Task 28.3.1**: Detect tensor parallelism patterns (column/row split)
+- [ ] **Task 28.3.2**: Detect pipeline parallelism patterns (layer sharding)
+- [ ] **Task 28.3.3**: Detect data parallelism patterns
+- [ ] **Task 28.3.4**: Identify all-reduce / all-gather communication ops
+- [ ] **Task 28.3.5**: Report memory per GPU for N-way parallelism
+- [ ] **Task 28.3.6**: Recommend parallelism strategy for target hardware
+
+### Story 28.4: Memory Waterfall Analysis
+- [ ] **Task 28.4.1**: Calculate peak memory at each point in forward pass
+- [ ] **Task 28.4.2**: Generate memory waterfall chart (memory over time)
+- [ ] **Task 28.4.3**: Identify memory spike locations
+- [ ] **Task 28.4.4**: Recommend batch size for given VRAM constraint
+
+---
+
+## Epic 29: Sparse and Efficient Architecture Analysis (P3)
+
+*Mixture of Experts, speculative decoding, and sparsity patterns.*
+
+### Story 29.1: Mixture of Experts (MoE) Analysis
+- [ ] **Task 29.1.1**: Detect MoE routing patterns (top-k gating)
+- [ ] **Task 29.1.2**: Count total experts and active experts per token
+- [ ] **Task 29.1.3**: Calculate effective vs total parameters
+- [ ] **Task 29.1.4**: Analyze expert utilization/load balancing
+- [ ] **Task 29.1.5**: Report memory for all experts vs active subset
+- [ ] **Task 29.1.6**: Detect expert parallelism patterns
+
+### Story 29.2: Speculative Decoding Detection
+- [ ] **Task 29.2.1**: Detect draft model + verify model pattern
+- [ ] **Task 29.2.2**: Identify draft model architecture
+- [ ] **Task 29.2.3**: Calculate speculative decoding speedup potential
+- [ ] **Task 29.2.4**: Report token acceptance rate requirements
+
+### Story 29.3: Weight Sparsity Analysis
+- [ ] **Task 29.3.1**: Detect structured sparsity (N:M sparsity)
+- [ ] **Task 29.3.2**: Detect unstructured sparsity (pruned weights)
+- [ ] **Task 29.3.3**: Calculate actual vs theoretical FLOPs with sparsity
+- [ ] **Task 29.3.4**: Identify sparse-compatible hardware requirements
+- [ ] **Task 29.3.5**: Report sparsity % per layer
+
+### Story 29.4: Efficient Architecture Patterns
+- [ ] **Task 29.4.1**: Detect depth-wise separable convolutions
+- [ ] **Task 29.4.2**: Detect inverted residual blocks (MobileNet-style)
+- [ ] **Task 29.4.3**: Detect squeeze-and-excitation patterns
+- [ ] **Task 29.4.4**: Detect neural architecture search (NAS) patterns
+- [ ] **Task 29.4.5**: Compare efficiency vs baseline architectures
+
+---
+
+## Epic 30: LLM Deployment Analysis (P3)
+
+*Inference patterns differ from training. Understand production characteristics.*
+
+### Story 30.1: Prefill vs Decode Analysis
+- [ ] **Task 30.1.1**: Identify prefill phase (process prompt, compute-bound)
+- [ ] **Task 30.1.2**: Identify decode phase (generate tokens, memory-bound)
+- [ ] **Task 30.1.3**: Calculate time-to-first-token (TTFT) estimate
+- [ ] **Task 30.1.4**: Calculate tokens-per-second decode rate
+- [ ] **Task 30.1.5**: Report optimal batch size for each phase
+
+### Story 30.2: Batching Strategy Analysis
+- [ ] **Task 30.2.1**: Analyze static batching characteristics
+- [ ] **Task 30.2.2**: Detect continuous batching compatibility
+- [ ] **Task 30.2.3**: Calculate throughput vs latency tradeoffs
+- [ ] **Task 30.2.4**: Report max concurrent requests for given VRAM
+- [ ] **Task 30.2.5**: Model request queuing and scheduling impact
+
+### Story 30.3: Context Length Scaling
+- [ ] **Task 30.3.1**: Calculate O(n²) attention scaling impact
+- [ ] **Task 30.3.2**: Calculate O(n) KV cache scaling impact
+- [ ] **Task 30.3.3**: Generate context length vs memory/latency curves
+- [ ] **Task 30.3.4**: Identify context length breakpoints (where OOM occurs)
+- [ ] **Task 30.3.5**: Recommend context length for target hardware
+
+### Story 30.4: Serving Framework Compatibility
+- [ ] **Task 30.4.1**: Check vLLM compatibility (PagedAttention, continuous batching)
+- [ ] **Task 30.4.2**: Check TensorRT-LLM compatibility
+- [ ] **Task 30.4.3**: Check llama.cpp compatibility
+- [ ] **Task 30.4.4**: Check Triton Inference Server compatibility
+- [ ] **Task 30.4.5**: Report recommended serving framework for model characteristics
