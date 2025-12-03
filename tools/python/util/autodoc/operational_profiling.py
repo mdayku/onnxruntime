@@ -234,7 +234,7 @@ class OperationalProfiler:
         batch_sizes: list[int] | None = None,
         num_warmup: int = 5,
         num_runs: int = 20,
-    ) -> BatchSizeSweep:
+    ) -> BatchSizeSweep | None:
         """
         Benchmark actual inference performance across batch sizes.
 

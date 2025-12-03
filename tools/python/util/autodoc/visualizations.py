@@ -544,7 +544,7 @@ class VisualizationGenerator:
         sorted_ops = sorted(nonzero_ops.items(), key=lambda x: -x[1])
 
         # Group small slices into "Other" more aggressively
-        top_ops = []
+        top_ops: list[tuple[str, float]] = []
         other_count = 0.0
         for op, count in sorted_ops:
             pct = (count / total) * 100

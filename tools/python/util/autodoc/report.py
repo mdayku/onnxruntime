@@ -658,10 +658,10 @@ class InspectionReport:
 
         # Batch Size Sweep (Story 6C.1)
         if self.batch_size_sweep:
-            sweep = self.batch_size_sweep
+            batch_sweep = self.batch_size_sweep
             lines.append("## Batch Size Scaling")
             lines.append("")
-            lines.append(f"**Optimal Batch Size**: {sweep.optimal_batch_size}")
+            lines.append(f"**Optimal Batch Size**: {batch_sweep.optimal_batch_size}")
             lines.append("")
             lines.append(
                 "| Batch Size | Latency (ms) | Throughput (inf/s) | VRAM (GB) |"
@@ -669,19 +669,19 @@ class InspectionReport:
             lines.append(
                 "|------------|--------------|--------------------|-----------|"
             )
-            for i, bs in enumerate(sweep.batch_sizes):
+            for i, bs in enumerate(batch_sweep.batch_sizes):
                 lines.append(
-                    f"| {bs} | {sweep.latencies[i]:.2f} | {sweep.throughputs[i]:.1f} | {sweep.vram_usage_gb[i]:.2f} |"
+                    f"| {bs} | {batch_sweep.latencies[i]:.2f} | {batch_sweep.throughputs[i]:.1f} | {batch_sweep.vram_usage_gb[i]:.2f} |"
                 )
             lines.append("")
 
         # Resolution Sweep (Story 6.8)
         if self.resolution_sweep:
-            sweep = self.resolution_sweep
+            res_sweep = self.resolution_sweep
             lines.append("## Resolution Scaling")
             lines.append("")
-            lines.append(f"**Max Resolution**: {sweep.max_resolution}")
-            lines.append(f"**Optimal Resolution**: {sweep.optimal_resolution}")
+            lines.append(f"**Max Resolution**: {res_sweep.max_resolution}")
+            lines.append(f"**Optimal Resolution**: {res_sweep.optimal_resolution}")
             lines.append("")
             lines.append(
                 "| Resolution | FLOPs | Memory (GB) | Latency (ms) | Throughput | VRAM (GB) |"
@@ -689,19 +689,21 @@ class InspectionReport:
             lines.append(
                 "|------------|-------|-------------|--------------|------------|-----------|"
             )
-            for i, res in enumerate(sweep.resolutions):
-                flops_str = self._format_number(sweep.flops[i])
+            for i, res in enumerate(res_sweep.resolutions):
+                flops_str = self._format_number(res_sweep.flops[i])
                 lat_str = (
-                    f"{sweep.latencies[i]:.2f}"
-                    if sweep.latencies[i] != float("inf")
+                    f"{res_sweep.latencies[i]:.2f}"
+                    if res_sweep.latencies[i] != float("inf")
                     else "OOM"
                 )
                 tput_str = (
-                    f"{sweep.throughputs[i]:.1f}" if sweep.throughputs[i] > 0 else "-"
+                    f"{res_sweep.throughputs[i]:.1f}"
+                    if res_sweep.throughputs[i] > 0
+                    else "-"
                 )
                 lines.append(
-                    f"| {res} | {flops_str} | {sweep.memory_gb[i]:.2f} | "
-                    f"{lat_str} | {tput_str} | {sweep.vram_usage_gb[i]:.2f} |"
+                    f"| {res} | {flops_str} | {res_sweep.memory_gb[i]:.2f} | "
+                    f"{lat_str} | {tput_str} | {res_sweep.vram_usage_gb[i]:.2f} |"
                 )
             lines.append("")
 
@@ -1286,49 +1288,51 @@ class InspectionReport:
 
         # Batch Size Sweep
         if self.batch_size_sweep:
-            sweep = self.batch_size_sweep
+            batch_sweep = self.batch_size_sweep
             html_parts.append('<section class="batch-scaling">')
             html_parts.append("<h2>Batch Size Scaling</h2>")
             html_parts.append(
-                f"<p><strong>Optimal Batch Size:</strong> {sweep.optimal_batch_size}</p>"
+                f"<p><strong>Optimal Batch Size:</strong> {batch_sweep.optimal_batch_size}</p>"
             )
             html_parts.append("<table>")
             html_parts.append(
                 "<tr><th>Batch Size</th><th>Latency (ms)</th><th>Throughput (inf/s)</th><th>VRAM (GB)</th></tr>"
             )
-            for i, bs in enumerate(sweep.batch_sizes):
+            for i, bs in enumerate(batch_sweep.batch_sizes):
                 html_parts.append(
-                    f"<tr><td>{bs}</td><td>{sweep.latencies[i]:.2f}</td><td>{sweep.throughputs[i]:.1f}</td><td>{sweep.vram_usage_gb[i]:.2f}</td></tr>"
+                    f"<tr><td>{bs}</td><td>{batch_sweep.latencies[i]:.2f}</td><td>{batch_sweep.throughputs[i]:.1f}</td><td>{batch_sweep.vram_usage_gb[i]:.2f}</td></tr>"
                 )
             html_parts.append("</table></section>")
 
         # Resolution Sweep (Story 6.8)
         if self.resolution_sweep:
-            sweep = self.resolution_sweep
+            res_sweep = self.resolution_sweep
             html_parts.append('<section class="resolution-scaling">')
             html_parts.append("<h2>Resolution Scaling</h2>")
             html_parts.append(
-                f"<p><strong>Max Resolution:</strong> {sweep.max_resolution} | "
-                f"<strong>Optimal:</strong> {sweep.optimal_resolution}</p>"
+                f"<p><strong>Max Resolution:</strong> {res_sweep.max_resolution} | "
+                f"<strong>Optimal:</strong> {res_sweep.optimal_resolution}</p>"
             )
             html_parts.append("<table>")
             html_parts.append(
                 "<tr><th>Resolution</th><th>FLOPs</th><th>Memory (GB)</th>"
                 "<th>Latency (ms)</th><th>Throughput</th><th>VRAM (GB)</th></tr>"
             )
-            for i, res in enumerate(sweep.resolutions):
-                flops_str = self._format_number(sweep.flops[i])
+            for i, res in enumerate(res_sweep.resolutions):
+                flops_str = self._format_number(res_sweep.flops[i])
                 lat_str = (
-                    f"{sweep.latencies[i]:.2f}"
-                    if sweep.latencies[i] != float("inf")
+                    f"{res_sweep.latencies[i]:.2f}"
+                    if res_sweep.latencies[i] != float("inf")
                     else "OOM"
                 )
                 tput_str = (
-                    f"{sweep.throughputs[i]:.1f}" if sweep.throughputs[i] > 0 else "-"
+                    f"{res_sweep.throughputs[i]:.1f}"
+                    if res_sweep.throughputs[i] > 0
+                    else "-"
                 )
                 html_parts.append(
-                    f"<tr><td>{res}</td><td>{flops_str}</td><td>{sweep.memory_gb[i]:.2f}</td>"
-                    f"<td>{lat_str}</td><td>{tput_str}</td><td>{sweep.vram_usage_gb[i]:.2f}</td></tr>"
+                    f"<tr><td>{res}</td><td>{flops_str}</td><td>{res_sweep.memory_gb[i]:.2f}</td>"
+                    f"<td>{lat_str}</td><td>{tput_str}</td><td>{res_sweep.vram_usage_gb[i]:.2f}</td></tr>"
                 )
             html_parts.append("</table></section>")
 
