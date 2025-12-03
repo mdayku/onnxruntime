@@ -197,3 +197,10 @@ Package.resolved
 .build/
 .swiftpm/
 repros/
+
+# Integration test artifacts (generated locally)
+tools/python/integration_tests/*.html
+tools/python/integration_tests/*.pdf
+tools/python/integration_tests/*.png
+tools/python/integration_tests/*.onnx
+tools/python/integration_tests/assets/
