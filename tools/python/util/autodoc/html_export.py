@@ -474,7 +474,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
             <h2>Visualization</h2>
             <div class="controls">
-                <button class="btn" id="heatmap-btn" onclick="toggleHeatMap()">Compute Heat Map</button>
+                <button class="btn" id="heatmap-btn" onclick="toggleHeatMap()">FLOPs Heat Map</button>
+                <button class="btn" id="timing-btn" onclick="toggleTimingHeatMap()" style="margin-top:6px;">Timing Heat Map</button>
             </div>
 
             <h2>Op Types <span style="font-size:0.6rem;color:var(--text-tertiary)">(click to filter)</span></h2>
@@ -524,7 +525,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <div class="legend" id="heatmap-legend" style="display: none;">
                 <div class="legend-item">
                     <div class="legend-dot" style="background: #0A84FF; box-shadow: 0 0 8px #0A84FF;"></div>
-                    <span>Low compute</span>
+                    <span>Low FLOPs</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-dot" style="background: #64D2FF; box-shadow: 0 0 8px #64D2FF;"></div>
@@ -544,11 +545,37 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 </div>
                 <div class="legend-item">
                     <div class="legend-dot" style="background: #FF453A; box-shadow: 0 0 8px #FF453A;"></div>
-                    <span>Hotspot</span>
+                    <span>Compute hotspot</span>
+                </div>
+            </div>
+            <div class="legend" id="timing-legend" style="display: none;">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #30D158; box-shadow: 0 0 8px #30D158;"></div>
+                    <span>Fast (&lt;10%)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #64D2FF; box-shadow: 0 0 8px #64D2FF;"></div>
+                    <span>Light (10-30%)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #BF5AF2; box-shadow: 0 0 8px #BF5AF2;"></div>
+                    <span>Medium (30-50%)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #FF9F0A; box-shadow: 0 0 8px #FF9F0A;"></div>
+                    <span>Slow (50-70%)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #FF6482; box-shadow: 0 0 8px #FF6482;"></div>
+                    <span>Very slow (70-90%)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #FF453A; box-shadow: 0 0 8px #FF453A;"></div>
+                    <span>Bottleneck (&gt;90%)</span>
                 </div>
             </div>
             <div class="legend" id="optype-legend-note">
-                <span style="font-size: 0.7rem; color: var(--text-tertiary);">Toggle heat map to see compute intensity</span>
+                <span style="font-size: 0.7rem; color: var(--text-tertiary);">Toggle heat maps to visualize compute or timing</span>
             </div>
         </aside>
 
@@ -644,8 +671,33 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             return base;
         }}
 
-        // Heat map mode toggle
+        // Heat map mode toggles
         let heatMapMode = false;
+        let timingHeatMapMode = false;
+
+        // Layer timing data (from profiling)
+        const layerTiming = graphData.layer_timing || {{}};
+        const hasTimingData = Object.keys(layerTiming).length > 0;
+
+        // Get max timing for scaling
+        function getMaxTiming() {{
+            const times = Object.values(layerTiming);
+            return times.length > 0 ? Math.max(...times) : 1;
+        }}
+
+        // Get timing for a node (check various name formats)
+        function getNodeTiming(node) {{
+            // Try exact match first
+            if (layerTiming[node.name]) return layerTiming[node.name];
+            // Try with op_type prefix
+            const key = node.op_type + '_' + node.name;
+            if (layerTiming[key]) return layerTiming[key];
+            // Search for partial match
+            for (const [k, v] of Object.entries(layerTiming)) {{
+                if (k.includes(node.name) || node.name.includes(k)) return v;
+            }}
+            return null;
+        }}
 
         // Get heat map color based on compute intensity
         function getHeatColor(flops, maxFlops) {{
@@ -658,6 +710,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             if (intensity < 0.8) return '#FFD60A';
             if (intensity < 0.9) return '#FF9F0A';
             return '#FF453A';
+        }}
+
+        // Get timing heat map color
+        function getTimingHeatColor(timing, maxTiming) {{
+            if (!timing || timing === 0) return null;
+            const intensity = timing / maxTiming;
+            // Similar scale but with different hue for distinction
+            if (intensity < 0.1) return '#30D158';  // Green - fast
+            if (intensity < 0.3) return '#64D2FF';  // Cyan
+            if (intensity < 0.5) return '#BF5AF2';  // Purple
+            if (intensity < 0.7) return '#FF9F0A';  // Orange
+            if (intensity < 0.9) return '#FF6482';  // Pink
+            return '#FF453A';  // Red - slowest (bottleneck)
         }}
 
         // Initialize visualization
@@ -981,14 +1046,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     }}
                 }});
 
-            // Calculate max FLOPs for heat map
+            // Calculate max FLOPs and timing for heat maps
             const maxFlops = getMaxFlops(visibleNodes);
+            const maxTiming = getMaxTiming();
 
             // Circle nodes - use heat map or category colors
             nodeGroups.append('circle')
                 .attr('class', 'node-circle')
                 .attr('r', d => d.r)
                 .attr('fill', d => {{
+                    // Timing heat map takes priority (more actionable)
+                    if (timingHeatMapMode && hasTimingData) {{
+                        const timing = getNodeTiming(d);
+                        if (timing) return getTimingHeatColor(timing, maxTiming);
+                    }}
                     if (heatMapMode && d.total_flops > 0) {{
                         return getHeatColor(d.total_flops, maxFlops);
                     }}
@@ -1068,13 +1139,46 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         function toggleHeatMap() {{
             heatMapMode = !heatMapMode;
+            // Turn off timing heat map if turning on FLOPs heat map
+            if (heatMapMode) timingHeatMapMode = false;
+
             const btn = document.getElementById('heatmap-btn');
             btn.style.background = heatMapMode ? 'var(--accent)' : '';
             btn.style.color = heatMapMode ? 'white' : '';
 
+            const timingBtn = document.getElementById('timing-btn');
+            timingBtn.style.background = '';
+            timingBtn.style.color = '';
+
             // Toggle legend visibility
             document.getElementById('heatmap-legend').style.display = heatMapMode ? 'block' : 'none';
-            document.getElementById('optype-legend-note').style.display = heatMapMode ? 'none' : 'block';
+            document.getElementById('timing-legend').style.display = 'none';
+            document.getElementById('optype-legend-note').style.display = (heatMapMode || timingHeatMapMode) ? 'none' : 'block';
+
+            render();
+        }}
+
+        function toggleTimingHeatMap() {{
+            if (!hasTimingData) {{
+                alert('No timing data available. Run with profiling enabled.');
+                return;
+            }}
+            timingHeatMapMode = !timingHeatMapMode;
+            // Turn off FLOPs heat map if turning on timing heat map
+            if (timingHeatMapMode) heatMapMode = false;
+
+            const btn = document.getElementById('timing-btn');
+            btn.style.background = timingHeatMapMode ? '#FF453A' : '';
+            btn.style.color = timingHeatMapMode ? 'white' : '';
+
+            const flopsBtn = document.getElementById('heatmap-btn');
+            flopsBtn.style.background = '';
+            flopsBtn.style.color = '';
+
+            // Toggle legend visibility
+            document.getElementById('timing-legend').style.display = timingHeatMapMode ? 'block' : 'none';
+            document.getElementById('heatmap-legend').style.display = 'none';
+            document.getElementById('optype-legend-note').style.display = (heatMapMode || timingHeatMapMode) ? 'none' : 'block';
 
             render();
         }}
@@ -1344,6 +1448,7 @@ def generate_html(
     title: str = "Model Architecture",
     output_path: Path | str | None = None,
     model_size_bytes: int | None = None,
+    layer_timing: dict[str, float] | None = None,
 ) -> str:
     """
     Generate interactive HTML visualization.
@@ -1356,14 +1461,18 @@ def generate_html(
         title: Page title.
         output_path: Optional path to save HTML file.
         model_size_bytes: Optional model file size in bytes.
+        layer_timing: Optional dict mapping layer name to execution time (ms).
+            Used to color-code nodes by execution time (hotspots).
 
     Returns:
         HTML content as string.
     """
-    # Convert graph to JSON, adding model_size_bytes
+    # Convert graph to JSON, adding model_size_bytes and layer_timing
     graph_dict = graph.to_dict()
     if model_size_bytes is not None:
         graph_dict["model_size_bytes"] = model_size_bytes
+    if layer_timing is not None:
+        graph_dict["layer_timing"] = layer_timing
     graph_json = json.dumps(graph_dict)
 
     # Convert edge analysis to JSON
@@ -1405,6 +1514,7 @@ class HTMLExporter:
         output_path: Path | str = "model_graph.html",
         title: str | None = None,
         model_size_bytes: int | None = None,
+        layer_timing: dict[str, float] | None = None,
     ) -> Path:
         """
         Export graph to HTML file.
@@ -1415,6 +1525,7 @@ class HTMLExporter:
             output_path: Output file path.
             title: Optional page title.
             model_size_bytes: Optional model file size in bytes.
+            layer_timing: Optional dict mapping layer name to execution time (ms).
 
         Returns:
             Path to generated HTML file.
@@ -1430,6 +1541,7 @@ class HTMLExporter:
             title=title,
             output_path=output_path,
             model_size_bytes=model_size_bytes,
+            layer_timing=layer_timing,
         )
 
         self.logger.info(f"HTML visualization exported to {output_path}")

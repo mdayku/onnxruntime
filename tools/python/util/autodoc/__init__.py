@@ -67,6 +67,18 @@ from .layer_summary import (
 from .llm_summarizer import LLMSummarizer, LLMSummary, summarize_report
 from .llm_summarizer import has_api_key as has_llm_api_key
 from .llm_summarizer import is_available as is_llm_available
+from .operational_profiling import (
+    BatchSizeSweep,
+    BatchSweepPoint,
+    BottleneckAnalysis,
+    GPUMetrics,
+    LayerProfile,
+    OperationalProfiler,
+    ProfilingResult,
+    ResolutionPoint,
+    ResolutionSweep,
+    SystemRequirements,
+)
 from .patterns import PatternAnalyzer
 from .pdf_generator import PDFGenerator, generate_pdf
 from .pdf_generator import is_available as is_pdf_available
@@ -96,11 +108,15 @@ __all__ = [
     "HARDWARE_PROFILES",
     "INSPECTION_REPORT_SCHEMA",
     "THEME",
+    "BatchSizeSweep",
+    "BatchSweepPoint",
+    "BottleneckAnalysis",
     "CalibrationRecommendation",
     "ChartTheme",
     "DatasetInfo",
     "EdgeAnalysisResult",
     "EdgeAnalyzer",
+    "GPUMetrics",
     "HTMLExporter",
     "HardwareDetector",
     "HardwareEstimates",
@@ -114,17 +130,23 @@ __all__ = [
     "LLMSummary",
     "LayerMetrics",
     "LayerPrecisionBreakdown",
+    "LayerProfile",
     "LayerSummary",
     "LayerSummaryBuilder",
     "MetricsEngine",
     "ModelInspector",
     "NormalizedMetrics",
     "ONNXGraphLoader",
+    "OperationalProfiler",
     "PDFGenerator",
     "PatternAnalyzer",
+    "ProfilingResult",
+    "ResolutionPoint",
+    "ResolutionSweep",
     "RiskAnalyzer",
     "RiskSignal",
     "RiskThresholds",
+    "SystemRequirements",
     "TradeoffPoint",
     "ValidationError",
     "VisualizationGenerator",

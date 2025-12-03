@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .analyzer import FlopCounts, GraphInfo, ParamCounts
-    from .operational_profiling import BatchSizeSweep, ResolutionSweep
+    from .operational_profiling import BatchSizeSweep, ProfilingResult, ResolutionSweep
     from .report import InspectionReport
 
 # Attempt to import matplotlib with Agg backend (non-interactive)
@@ -873,6 +873,214 @@ class VisualizationGenerator:
             facecolor=THEME.background,
             labelcolor=THEME.text,
         )
+
+        plt.tight_layout()
+        fig.savefig(
+            output_path,
+            facecolor=THEME.background,
+            edgecolor="none",
+            bbox_inches="tight",
+        )
+        plt.close(fig)
+
+        return output_path
+
+    def layer_timing_chart(
+        self,
+        profiling_result: ProfilingResult,
+        output_path: Path,
+        top_n: int = 15,
+    ) -> Path | None:
+        """
+        Generate per-layer timing breakdown chart (Story 9.3.4).
+
+        Shows execution time for the slowest N layers as a horizontal bar chart.
+
+        Args:
+            profiling_result: ProfilingResult from OperationalProfiler.profile_model()
+            output_path: Path to save the chart
+            top_n: Number of slowest layers to show
+
+        Returns:
+            Path to generated chart or None if unavailable
+        """
+        if not _MATPLOTLIB_AVAILABLE:
+            return None
+
+        # Import at runtime
+        from .operational_profiling import ProfilingResult
+
+        if not isinstance(profiling_result, ProfilingResult):
+            return None
+
+        slowest = profiling_result.get_slowest_layers(top_n)
+        if not slowest:
+            return None
+
+        # Prepare data (reversed for horizontal bar chart - slowest at top)
+        layers = [lp.name[:30] for lp in reversed(slowest)]  # Truncate long names
+        times = [lp.duration_ms for lp in reversed(slowest)]
+        op_types = [lp.op_type for lp in reversed(slowest)]
+
+        # Create figure
+        fig, ax = plt.subplots(
+            figsize=(12, max(6, len(slowest) * 0.4)), dpi=THEME.figure_dpi
+        )
+
+        # Color by op type
+        unique_ops = list(set(op_types))
+        colors = [
+            THEME.palette[unique_ops.index(op) % len(THEME.palette)] for op in op_types
+        ]
+
+        y_pos = range(len(layers))
+        bars = ax.barh(
+            y_pos, times, color=colors, edgecolor=THEME.background, height=0.7
+        )
+
+        ax.set_yticks(list(y_pos))
+        ax.set_yticklabels(layers, fontsize=9)
+        ax.set_xlabel("Time (ms)", color=THEME.text, fontsize=10)
+
+        # Add value labels
+        for bar, time_val, op_type in zip(bars, times, op_types, strict=False):
+            ax.text(
+                bar.get_width() + max(times) * 0.01,
+                bar.get_y() + bar.get_height() / 2,
+                f"{time_val:.2f}ms ({op_type})",
+                va="center",
+                ha="left",
+                color=THEME.text,
+                fontsize=8,
+            )
+
+        _apply_theme(
+            fig,
+            ax,
+            f"Top {len(slowest)} Slowest Layers (Total: {profiling_result.total_time_ms:.2f}ms)",
+        )
+
+        # Add legend for op types
+        from matplotlib.patches import Patch
+
+        legend_elements = [
+            Patch(facecolor=THEME.palette[i % len(THEME.palette)], label=op)
+            for i, op in enumerate(unique_ops)
+        ]
+        ax.legend(
+            handles=legend_elements,
+            loc="lower right",
+            fontsize=8,
+            facecolor=THEME.plot_background,
+            edgecolor=THEME.grid,
+            labelcolor=THEME.text,
+        )
+
+        plt.tight_layout()
+        fig.savefig(
+            output_path,
+            facecolor=THEME.background,
+            edgecolor="none",
+            bbox_inches="tight",
+        )
+        plt.close(fig)
+
+        return output_path
+
+    def op_time_distribution_chart(
+        self,
+        profiling_result: ProfilingResult,
+        output_path: Path,
+    ) -> Path | None:
+        """
+        Generate operator type time distribution pie chart.
+
+        Shows percentage of execution time by operator type.
+
+        Args:
+            profiling_result: ProfilingResult from profiling
+            output_path: Path to save the chart
+
+        Returns:
+            Path to generated chart or None if unavailable
+        """
+        if not _MATPLOTLIB_AVAILABLE:
+            return None
+
+        from .operational_profiling import ProfilingResult
+
+        if not isinstance(profiling_result, ProfilingResult):
+            return None
+
+        time_by_op = profiling_result.get_time_by_op_type()
+        if not time_by_op:
+            return None
+
+        # Limit to top 8 ops, aggregate rest into "Other"
+        sorted_ops = sorted(time_by_op.items(), key=lambda x: -x[1])
+        labels = []
+        values = []
+        other_time = 0.0
+
+        for i, (op, time_val) in enumerate(sorted_ops):
+            if i < 8:
+                labels.append(op)
+                values.append(time_val)
+            else:
+                other_time += time_val
+
+        if other_time > 0:
+            labels.append("Other")
+            values.append(other_time)
+
+        # Create figure
+        fig, ax = plt.subplots(figsize=(10, 8), dpi=THEME.figure_dpi)
+        ax.set_facecolor(THEME.plot_background)
+
+        colors = THEME.palette[: len(values)]
+        wedges, _texts, autotexts = ax.pie(
+            values,
+            labels=None,
+            autopct=lambda pct: f"{pct:.1f}%" if pct > 3 else "",
+            startangle=90,
+            colors=colors,
+            pctdistance=0.75,
+            wedgeprops={"edgecolor": THEME.background, "linewidth": 1},
+        )
+
+        for autotext in autotexts:
+            autotext.set_color(THEME.text)
+            autotext.set_fontsize(9)
+
+        # Legend
+        legend_labels = [
+            f"{op} ({time_val:.2f}ms)"
+            for op, time_val in zip(labels, values, strict=False)
+        ]
+        ax.legend(
+            wedges,
+            legend_labels,
+            title="Operator Type",
+            loc="center left",
+            bbox_to_anchor=(1.0, 0.5),
+            fontsize=9,
+            title_fontsize=10,
+            frameon=True,
+            facecolor=THEME.plot_background,
+            edgecolor=THEME.grid,
+            labelcolor=THEME.text,
+        )
+
+        total_time = sum(values)
+        ax.set_title(
+            f"Execution Time Distribution (Total: {total_time:.2f}ms)",
+            color=THEME.text,
+            fontsize=THEME.title_size,
+            fontweight="bold",
+            pad=20,
+        )
+
+        fig.patch.set_facecolor(THEME.background)
 
         plt.tight_layout()
         fig.savefig(

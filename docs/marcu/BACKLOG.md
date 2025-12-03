@@ -23,7 +23,7 @@
 | Epic 6: Hardware/Compare | **COMPLETE** | 10 | 56/56 | P3 |
 | Epic 7: LLM Integration | In Progress | 2 | 5/9 | P3 |
 | Epic 8: Testing & CI/CD | **COMPLETE** | 4 | 18/18 | P3 |
-| Epic 9: Runtime Profiling | In Progress | 5 | 4/17 | P2 |
+| Epic 9: Runtime Profiling | **COMPLETE** | 5 | 17/17 | P2 |
 | Epic 10: SaaS Web App | Not Started | 5 | 0/27 | P4 |
 | Epic 10B: Standalone Package | Not Started | 3 | 0/17 | P0 |
 | Epic 11: Streamlit Web UI | Not Started | 3 | 0/14 | P0 |
@@ -325,7 +325,7 @@
 
 ---
 
-## Epic 9: Runtime Profiling and Actual Measurements (P2)
+## Epic 9: Runtime Profiling and Actual Measurements (P2) - **COMPLETE**
 
 *Replace theoretical estimates with actual ONNX Runtime measurements.*
 
@@ -335,29 +335,29 @@
 - [x] **Task 9.1.3**: Calculate real throughput from measured latency
 - [x] **Task 9.1.4**: Make benchmarking the default (`--no-benchmark` for theoretical)
 
-### Story 9.2: GPU Memory Profiling
-- [ ] **Task 9.2.1**: Integrate `pynvml` for GPU memory measurement
-- [ ] **Task 9.2.2**: Track VRAM usage during inference
-- [ ] **Task 9.2.3**: Measure peak GPU memory per batch size
-- [ ] **Task 9.2.4**: Add GPU utilization tracking
+### Story 9.2: GPU Memory Profiling - **COMPLETE**
+- [x] **Task 9.2.1**: Integrate `pynvml` for GPU memory measurement
+- [x] **Task 9.2.2**: Track VRAM usage during inference
+- [x] **Task 9.2.3**: Measure peak GPU memory per batch size
+- [x] **Task 9.2.4**: Add GPU utilization tracking
 
-### Story 9.3: Per-Layer Profiling
-- [ ] **Task 9.3.1**: Enable ONNX Runtime profiling (`enable_profiling=True`)
-- [ ] **Task 9.3.2**: Parse profiling JSON output
-- [ ] **Task 9.3.3**: Identify slowest layers/operators
-- [ ] **Task 9.3.4**: Generate per-layer timing breakdown chart
-- [ ] **Task 9.3.5**: Highlight bottleneck layers in graph visualization
+### Story 9.3: Per-Layer Profiling - **COMPLETE**
+- [x] **Task 9.3.1**: Enable ONNX Runtime profiling (`enable_profiling=True`)
+- [x] **Task 9.3.2**: Parse profiling JSON output
+- [x] **Task 9.3.3**: Identify slowest layers/operators
+- [x] **Task 9.3.4**: Generate per-layer timing breakdown chart
+- [x] **Task 9.3.5**: Highlight bottleneck layers in graph visualization (via layer_timing_chart)
 
-### Story 9.4: Bottleneck Detection
-- [ ] **Task 9.4.1**: Compare compute time vs memory transfer time
-- [ ] **Task 9.4.2**: Classify as compute-bound or memory-bound
-- [ ] **Task 9.4.3**: Provide optimization recommendations based on bottleneck
-- [ ] **Task 9.4.4**: Show theoretical vs actual performance gap
+### Story 9.4: Bottleneck Detection - **COMPLETE**
+- [x] **Task 9.4.1**: Compare compute time vs memory transfer time
+- [x] **Task 9.4.2**: Classify as compute-bound or memory-bound
+- [x] **Task 9.4.3**: Provide optimization recommendations based on bottleneck
+- [x] **Task 9.4.4**: Show theoretical vs actual performance gap
 
-### Story 9.5: Resolution Benchmarking
-- [ ] **Task 9.5.1**: Benchmark actual inference at different resolutions
-- [ ] **Task 9.5.2**: Measure real throughput scaling with resolution
-- [ ] **Task 9.5.3**: Find optimal resolution for target latency
+### Story 9.5: Resolution Benchmarking - **COMPLETE**
+- [x] **Task 9.5.1**: Benchmark actual inference at different resolutions
+- [x] **Task 9.5.2**: Measure real throughput scaling with resolution
+- [x] **Task 9.5.3**: Find optimal resolution for target latency
 
 ---
 

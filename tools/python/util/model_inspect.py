@@ -413,6 +413,40 @@ Examples:
         ),
     )
 
+    # Epic 9: Runtime Profiling Options (defaults to ON for real measurements)
+    profiling_group = parser.add_argument_group("Runtime Profiling Options")
+    profiling_group.add_argument(
+        "--no-profile",
+        action="store_true",
+        help="Disable per-layer ONNX Runtime profiling (faster but less detailed).",
+    )
+
+    profiling_group.add_argument(
+        "--profile-runs",
+        type=int,
+        default=10,
+        metavar="N",
+        help="Number of inference runs for profiling (default: 10).",
+    )
+
+    profiling_group.add_argument(
+        "--no-gpu-metrics",
+        action="store_true",
+        help="Disable GPU metrics capture (VRAM, utilization, temperature).",
+    )
+
+    profiling_group.add_argument(
+        "--no-bottleneck-analysis",
+        action="store_true",
+        help="Disable compute vs memory bottleneck analysis.",
+    )
+
+    profiling_group.add_argument(
+        "--no-benchmark-resolutions",
+        action="store_true",
+        help="Disable resolution benchmarking (use theoretical estimates instead).",
+    )
+
     # Visualization options
     viz_group = parser.add_argument_group("Visualization Options")
     viz_group.add_argument(
@@ -1672,6 +1706,14 @@ def run_inspect():
         total_steps += 1
     if args.sweep_resolutions and hardware_profile:
         total_steps += 1
+    if not args.no_gpu_metrics:
+        total_steps += 1
+    if not args.no_profile:
+        total_steps += 1
+    if not args.no_profile and not args.no_bottleneck_analysis and hardware_profile:
+        total_steps += 1
+    if not args.no_benchmark_resolutions:
+        total_steps += 1
     if args.with_plots and is_viz_available():
         total_steps += 1
     if args.llm_summary and is_llm_available() and has_llm_api_key():
@@ -1843,6 +1885,90 @@ def run_inspect():
                 logger.info(f"Recommended device: {sys_reqs.recommended_gpu.device}")
             elif sys_reqs.minimum_gpu:
                 logger.info(f"Minimum device: {sys_reqs.minimum_gpu.device}")
+
+        # Epic 9: Runtime Profiling (defaults ON for real measurements)
+        profiler = OperationalProfiler(logger=logger)
+        profiling_result = None  # Store for use in NN graph visualization
+
+        # GPU Metrics (Story 9.2) - default ON
+        if not args.no_gpu_metrics:
+            progress.step("Capturing GPU metrics")
+            gpu_metrics = profiler.get_gpu_metrics()
+            if gpu_metrics:
+                logger.info(
+                    f"GPU: {gpu_metrics.vram_used_bytes / (1024**3):.2f} GB VRAM used, "
+                    f"{gpu_metrics.gpu_utilization_percent:.0f}% utilization, "
+                    f"{gpu_metrics.temperature_c}C"
+                )
+                # Store in report (add to JSON output)
+                report.extra_data = report.extra_data or {}
+                report.extra_data["gpu_metrics"] = gpu_metrics.to_dict()
+            else:
+                logger.debug("GPU metrics unavailable (pynvml not installed)")
+
+        # Per-Layer Profiling (Story 9.3) - default ON
+        if not args.no_profile:
+            progress.step("Running ONNX Runtime profiler")
+            profiling_result = profiler.profile_model(
+                model_path=str(model_path),
+                batch_size=args.batch_size,
+                num_runs=args.profile_runs,
+            )
+            if profiling_result:
+                logger.info(
+                    f"Profiling complete: {profiling_result.total_time_ms:.2f}ms "
+                    f"({len(profiling_result.layer_profiles)} layers)"
+                )
+                # Show slowest layers
+                slowest = profiling_result.get_slowest_layers(5)
+                if slowest:
+                    logger.info("Top 5 slowest layers:")
+                    for lp in slowest:
+                        logger.info(
+                            f"  {lp.name}: {lp.duration_ms:.3f}ms ({lp.op_type})"
+                        )
+
+                # Store in report
+                report.extra_data = report.extra_data or {}
+                report.extra_data["profiling"] = profiling_result.to_dict()
+
+                # Bottleneck Analysis (Story 9.4) - default ON
+                if not args.no_bottleneck_analysis and hardware_profile:
+                    progress.step("Analyzing bottlenecks")
+                    bottleneck = profiler.analyze_bottleneck(
+                        model_flops=report.flop_counts.total,
+                        profiling_result=profiling_result,
+                        hardware=hardware_profile,
+                        precision=args.precision,
+                    )
+                    logger.info(
+                        f"Bottleneck: {bottleneck.bottleneck_type} "
+                        f"(compute: {bottleneck.compute_ratio:.0%}, "
+                        f"memory: {bottleneck.memory_ratio:.0%})"
+                    )
+                    logger.info(f"Efficiency: {bottleneck.efficiency_percent:.1f}%")
+                    for rec in bottleneck.recommendations[:3]:
+                        logger.info(f"  - {rec}")
+                    report.extra_data["bottleneck_analysis"] = bottleneck.to_dict()
+            else:
+                logger.debug("Profiling unavailable (onnxruntime not installed)")
+
+        # Resolution Benchmarking (Story 9.5) - default ON
+        if not args.no_benchmark_resolutions:
+            progress.step("Benchmarking resolutions (actual inference)")
+            res_benchmark = profiler.benchmark_resolutions(
+                model_path=str(model_path),
+                batch_size=args.batch_size,
+            )
+            if res_benchmark:
+                logger.info(
+                    f"Resolution benchmark complete. "
+                    f"Optimal: {res_benchmark.optimal_resolution}"
+                )
+                report.extra_data = report.extra_data or {}
+                report.extra_data["resolution_benchmark"] = res_benchmark.to_dict()
+            else:
+                logger.debug("Resolution benchmark unavailable")
 
     except Exception as e:
         logger.error(f"Failed to inspect model: {e}")
@@ -2042,8 +2168,20 @@ def run_inspect():
 
                 # Generate graph HTML (just the interactive part, not full document)
                 # For embedding, we'll use an iframe approach
+
+                # Extract layer timing from profiling results if available
+                layer_timing = None
+                if (
+                    report.extra_data
+                    and "profiling" in report.extra_data
+                    and "slowest_layers" in report.extra_data["profiling"]
+                ):
+                    layer_timing = {}
+                    for layer in report.extra_data["profiling"]["slowest_layers"]:
+                        layer_timing[layer["name"]] = layer["duration_ms"]
+
                 full_graph_html = generate_graph_html(
-                    hier_graph, edge_result, model_path.stem
+                    hier_graph, edge_result, model_path.stem, layer_timing=layer_timing
                 )
                 # Wrap in iframe data URI for embedding
                 import base64
@@ -2117,8 +2255,21 @@ def run_inspect():
             builder = HierarchicalGraphBuilder(logger=logger)
             hier_graph = builder.build(graph_info, blocks, model_path.stem)
 
-            # Export HTML with model size
+            # Export HTML with model size and layer timing
             model_size = model_path.stat().st_size if model_path.exists() else None
+
+            # Extract layer timing from profiling results if available
+            layer_timing = None
+            if (
+                report.extra_data
+                and "profiling" in report.extra_data
+                and "slowest_layers" in report.extra_data["profiling"]
+            ):
+                # Build timing dict from profiling results
+                layer_timing = {}
+                for layer in report.extra_data["profiling"]["slowest_layers"]:
+                    layer_timing[layer["name"]] = layer["duration_ms"]
+
             exporter = HTMLExporter(logger=logger)
             exporter.export(
                 hier_graph,
@@ -2126,6 +2277,7 @@ def run_inspect():
                 args.html_graph,
                 model_path.stem,
                 model_size_bytes=model_size,
+                layer_timing=layer_timing,
             )
 
             logger.info(
