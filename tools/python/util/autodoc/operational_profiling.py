@@ -252,6 +252,7 @@ class OperationalProfiler:
         """
         try:
             import numpy as np
+
             import onnxruntime as ort
         except ImportError:
             self.logger.warning("onnxruntime not available, falling back to estimates")
