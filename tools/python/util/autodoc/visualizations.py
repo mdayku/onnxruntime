@@ -252,7 +252,7 @@ class VisualizationGenerator:
             return None
 
         # Import at runtime for isinstance check (avoid circular import)
-        from .operational_profiling import ResolutionSweep  # noqa: PLC0415
+        from .operational_profiling import ResolutionSweep
 
         if not isinstance(sweep, ResolutionSweep):
             return None
@@ -344,7 +344,7 @@ class VisualizationGenerator:
             return None
 
         # Import at runtime for isinstance check (avoid circular import)
-        from .operational_profiling import BatchSizeSweep  # noqa: PLC0415
+        from .operational_profiling import BatchSizeSweep
 
         if not isinstance(sweep, BatchSizeSweep):
             return None

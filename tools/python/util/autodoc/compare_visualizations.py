@@ -766,7 +766,7 @@ def generate_radar_chart(
         LOGGER.warning("matplotlib not available, skipping radar chart")
         return None
 
-    import numpy as np  # noqa: PLC0415
+    import numpy as np
 
     variants = compare_json.get("variants", [])
     if not variants:
@@ -908,8 +908,8 @@ def generate_compare_pdf(
     Uses the existing PDF generator infrastructure if available.
     """
     try:
-        from .pdf_generator import PDFGenerator  # noqa: PLC0415
-        from .pdf_generator import is_available as is_pdf_available  # noqa: PLC0415
+        from .pdf_generator import PDFGenerator
+        from .pdf_generator import is_available as is_pdf_available
     except ImportError:
         LOGGER.warning("PDF generator not available")
         return None
