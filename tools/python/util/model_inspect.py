@@ -1730,7 +1730,7 @@ def run_inspect():
     if args.html_graph:
         try:
             args.html_graph.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Use graph_info from the inspector if available
             if hasattr(inspector, "_graph_info") and inspector._graph_info:
                 graph_info = inspector._graph_info
@@ -1739,23 +1739,23 @@ def run_inspect():
                 from .autodoc.analyzer import ONNXGraphLoader
                 loader = ONNXGraphLoader(logger=logger)
                 _, graph_info = loader.load(model_path)
-            
+
             # Detect patterns
             pattern_analyzer = PatternAnalyzer(logger=logger)
             blocks = pattern_analyzer.group_into_blocks(graph_info)
-            
+
             # Analyze edges
             edge_analyzer = EdgeAnalyzer(logger=logger)
             edge_result = edge_analyzer.analyze(graph_info)
-            
+
             # Build hierarchy
             builder = HierarchicalGraphBuilder(logger=logger)
             hier_graph = builder.build(graph_info, blocks, model_path.stem)
-            
+
             # Export HTML
             exporter = HTMLExporter(logger=logger)
             exporter.export(hier_graph, edge_result, args.html_graph, model_path.stem)
-            
+
             logger.info(f"Interactive graph visualization written to: {args.html_graph}")
         except Exception as e:
             logger.error(f"Failed to generate graph visualization: {e}")
