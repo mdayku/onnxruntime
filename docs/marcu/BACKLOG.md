@@ -22,7 +22,7 @@
 | Epic 5: Visualization | **Complete** | 8 | 52/52 | Done |
 | Epic 6: Hardware/Compare | **COMPLETE** | 10 | 56/56 | P3 |
 | Epic 7: LLM Integration | In Progress | 2 | 5/9 | P3 |
-| Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 | P3 |
+| Epic 8: Testing & CI/CD | **COMPLETE** | 4 | 18/18 | P3 |
 | Epic 10: SaaS Web App | Not Started | 5 | 0/27 | P4 |
 | Epic 10B: Standalone Package | Not Started | 3 | 0/17 | P0 |
 | Epic 11: Streamlit Web UI | Not Started | 3 | 0/14 | P0 |
@@ -302,7 +302,7 @@
 
 ---
 
-## Epic 8: Testing, CI/CD, and Quality (P3 - 15/18 done)
+## Epic 8: Testing, CI/CD, and Quality (P3) - **COMPLETE**
 
 ### Story 8.1: Unit Tests - **COMPLETE**
 - [x] **Task 8.1.1-8.1.4**: All unit tests complete
@@ -313,11 +313,11 @@
 - [x] **Task 8.2.3**: Test compare mode with quantized variants (real benchmarks)
 - [x] **Task 8.2.4**: Test visualization generation (17 tests)
 
-### Story 8.3: Documentation
+### Story 8.3: Documentation - **COMPLETE**
 - [x] **Task 8.3.1**: Write tool README
-- [ ] **Task 8.3.2**: Add inline code documentation
-- [ ] **Task 8.3.3**: Create example scripts
-- [ ] **Task 8.3.4**: Document JSON schemas
+- [x] **Task 8.3.2**: Add inline code documentation (844 docstrings across 35 files)
+- [x] **Task 8.3.3**: Create example scripts (`autodoc/examples/`)
+- [x] **Task 8.3.4**: Document JSON schemas (`docs/marcu/JSON_SCHEMAS.md`)
 
 ### Story 8.4: CI/CD Pipeline - **COMPLETE**
 - [x] **Task 8.4.1-8.4.6**: GitHub Actions workflow complete
