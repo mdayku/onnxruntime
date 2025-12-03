@@ -81,5 +81,7 @@ ignore = [
 "onnxruntime/test/python/quantization/op_test_utils.py" = ["N806", "PERF203", "RUF012"]  # use of A for a matrix
 "tools/python/util/autodoc/tests/*" = ["N806", "PLC0415"]  # ONNX tensor names (X, W, Y) are idiomatic; lazy test imports
 "tools/python/util/autodoc/report.py" = ["PLC0415"]  # Lazy imports for optional dependencies (numpy, base64)
+"tools/python/util/autodoc/visualizations.py" = ["PLC0415"]  # Lazy imports for isinstance checks (avoid circular import)
+"tools/python/util/autodoc/compare_visualizations.py" = ["PLC0415"]  # Lazy imports for optional dependencies (numpy, pdf_generator)
 "tools/python/util/model_inspect.py" = ["PLC0415", "F541", "SIM105", "SIM115"]  # CLI with lazy imports and multiline f-strings
 "orttraining/orttraining/python/training/ort_triton/kernel/_flash_attn.py" = ["N806", "PLW2901", "ISC001", "E731"]  # Long triton code from other repo.
