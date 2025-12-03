@@ -1538,7 +1538,7 @@ If ONNX Autodoc gains traction, the natural evolution is a full MLOps platform:
 
 - **Cloud Integration**: AWS/GCP/Azure SDKs for instance management
 - **GPU Orchestration**: Spin up H100/A100/etc on demand
-- **Job Scheduler**: Queue and execute benchmark/training jobs  
+- **Job Scheduler**: Queue and execute benchmark/training jobs
 - **Cost Engine**: Track cloud spend, project costs
 - **Model Registry**: Version, lineage, deployment tracking
 
@@ -1599,3 +1599,6 @@ If ONNX Autodoc gains traction, the natural evolution is a full MLOps platform:
 | Dec 3, 2025 | Inference | Added Section 15: Inference Platform with "wide hole" architecture. InferenceRunner, DataLoader interface, MetricsCalculator extension point | Platform-first approach: build horizontal, go vertical when paid |
 | Dec 3, 2025 | Backlog | Added Epic 12: Inference Platform (24 tasks across 5 stories). Platform layer for inference, not task-specific metrics | Extensible architecture for future customer needs |
 | Dec 3, 2025 | Future | Added Section 16: MLOps Platform Vision (P5). Cloud GPU orchestration, training estimation, model inventory. High-level only | Document vision, execute MVP. Don't confuse the two |
+| Dec 3, 2025 | Backlog | Added Epics 18-25: Universal IR, SafeTensors, CoreML, TFLite, TensorRT, OpenVINO, GGUF, Privacy/Trust | Format-agnostic vision: read/write any model format |
+| Dec 3, 2025 | Git | Merged feature/onnx-autodoc to main branch, now working on main | This is our IP, not a Microsoft contribution |
+| Dec 3, 2025 | Backlog | Removed Epic 9 (Demo/Deliverables), reordered to original epic numbers | User preference: feature work tonight, deployment tomorrow |
