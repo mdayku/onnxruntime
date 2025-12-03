@@ -270,6 +270,84 @@ class OperationalProfiler:
         self.logger = logger or logging.getLogger("autodoc.profiler")
         self.hw_estimator = HardwareEstimator(logger=self.logger)
 
+    def _create_input_feed(
+        self,
+        sess: Any,
+        batch_size: int = 1,
+        seq_len: int = 128,
+    ) -> dict[str, Any]:
+        """
+        Create input feed dict for all model inputs (Story 9.6).
+
+        Handles multi-input models like BERT, LLMs, and multimodal models.
+
+        Args:
+            sess: ONNX Runtime InferenceSession
+            batch_size: Batch size for inputs
+            seq_len: Sequence length for text inputs (default: 128)
+
+        Returns:
+            Dict mapping input names to numpy arrays
+        """
+        import numpy as np
+
+        input_feed = {}
+
+        for inp in sess.get_inputs():
+            name = inp.name
+            shape = list(inp.shape)
+            dtype_str = inp.type  # e.g., "tensor(float)", "tensor(int64)"
+
+            # Determine numpy dtype from ONNX type
+            if "int64" in dtype_str:
+                np_dtype = np.int64
+                is_text = True
+            elif "int32" in dtype_str:
+                np_dtype = np.int32
+                is_text = True
+            elif "float16" in dtype_str:
+                np_dtype = np.float16
+                is_text = False
+            elif "bool" in dtype_str:
+                np_dtype = np.bool_
+                is_text = False
+            else:
+                np_dtype = np.float32
+                is_text = False
+
+            # Resolve dynamic dimensions
+            resolved_shape = []
+            for i, dim in enumerate(shape):
+                if isinstance(dim, int) and dim > 0:
+                    resolved_shape.append(dim)
+                elif i == 0:
+                    # Batch dimension
+                    resolved_shape.append(batch_size)
+                elif is_text:
+                    # Text models: sequence length
+                    resolved_shape.append(seq_len)
+                elif len(shape) == 4 and i == 1:
+                    # Vision models: channels
+                    resolved_shape.append(3)
+                else:
+                    # Vision models: spatial dims
+                    resolved_shape.append(224)
+
+            # Generate appropriate dummy data
+            if is_text:
+                # Token IDs: random integers in typical vocab range
+                dummy = np.random.randint(0, 30000, size=resolved_shape, dtype=np_dtype)
+            elif np_dtype == np.bool_:
+                # Boolean masks
+                dummy = np.ones(resolved_shape, dtype=np_dtype)
+            else:
+                # Continuous values (vision, etc.)
+                dummy = np.random.randn(*resolved_shape).astype(np_dtype)
+
+            input_feed[name] = dummy
+
+        return input_feed
+
     def run_batch_sweep(
         self,
         model_params: int,
@@ -382,20 +460,50 @@ class OperationalProfiler:
         active_provider = sess.get_providers()[0]
         self.logger.info(f"Benchmarking with {active_provider}")
 
-        # Get input info
-        input_info = sess.get_inputs()[0]
-        input_name = input_info.name
-        input_shape = list(input_info.shape)
+        # Get ALL input info (Story 9.6: Multi-input model support)
+        all_inputs = sess.get_inputs()
+        input_specs = []  # List of (name, shape_template, dtype, is_text)
 
-        # Replace dynamic dimensions with defaults
-        for i, dim in enumerate(input_shape):
-            if not isinstance(dim, int) or dim <= 0:
-                if i == 0:
-                    input_shape[i] = 1  # Batch dim, will be replaced
-                elif i == 1:
-                    input_shape[i] = 3  # Channels
+        for inp in all_inputs:
+            name = inp.name
+            shape = list(inp.shape)
+            dtype_str = inp.type  # e.g., "tensor(float)", "tensor(int64)"
+
+            # Determine numpy dtype
+            if "int64" in dtype_str:
+                np_dtype = np.int64
+                is_text = True  # Likely token IDs
+            elif "int32" in dtype_str:
+                np_dtype = np.int32
+                is_text = True
+            elif "float16" in dtype_str:
+                np_dtype = np.float16
+                is_text = False
+            else:
+                np_dtype = np.float32
+                is_text = False
+
+            # Resolve dynamic dimensions with sensible defaults
+            resolved_shape = []
+            for i, dim in enumerate(shape):
+                if isinstance(dim, int) and dim > 0:
+                    resolved_shape.append(dim)
+                elif i == 0:
+                    resolved_shape.append(1)  # Batch dim, replaced per iteration
+                elif is_text:
+                    # Text models: sequence length
+                    resolved_shape.append(128)  # Default seq_len
+                elif len(shape) == 4 and i == 1:
+                    resolved_shape.append(3)  # Channels for vision
                 else:
-                    input_shape[i] = 224  # Spatial dims
+                    resolved_shape.append(224)  # Spatial dims for vision
+
+            input_specs.append((name, resolved_shape, np_dtype, is_text))
+            self.logger.debug(
+                f"  Input '{name}': shape={resolved_shape}, dtype={np_dtype.__name__}"
+            )
+
+        self.logger.info(f"Model has {len(input_specs)} input(s)")
 
         latencies = []
         throughputs = []
@@ -404,12 +512,29 @@ class OperationalProfiler:
         max_throughput = 0.0
 
         for bs in batch_sizes:
-            # Create input with current batch size
-            input_shape[0] = bs
+            # Create input feed for ALL inputs
+            input_feed = {}
+            total_bytes = 0
+
             try:
-                dummy_input = np.random.randn(*input_shape).astype(np.float32)
+                for name, shape_template, np_dtype, is_text in input_specs:
+                    # Set batch size
+                    shape = shape_template.copy()
+                    shape[0] = bs
+
+                    # Generate appropriate dummy data
+                    if is_text:
+                        # Token IDs: random integers in vocab range
+                        dummy = np.random.randint(0, 30000, size=shape, dtype=np_dtype)
+                    else:
+                        # Vision/continuous: random floats
+                        dummy = np.random.randn(*shape).astype(np_dtype)
+
+                    input_feed[name] = dummy
+                    total_bytes += dummy.nbytes
+
             except Exception as e:
-                self.logger.warning(f"Failed to create input for batch {bs}: {e}")
+                self.logger.warning(f"Failed to create inputs for batch {bs}: {e}")
                 latencies.append(float("inf"))
                 throughputs.append(0.0)
                 vram_usage.append(0.0)
@@ -418,7 +543,7 @@ class OperationalProfiler:
             # Warmup
             try:
                 for _ in range(num_warmup):
-                    sess.run(None, {input_name: dummy_input})
+                    sess.run(None, input_feed)
             except Exception as e:
                 self.logger.warning(f"Batch {bs} failed (OOM?): {e}")
                 latencies.append(float("inf"))
@@ -432,7 +557,7 @@ class OperationalProfiler:
             run_latencies = []
             for _ in range(num_runs):
                 start = time.perf_counter()
-                sess.run(None, {input_name: dummy_input})
+                sess.run(None, input_feed)
                 end = time.perf_counter()
                 run_latencies.append((end - start) * 1000)  # ms
 
@@ -449,9 +574,8 @@ class OperationalProfiler:
             if gpu_metrics:
                 vram_gb = gpu_metrics.vram_used_bytes / (1024**3)
             else:
-                # Estimate: model weights + activations scale with batch
-                # Rough estimate: input * 10 accounts for intermediate activations
-                vram_gb = (dummy_input.nbytes * 10) / (1024**3)
+                # Estimate: total input bytes * 10 for activations
+                vram_gb = (total_bytes * 10) / (1024**3)
             vram_usage.append(round(vram_gb, 3))
 
             if throughput > max_throughput:
@@ -981,8 +1105,6 @@ class OperationalProfiler:
             import tempfile
             import time
 
-            import numpy as np
-
             import onnxruntime as ort
         except ImportError:
             self.logger.warning("onnxruntime not available for profiling")
@@ -1006,29 +1128,17 @@ class OperationalProfiler:
                 self.logger.error(f"Failed to create profiling session: {e}")
                 return None
 
-            # Get input info
-            input_info = sess.get_inputs()[0]
-            input_shape = list(input_info.shape)
-            for i, dim in enumerate(input_shape):
-                if not isinstance(dim, int) or dim <= 0:
-                    if i == 0:
-                        input_shape[i] = batch_size
-                    elif i == 1:
-                        input_shape[i] = 3
-                    else:
-                        input_shape[i] = 224
-            input_shape[0] = batch_size
-
-            dummy_input = np.random.randn(*input_shape).astype(np.float32)
+            # Get ALL inputs (Story 9.6: Multi-input model support)
+            input_feed = self._create_input_feed(sess, batch_size)
 
             # Warmup
             for _ in range(3):
-                sess.run(None, {input_info.name: dummy_input})
+                sess.run(None, input_feed)
 
             # Profile runs
             start = time.perf_counter()
             for _ in range(num_runs):
-                sess.run(None, {input_info.name: dummy_input})
+                sess.run(None, input_feed)
             total_time_ms = ((time.perf_counter() - start) / num_runs) * 1000
 
             # End profiling and get the file
