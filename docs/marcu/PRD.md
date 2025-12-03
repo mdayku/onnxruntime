@@ -956,6 +956,81 @@ This schema is intentionally minimal so it can be produced by:
 - ONNX Runtime perf test wrappers
 - Custom eval scripts in any language
 
+### 9.4 Runtime Profiling (Epic 9)
+
+**Purpose**: Replace theoretical estimates with actual ONNX Runtime measurements for accurate performance analysis.
+
+#### 9.4.1 Batch Size Benchmarking (Complete)
+
+Actual inference benchmarking is now the **default** for batch size sweeps:
+
+```bash
+# Default: actual benchmarking with ONNX Runtime
+python -m util.model_inspect model.onnx --sweep-batch-sizes --hardware auto
+
+# Use --no-benchmark for fast theoretical estimates
+python -m util.model_inspect model.onnx --sweep-batch-sizes --no-benchmark --hardware auto
+```
+
+**Implementation**: Uses `onnxruntime.InferenceSession` to measure real latency:
+- Warmup runs (5) to stabilize GPU
+- Timed runs (20) per batch size
+- Reports p50 latency and actual throughput
+- Identifies true optimal batch size (often different from theoretical!)
+
+**Example Results** (ResNet18 on RTX 4050):
+
+| Batch | Theoretical | **Actual** |
+|-------|-------------|------------|
+| Optimal | 128 | **8** |
+| Peak Throughput | 5,490 inf/s | **1,342 inf/s** |
+| Batch 1 Latency | 0.28 ms | **2.15 ms** |
+
+#### 9.4.2 GPU Memory Profiling (Planned)
+
+Track actual VRAM usage during inference using `pynvml`:
+
+```python
+import pynvml
+pynvml.nvmlInit()
+handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+mem_before = pynvml.nvmlDeviceGetMemoryInfo(handle).used
+# Run inference
+mem_after = pynvml.nvmlDeviceGetMemoryInfo(handle).used
+actual_vram = mem_after - mem_before
+```
+
+**Metrics to capture**:
+- Peak VRAM usage per batch size
+- VRAM scaling curve
+- GPU utilization percentage
+
+#### 9.4.3 Per-Layer Profiling (Planned)
+
+Use ONNX Runtime's built-in profiling to identify bottleneck layers:
+
+```python
+sess_options = ort.SessionOptions()
+sess_options.enable_profiling = True
+session = ort.InferenceSession(model_path, sess_options)
+# After inference, profiling JSON is written to disk
+```
+
+**Output**: Per-operator timing breakdown showing:
+- Slowest operators (e.g., which Conv layers take longest)
+- Time spent in each layer
+- Optimization candidates
+
+#### 9.4.4 Bottleneck Detection (Planned)
+
+Automatically classify models as compute-bound or memory-bound:
+
+| Bottleneck | Indicator | Recommendation |
+|------------|-----------|----------------|
+| Compute-bound | GPU util > 80%, low memory BW | Use lower precision (FP16/INT8) |
+| Memory-bound | GPU util < 50%, high memory BW | Reduce activations, use fusion |
+| VRAM-limited | OOM at target batch | Reduce batch size or model size |
+
 ---
 
 ## 10. Testing Strategy
@@ -1850,3 +1925,5 @@ This creates a complete **optimize → analyze → deploy** workflow.
 | Dec 3, 2025 | Story 6.4 | **COMPLETE**: Quantization Impact Report. `compare_visualizations.py` with tradeoff charts, memory savings charts, calibration recommendations, HTML engine summary panel. 19 tests | TRT EngineXplorer-inspired quantization analysis |
 | Dec 3, 2025 | Story 6.8 | **COMPLETE**: Resolution/Batch Impact Analysis. `--sweep-resolutions auto`, `--input-resolution`. Only sweeps UP TO training resolution, matches aspect ratio. Resolution scaling charts. `recommend_resolution()` for target FPS | Smart resolution scaling that respects training constraints |
 | Dec 3, 2025 | Story 6.11 | **MOVED** to Story 12.6 (Inference Platform). Model Leaderboard requires inference metrics for meaningful ranking | Proper placement in Inference Platform epic |
+| Dec 3, 2025 | Section 9.4 | Added Runtime Profiling (Epic 9). Batch benchmarking with actual ONNX Runtime inference now **default** (`--no-benchmark` for theoretical). Story 9.1 complete, 9.2-9.5 planned for GPU memory, per-layer profiling, bottleneck detection | Real measurements > theoretical estimates. Batch 8 optimal vs theoretical batch 128 |
+| Dec 3, 2025 | Bug Fixes | Fixed VRAM calculation (symbolic dims like 'N' now handled), throughput model (added 0.1ms overhead), pie chart labels (legend instead of overlapping text), graph tooltip (smart positioning) | Integration test findings |
