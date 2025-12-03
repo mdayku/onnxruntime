@@ -587,9 +587,7 @@ def generate_legend_svg(width: int = 400, height: int = 300) -> str:
 
     Task 5.5.6: Add legend/key to visualization.
     """
-    lines = [
-        f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg">'
-    ]
+    lines = [f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg">']
     lines.append('<rect width="100%" height="100%" fill="#1a1a2e"/>')
     lines.append(
         '<text x="10" y="25" font-size="14" fill="white" font-weight="bold">Op Type Legend</text>'

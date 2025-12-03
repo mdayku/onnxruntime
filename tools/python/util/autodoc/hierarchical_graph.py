@@ -309,7 +309,7 @@ class HierarchicalGraphBuilder:
             nodes_by_id[op_node.id] = op_node
 
         # Add non-hidden blocks to root
-        for _block_name, block_node in block_nodes.items():
+        for block_node in block_nodes.values():
             if not block_node.attributes.get("hidden_by_repeat", False):
                 root.children.append(block_node)
 
