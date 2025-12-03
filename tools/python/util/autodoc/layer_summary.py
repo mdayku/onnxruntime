@@ -67,7 +67,7 @@ class LayerSummary:
     def to_dict(self) -> dict:
         """Convert to dictionary."""
         return {
-            "layers": [l.to_dict() for l in self.layers],
+            "layers": [layer.to_dict() for layer in self.layers],
             "total_params": self.total_params,
             "total_flops": self.total_flops,
             "total_memory": self.total_memory,
@@ -128,7 +128,7 @@ class LayerSummary:
 
     def filter_by_op_type(self, op_types: list[str]) -> LayerSummary:
         """Return a new summary filtered by op type."""
-        filtered = [l for l in self.layers if l.op_type in op_types]
+        filtered = [layer for layer in self.layers if layer.op_type in op_types]
         return LayerSummary(
             layers=filtered,
             total_params=self.total_params,
@@ -145,12 +145,12 @@ class LayerSummary:
     ) -> LayerSummary:
         """Return a new summary filtered by thresholds."""
         filtered = [
-            l
-            for l in self.layers
-            if l.params >= min_params
-            and l.flops >= min_flops
-            and l.pct_params >= min_pct_params
-            and l.pct_flops >= min_pct_flops
+            layer
+            for layer in self.layers
+            if layer.params >= min_params
+            and layer.flops >= min_flops
+            and layer.pct_params >= min_pct_params
+            and layer.pct_flops >= min_pct_flops
         ]
         return LayerSummary(
             layers=filtered,
@@ -187,7 +187,7 @@ class LayerSummary:
 
         sorted_layers = sorted(
             self.layers,
-            key=lambda l: getattr(l, key_normalized),
+            key=lambda layer: getattr(layer, key_normalized),
             reverse=descending,
         )
         return LayerSummary(
@@ -527,7 +527,7 @@ def generate_html_table(summary: LayerSummary, include_js: bool = True) -> str:
     )
 
     # Get unique op types
-    op_types = sorted(set(l.op_type for l in summary.layers))
+    op_types = sorted({layer.op_type for layer in summary.layers})
     for op_type in op_types:
         html_parts.append(f'            <option value="{op_type}">{op_type}</option>\n')
 
@@ -760,7 +760,7 @@ def generate_markdown_table(summary: LayerSummary, max_rows: int = 50) -> str:
     lines.append("|-------|---------|--------|-------|-----------|")
 
     # Sort by FLOPs descending to show most important first
-    sorted_layers = sorted(summary.layers, key=lambda l: l.flops, reverse=True)
+    sorted_layers = sorted(summary.layers, key=lambda layer: layer.flops, reverse=True)
 
     for layer in sorted_layers[:max_rows]:
         lines.append(

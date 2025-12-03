@@ -199,7 +199,7 @@ class TestLayerSummary:
 
         filtered = summary.filter_by_op_type(["Conv"])
         assert len(filtered.layers) == 2
-        assert all(l.op_type == "Conv" for l in filtered.layers)
+        assert all(layer.op_type == "Conv" for layer in filtered.layers)
 
     def test_filter_by_threshold(self):
         """Test filtering by parameter/FLOP thresholds."""
@@ -219,8 +219,8 @@ class TestLayerSummary:
         # Filter to layers with >10% FLOPs
         filtered = summary.filter_by_threshold(min_pct_flops=10.0)
         assert len(filtered.layers) == 2
-        assert "big" in [l.name for l in filtered.layers]
-        assert "medium" in [l.name for l in filtered.layers]
+        assert "big" in [layer.name for layer in filtered.layers]
+        assert "medium" in [layer.name for layer in filtered.layers]
 
     def test_sort_by(self):
         """Test sorting by different keys."""
@@ -281,7 +281,7 @@ class TestLayerSummaryBuilder:
             assert summary.total_flops == flop_counts.total
 
             # Check op types
-            op_types = {l.op_type for l in summary.layers}
+            op_types = {layer.op_type for layer in summary.layers}
             assert "Conv" in op_types
             assert "Relu" in op_types
             assert "Gemm" in op_types
@@ -322,7 +322,7 @@ class TestLayerSummaryBuilder:
                 ), f"Invalid pct_flops: {layer.pct_flops}"
 
             # At least some layers should have FLOPs
-            total_pct_flops = sum(l.pct_flops for l in summary.layers)
+            total_pct_flops = sum(layer.pct_flops for layer in summary.layers)
             # Note: might not sum to 100 if some nodes aren't in by_node dict
             assert total_pct_flops >= 0.0, f"FLOPs % sum: {total_pct_flops}"
 
@@ -440,7 +440,7 @@ class TestMarkdownTable:
         md = generate_markdown_table(summary, max_rows=10)
 
         # Should have header + separator + 10 rows + truncation note
-        lines = [l for l in md.split("\n") if l.strip()]
+        lines = [line for line in md.split("\n") if line.strip()]
         assert len(lines) == 13  # header, separator, 10 rows, truncation note
         assert "more layers" in md
 

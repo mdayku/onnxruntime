@@ -2,16 +2,13 @@
 # Licensed under the MIT License.
 
 import unittest
-from unittest.mock import MagicMock
 
 from ..hardware import (
-    HardwareProfile,
-    HardwareEstimator,
-    SystemRequirementsRecommender,
-    BatchSizeSweeper,
     NVIDIA_JETSON_NANO,
     NVIDIA_RTX_3060_12GB,
-    NVIDIA_RTX_4090,
+    BatchSizeSweeper,
+    HardwareEstimator,
+    SystemRequirementsRecommender,
 )
 
 
@@ -66,7 +63,7 @@ class TestBatchSizeSweep(unittest.TestCase):
 
         self.assertEqual(len(sweep.batch_sizes), 4)  # 1, 2, 4, 8
         self.assertEqual(sweep.batch_sizes[-1], 8)
-        self.assertTrue(all(l > 0 for l in sweep.latencies))
+        self.assertTrue(all(lat > 0 for lat in sweep.latencies))
 
         # Throughput should generally increase (or saturate)
         self.assertGreater(sweep.throughputs[-1], sweep.throughputs[0])

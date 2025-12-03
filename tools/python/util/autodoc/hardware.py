@@ -18,7 +18,7 @@ import os
 import platform
 import subprocess
 from dataclasses import dataclass
-from typing import Any, List
+from typing import Any
 
 # Try to import psutil for CPU info, but don't require it
 try:
@@ -2228,11 +2228,11 @@ class SystemRequirementsRecommender:
 class BatchSizeSweep:
     """Results of a batch size parameter sweep."""
 
-    batch_sizes: List[int]
-    latencies: List[float]
-    throughputs: List[float]
-    vram_usage_gb: List[float]
-    gpu_utilization: List[float]
+    batch_sizes: list[int]
+    latencies: list[float]
+    throughputs: list[float]
+    vram_usage_gb: list[float]
+    gpu_utilization: list[float]
     optimal_batch_size: int
 
     def to_dict(self) -> dict[str, Any]:
@@ -2268,16 +2268,16 @@ class BatchSizeSweeper:
             max_batch_size: Upper limit for sweep.
         """
         # Power of 2 steps: 1, 2, 4, ...
-        batch_sizes: List[int] = []
+        batch_sizes: list[int] = []
         b = 1
         while b <= max_batch_size:
             batch_sizes.append(b)
             b *= 2
 
-        latencies: List[float] = []
-        throughputs: List[float] = []
-        vram: List[float] = []
-        utilization: List[float] = []
+        latencies: list[float] = []
+        throughputs: list[float] = []
+        vram: list[float] = []
+        utilization: list[float] = []
 
         optimal_bs = 1
         max_throughput = 0.0
@@ -2292,7 +2292,7 @@ class BatchSizeSweeper:
                 precision=precision,
             )
 
-            # If OOM, stop sweeping entirely – larger batches will also OOM.
+            # If OOM, stop sweeping entirely - larger batches will also OOM.
             if not est.fits_in_vram:
                 break
 

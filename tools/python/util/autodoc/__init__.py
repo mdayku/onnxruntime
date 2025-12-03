@@ -19,6 +19,7 @@ Example usage:
 """
 
 from .analyzer import MetricsEngine, ONNXGraphLoader
+from .edge_analysis import EdgeAnalyzer, EdgeAnalysisResult
 from .hardware import (
     HARDWARE_PROFILES,
     HardwareDetector,
@@ -29,25 +30,26 @@ from .hardware import (
     get_profile,
     list_available_profiles,
 )
-from .llm_summarizer import (
-    LLMSummarizer,
-    LLMSummary,
-    summarize_report,
+from .hierarchical_graph import (
+    HierarchicalGraph,
+    HierarchicalGraphBuilder,
+    HierarchicalNode,
+    generate_summary as generate_graph_summary,
 )
-from .llm_summarizer import (
-    has_api_key as has_llm_api_key,
+from .html_export import HTMLExporter, generate_html as generate_graph_html
+from .layer_summary import (
+    LayerMetrics,
+    LayerSummary,
+    LayerSummaryBuilder,
+    generate_html_table,
+    generate_markdown_table,
 )
-from .llm_summarizer import (
-    is_available as is_llm_available,
-)
+from .llm_summarizer import LLMSummarizer, LLMSummary, summarize_report
+from .llm_summarizer import has_api_key as has_llm_api_key
+from .llm_summarizer import is_available as is_llm_available
 from .patterns import PatternAnalyzer
-from .pdf_generator import (
-    PDFGenerator,
-    generate_pdf,
-)
-from .pdf_generator import (
-    is_available as is_pdf_available,
-)
+from .pdf_generator import PDFGenerator, generate_pdf
+from .pdf_generator import is_available as is_pdf_available
 from .report import (
     DatasetInfo,
     InspectionReport,
@@ -68,61 +70,45 @@ from .visualizations import (
     VisualizationGenerator,
     generate_visualizations,
 )
-from .visualizations import (
-    is_available as is_visualization_available,
-)
-from .layer_summary import (
-    LayerMetrics,
-    LayerSummary,
-    LayerSummaryBuilder,
-    generate_html_table,
-    generate_markdown_table,
-)
-from .hierarchical_graph import (
-    HierarchicalGraph,
-    HierarchicalGraphBuilder,
-    HierarchicalNode,
-    generate_summary as generate_graph_summary,
-)
-from .html_export import (
-    HTMLExporter,
-    generate_html as generate_graph_html,
-)
-from .edge_analysis import (
-    EdgeAnalyzer,
-    EdgeAnalysisResult,
-)
+from .visualizations import is_available as is_visualization_available
 
 __all__ = [
-    "HARDWARE_PROFILES",
-    "INSPECTION_REPORT_SCHEMA",
-    "THEME",
     "ChartTheme",
-    # Dataset Info
     "DatasetInfo",
+    "EdgeAnalyzer",
+    "EdgeAnalysisResult",
+    "HARDWARE_PROFILES",
     "HardwareDetector",
     "HardwareEstimates",
     "HardwareEstimator",
-    # Hardware
     "HardwareProfile",
+    "HierarchicalGraph",
+    "HierarchicalGraphBuilder",
+    "HierarchicalNode",
+    "HTMLExporter",
+    "INSPECTION_REPORT_SCHEMA",
     "InspectionReport",
-    # LLM Summarization
+    "LayerMetrics",
+    "LayerSummary",
+    "LayerSummaryBuilder",
     "LLMSummarizer",
     "LLMSummary",
     "MetricsEngine",
     "ModelInspector",
     "ONNXGraphLoader",
-    # PDF Generation
     "PDFGenerator",
     "PatternAnalyzer",
     "RiskAnalyzer",
     "RiskSignal",
     "RiskThresholds",
-    # Schema Validation
+    "THEME",
     "ValidationError",
-    # Visualization
     "VisualizationGenerator",
     "detect_local_hardware",
+    "generate_graph_html",
+    "generate_graph_summary",
+    "generate_html_table",
+    "generate_markdown_table",
     "generate_pdf",
     "generate_visualizations",
     "get_profile",
@@ -136,21 +122,4 @@ __all__ = [
     "summarize_report",
     "validate_report",
     "validate_report_strict",
-    # Layer Summary (Story 5.8)
-    "LayerMetrics",
-    "LayerSummary",
-    "LayerSummaryBuilder",
-    "generate_html_table",
-    "generate_markdown_table",
-    # Hierarchical Graph (Story 5.7)
-    "HierarchicalGraph",
-    "HierarchicalGraphBuilder",
-    "HierarchicalNode",
-    "generate_graph_summary",
-    # HTML Export
-    "HTMLExporter",
-    "generate_graph_html",
-    # Edge Analysis
-    "EdgeAnalyzer",
-    "EdgeAnalysisResult",
 ]
