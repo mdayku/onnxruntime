@@ -19,27 +19,33 @@ if TYPE_CHECKING:
     from .hierarchical_graph import HierarchicalGraph
 
 
-# HTML template with embedded D3.js visualization
+# HTML template with embedded D3.js visualization - Jony Ive Edition
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title} - ONNX Autodoc</title>
+    <title>{title} - Neural Architecture</title>
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         :root {{
-            --bg-primary: #0d1117;
-            --bg-secondary: #161b22;
-            --bg-tertiary: #21262d;
-            --text-primary: #c9d1d9;
-            --text-secondary: #8b949e;
-            --accent: #58a6ff;
-            --accent-hover: #79c0ff;
-            --border: #30363d;
-            --success: #3fb950;
-            --warning: #d29922;
-            --error: #f85149;
+            --bg-deep: #000000;
+            --bg-primary: #0a0a0a;
+            --bg-elevated: #1a1a1a;
+            --bg-glass: rgba(255, 255, 255, 0.03);
+            --text-primary: rgba(255, 255, 255, 0.92);
+            --text-secondary: rgba(255, 255, 255, 0.55);
+            --text-tertiary: rgba(255, 255, 255, 0.35);
+            --accent: #0A84FF;
+            --accent-glow: rgba(10, 132, 255, 0.3);
+            --border: rgba(255, 255, 255, 0.08);
+            --success: #30D158;
+            --warning: #FFD60A;
+            --error: #FF453A;
+            --purple: #BF5AF2;
+            --orange: #FF9F0A;
+            --teal: #64D2FF;
         }}
 
         * {{
@@ -49,10 +55,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         }}
 
         body {{
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            background: var(--bg-deep);
             color: var(--text-primary);
             overflow: hidden;
+            -webkit-font-smoothing: antialiased;
         }}
 
         .container {{
@@ -61,198 +68,274 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         }}
 
         .sidebar {{
-            width: 320px;
-            background: var(--bg-secondary);
+            width: 280px;
+            background: var(--bg-primary);
             border-right: 1px solid var(--border);
-            padding: 20px;
+            padding: 32px 24px;
             overflow-y: auto;
+            backdrop-filter: blur(20px);
         }}
 
         .sidebar h1 {{
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            color: var(--accent);
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin-bottom: 32px;
+            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }}
 
         .sidebar h2 {{
-            font-size: 1rem;
-            color: var(--text-secondary);
-            margin: 16px 0 8px;
+            font-size: 0.6875rem;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            margin: 24px 0 12px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.08em;
         }}
 
         .stats {{
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 8px;
         }}
 
         .stat-card {{
-            background: var(--bg-tertiary);
-            border-radius: 8px;
-            padding: 12px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }}
+
+        .stat-card:hover {{
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateY(-1px);
         }}
 
         .stat-value {{
             font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--accent);
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--teal) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }}
 
         .stat-label {{
-            font-size: 0.75rem;
-            color: var(--text-secondary);
+            font-size: 0.6875rem;
+            color: var(--text-tertiary);
+            margin-top: 4px;
         }}
 
         .controls {{
-            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
         }}
 
         .btn {{
-            display: inline-block;
-            padding: 8px 16px;
-            background: var(--bg-tertiary);
+            padding: 8px 14px;
+            background: var(--bg-glass);
             border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text-primary);
+            border-radius: 8px;
+            color: var(--text-secondary);
             cursor: pointer;
-            font-size: 0.875rem;
-            margin-right: 8px;
-            margin-bottom: 8px;
-            transition: all 0.2s;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
         }}
 
         .btn:hover {{
             background: var(--accent);
             border-color: var(--accent);
-            color: var(--bg-primary);
-        }}
-
-        .legend {{
-            margin-top: 20px;
+            color: white;
+            box-shadow: 0 4px 16px var(--accent-glow);
         }}
 
         .legend-item {{
             display: flex;
             align-items: center;
-            margin: 8px 0;
+            padding: 6px 0;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
         }}
 
-        .legend-color {{
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
+        .legend-dot {{
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
             margin-right: 10px;
+            box-shadow: 0 0 8px currentColor;
         }}
 
         .main {{
             flex: 1;
             position: relative;
+            background: radial-gradient(ellipse at center, #0a0a0a 0%, #000 100%);
+        }}
+
+        /* Subtle grid pattern */
+        .main::before {{
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
         }}
 
         svg {{
             width: 100%;
             height: 100%;
-            background: var(--bg-primary);
         }}
 
         .node {{
             cursor: pointer;
         }}
 
-        .node:hover {{
-            filter: brightness(1.2);
+        .node:hover .node-circle {{
+            filter: brightness(1.2) drop-shadow(0 0 12px currentColor);
         }}
 
-        .node-rect {{
-            rx: 6;
-            ry: 6;
+        .node-circle {{
+            stroke: rgba(255,255,255,0.1);
+            stroke-width: 1;
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
         }}
 
         .node-label {{
-            font-size: 11px;
+            font-size: 9px;
+            font-weight: 500;
             fill: white;
             text-anchor: middle;
             dominant-baseline: middle;
+            pointer-events: none;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }}
+
+        .node-sublabel {{
+            font-size: 7px;
+            fill: rgba(255,255,255,0.5);
+            text-anchor: middle;
             pointer-events: none;
         }}
 
         .edge {{
             fill: none;
             stroke-linecap: round;
+            opacity: 0.6;
         }}
 
-        .edge.bottleneck {{
-            stroke: var(--error);
-        }}
-
-        .edge.attention {{
-            stroke: var(--warning);
-            stroke-dasharray: 5,3;
-        }}
-
-        .edge.skip {{
-            stroke: var(--success);
-            stroke-dasharray: 8,4;
+        .edge:hover {{
+            opacity: 1;
+            stroke-width: 3;
         }}
 
         .tooltip {{
             position: absolute;
-            background: var(--bg-tertiary);
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(20px);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 0.875rem;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 0.8125rem;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.2s;
-            max-width: 300px;
+            transform: translateY(4px);
+            transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+            max-width: 280px;
             z-index: 100;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
         }}
 
         .tooltip.visible {{
             opacity: 1;
+            transform: translateY(0);
         }}
 
         .tooltip-title {{
-            font-weight: bold;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            margin-bottom: 6px;
             color: var(--accent);
-            margin-bottom: 8px;
+        }}
+
+        .tooltip-desc {{
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
         }}
 
         .tooltip-row {{
             display: flex;
             justify-content: space-between;
-            margin: 4px 0;
+            padding: 3px 0;
+            font-size: 0.75rem;
         }}
 
         .tooltip-label {{
-            color: var(--text-secondary);
+            color: var(--text-tertiary);
         }}
 
-        .minimap {{
+        .tooltip-value {{
+            color: var(--text-primary);
+            font-weight: 500;
+            font-family: 'SF Mono', 'Menlo', monospace;
+        }}
+
+        .block-indicator {{
             position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 200px;
-            height: 150px;
-            background: var(--bg-secondary);
+            top: -6px;
+            right: -6px;
+            width: 14px;
+            height: 14px;
+            background: var(--accent);
+            border-radius: 50%;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 2px 8px var(--accent-glow);
+        }}
+
+        /* Zoom controls */
+        .zoom-controls {{
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }}
+
+        .zoom-btn {{
+            width: 36px;
+            height: 36px;
+            background: rgba(20, 20, 20, 0.9);
+            backdrop-filter: blur(10px);
             border: 1px solid var(--border);
             border-radius: 8px;
-            overflow: hidden;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
         }}
 
-        .minimap svg {{
-            opacity: 0.6;
-        }}
-
-        .minimap-viewport {{
-            fill: var(--accent);
-            fill-opacity: 0.2;
-            stroke: var(--accent);
-            stroke-width: 2;
+        .zoom-btn:hover {{
+            background: var(--bg-elevated);
+            color: var(--text-primary);
         }}
     </style>
 </head>
@@ -261,6 +344,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <aside class="sidebar">
             <h1>{title}</h1>
 
+            <h2>Overview</h2>
             <div class="stats">
                 <div class="stat-card">
                     <div class="stat-value" id="node-count">0</div>
@@ -271,7 +355,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     <div class="stat-label">Edges</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="peak-memory">0 MB</div>
+                    <div class="stat-value" id="peak-memory">0</div>
                     <div class="stat-label">Peak Memory</div>
                 </div>
                 <div class="stat-card">
@@ -280,43 +364,48 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 </div>
             </div>
 
-            <h2>Controls</h2>
+            <h2>Navigation</h2>
             <div class="controls">
-                <button class="btn" onclick="expandAll()">Expand All</button>
-                <button class="btn" onclick="collapseAll()">Collapse All</button>
-                <button class="btn" onclick="resetZoom()">Reset View</button>
-                <button class="btn" onclick="fitToScreen()">Fit to Screen</button>
+                <button class="btn" onclick="expandAll()">Expand</button>
+                <button class="btn" onclick="collapseAll()">Collapse</button>
+                <button class="btn" onclick="fitToScreen()">Fit</button>
+                <button class="btn" onclick="resetZoom()">Reset</button>
             </div>
 
-            <h2>Legend</h2>
+            <h2>Visualization</h2>
+            <div class="controls">
+                <button class="btn" id="heatmap-btn" onclick="toggleHeatMap()">Compute Heat Map</button>
+            </div>
+
+            <h2>Architecture</h2>
             <div class="legend">
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #4A90D9;"></div>
+                    <div class="legend-dot" style="color: #4A90D9;"></div>
                     <span>Convolution</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #9B59B6;"></div>
-                    <span>Linear/MatMul</span>
+                    <div class="legend-dot" style="color: #BF5AF2;"></div>
+                    <span>Linear</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #E67E22;"></div>
+                    <div class="legend-dot" style="color: #FF9F0A;"></div>
                     <span>Attention</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #7F8C8D;"></div>
+                    <div class="legend-dot" style="color: #64D2FF;"></div>
                     <span>Normalization</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #F1C40F;"></div>
+                    <div class="legend-dot" style="color: #FFD60A;"></div>
                     <span>Activation</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #2ECC71;"></div>
-                    <span>Skip Connection</span>
+                    <div class="legend-dot" style="color: #30D158;"></div>
+                    <span>Skip</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #E74C3C;"></div>
-                    <span>Memory Bottleneck</span>
+                    <div class="legend-dot" style="color: #FF453A;"></div>
+                    <span>Bottleneck</span>
                 </div>
             </div>
         </aside>
@@ -324,6 +413,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <main class="main">
             <svg id="graph"></svg>
             <div class="tooltip" id="tooltip"></div>
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()">+</button>
+                <button class="zoom-btn" onclick="zoomOut()">-</button>
+            </div>
         </main>
     </div>
 
@@ -332,56 +425,81 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const graphData = {graph_json};
         const edgeData = {edge_json};
 
-        // Category colors
-        const categoryColors = {{
-            'conv': '#4A90D9',
-            'linear': '#9B59B6',
-            'attention': '#E67E22',
-            'norm': '#7F8C8D',
-            'activation': '#F1C40F',
-            'pool': '#1ABC9C',
-            'embed': '#8E44AD',
-            'reshape': '#3498DB',
-            'elementwise': '#9B59B6',
-            'reduce': '#E74C3C',
-            'default': '#7F8C8D'
-        }};
-
         // Get label for a node
         function getNodeLabel(node) {{
-            // For op nodes, show the op type (Conv, Relu, etc)
             if (node.node_type === 'op' && node.op_type) {{
                 return node.op_type;
             }}
-            // For blocks, show display name (may include xN)
             if (node.display_name) {{
                 return node.display_name;
             }}
             return node.name;
         }}
 
+        // Apple-inspired color palette
+        const colors = {{
+            conv: '#4A90D9',
+            linear: '#BF5AF2',
+            attention: '#FF9F0A',
+            norm: '#64D2FF',
+            activation: '#FFD60A',
+            pool: '#30D158',
+            embed: '#AF52DE',
+            reshape: '#5E5CE6',
+            elementwise: '#FF6482',
+            reduce: '#FF453A',
+            default: '#636366'
+        }};
+
         // Get color for op type
         function getNodeColor(node) {{
             if (node.node_type === 'block') {{
                 const blockType = (node.attributes?.block_type || '').toLowerCase();
-                if (blockType.includes('attention')) return categoryColors.attention;
-                if (blockType.includes('mlp') || blockType.includes('ffn')) return categoryColors.linear;
-                if (blockType.includes('conv')) return categoryColors.conv;
-                if (blockType.includes('norm')) return categoryColors.norm;
-                if (blockType.includes('embed')) return categoryColors.embed;
-                return categoryColors.default;
+                if (blockType.includes('attention')) return colors.attention;
+                if (blockType.includes('mlp') || blockType.includes('ffn')) return colors.linear;
+                if (blockType.includes('conv')) return colors.conv;
+                if (blockType.includes('norm')) return colors.norm;
+                if (blockType.includes('embed')) return colors.embed;
+                return colors.default;
             }}
 
             const op = (node.op_type || '').toLowerCase();
-            if (op.includes('conv')) return categoryColors.conv;
-            if (op.includes('matmul') || op.includes('gemm')) return categoryColors.linear;
-            if (op.includes('norm')) return categoryColors.norm;
-            if (op.includes('relu') || op.includes('gelu') || op.includes('softmax')) return categoryColors.activation;
-            if (op.includes('pool')) return categoryColors.pool;
-            if (op.includes('reshape') || op.includes('transpose')) return categoryColors.reshape;
-            if (op.includes('add') || op.includes('mul') || op.includes('sub')) return categoryColors.elementwise;
-            if (op.includes('reduce')) return categoryColors.reduce;
-            return categoryColors.default;
+            if (op.includes('conv')) return colors.conv;
+            if (op.includes('matmul') || op.includes('gemm')) return colors.linear;
+            if (op.includes('norm') || op.includes('layer')) return colors.norm;
+            if (op.includes('relu') || op.includes('gelu') || op.includes('softmax') || op.includes('sigmoid')) return colors.activation;
+            if (op.includes('pool')) return colors.pool;
+            if (op.includes('reshape') || op.includes('transpose') || op.includes('flatten')) return colors.reshape;
+            if (op.includes('add') || op.includes('mul') || op.includes('sub') || op.includes('div')) return colors.elementwise;
+            if (op.includes('reduce')) return colors.reduce;
+            return colors.default;
+        }}
+
+        // Get node size based on type and compute
+        function getNodeSize(node) {{
+            const base = node.node_type === 'model' ? 50 :
+                         node.node_type === 'layer' ? 40 :
+                         node.node_type === 'block' ? 35 : 24;
+            // Scale up slightly for high-compute nodes
+            if (node.total_flops > 1e9) return base * 1.3;
+            if (node.total_flops > 1e6) return base * 1.1;
+            return base;
+        }}
+
+        // Heat map mode toggle
+        let heatMapMode = false;
+
+        // Get heat map color based on compute intensity
+        function getHeatColor(flops, maxFlops) {{
+            if (!flops || flops === 0) return null;
+            const intensity = Math.log10(flops + 1) / Math.log10(maxFlops + 1);
+            // Blue -> Cyan -> Green -> Yellow -> Orange -> Red
+            if (intensity < 0.2) return '#0A84FF';
+            if (intensity < 0.4) return '#64D2FF';
+            if (intensity < 0.6) return '#30D158';
+            if (intensity < 0.8) return '#FFD60A';
+            if (intensity < 0.9) return '#FF9F0A';
+            return '#FF453A';
         }}
 
         // Initialize visualization
@@ -400,34 +518,79 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         // Tooltip
         const tooltip = d3.select('#tooltip');
 
+        // Op type explanations for demystifying the model
+        const opDescriptions = {{
+            'Conv': 'Convolution: Slides filters across input to detect features like edges, textures, shapes',
+            'MatMul': 'Matrix Multiply: Core linear transformation - learns weighted combinations of inputs',
+            'Gemm': 'General Matrix Multiply: Linear layer with weights and bias',
+            'Relu': 'ReLU Activation: Keeps positive values, zeros negatives - adds non-linearity',
+            'Gelu': 'GELU Activation: Smooth activation used in transformers - better gradients',
+            'Softmax': 'Softmax: Converts scores to probabilities (sums to 1) - used in attention',
+            'Sigmoid': 'Sigmoid: Squashes values to 0-1 range - used for gates/probabilities',
+            'LayerNormalization': 'Layer Norm: Normalizes activations for stable training',
+            'BatchNormalization': 'Batch Norm: Normalizes across batch - speeds up training',
+            'Add': 'Addition: Element-wise sum - often a residual/skip connection',
+            'Mul': 'Multiply: Element-wise product - used in attention and gating',
+            'Div': 'Division: Often scaling (e.g., by sqrt(d) in attention)',
+            'Transpose': 'Transpose: Rearranges tensor dimensions',
+            'Reshape': 'Reshape: Changes tensor shape without changing data',
+            'Gather': 'Gather: Lookup operation - retrieves embeddings by index',
+            'Concat': 'Concatenate: Joins tensors along an axis',
+            'Split': 'Split: Divides tensor into parts',
+            'MaxPool': 'Max Pooling: Downsamples by taking maximum in each window',
+            'GlobalAveragePool': 'Global Avg Pool: Reduces spatial dims to single values',
+            'Flatten': 'Flatten: Collapses dimensions into 1D for dense layers',
+            'Dropout': 'Dropout: Randomly zeros values during training for regularization',
+            'Attention': 'Self-Attention: Computes relationships between all positions',
+            'AttentionHead': 'Attention Head: Q/K/V projections + scaled dot-product attention',
+            'MLPBlock': 'MLP/FFN: Feed-forward network - expands then contracts dimensions',
+        }};
+
+        function getOpDescription(node) {{
+            const opType = node.op_type || node.attributes?.block_type || '';
+            return opDescriptions[opType] || `${{opType}}: Neural network operation`;
+        }}
+
         function showTooltip(event, node) {{
+            const opType = node.op_type || node.node_type;
+            const description = getOpDescription(node);
+            
+            // Build detailed info
+            let details = '';
+            
+            // Input/output info
+            if (node.inputs && node.inputs.length > 0) {{
+                details += `<div class="tooltip-row"><span class="tooltip-label">Inputs:</span><span class="tooltip-value">${{node.inputs.length}} tensor(s)</span></div>`;
+            }}
+            if (node.outputs && node.outputs.length > 0) {{
+                details += `<div class="tooltip-row"><span class="tooltip-label">Outputs:</span><span class="tooltip-value">${{node.outputs.length}} tensor(s)</span></div>`;
+            }}
+            
+            // Child count for blocks
+            if (node.children && node.children.length > 0) {{
+                details += `<div class="tooltip-row"><span class="tooltip-label">Contains:</span><span class="tooltip-value">${{node.node_count || node.children.length}} ops</span></div>`;
+            }}
+            
+            // Compute info
+            if (node.total_flops > 0) {{
+                const intensity = node.total_flops > 1e9 ? 'high' : node.total_flops > 1e6 ? 'medium' : 'low';
+                details += `<div class="tooltip-row"><span class="tooltip-label">Compute:</span><span class="tooltip-value">${{formatNumber(node.total_flops)}} FLOPs (${{intensity}})</span></div>`;
+            }}
+            
+            // Memory info
+            if (node.total_memory_bytes > 0) {{
+                details += `<div class="tooltip-row"><span class="tooltip-label">Memory:</span><span class="tooltip-value">${{formatBytes(node.total_memory_bytes)}}</span></div>`;
+            }}
+
             const html = `
-                <div class="tooltip-title">${{node.display_name || node.name}}</div>
-                <div class="tooltip-row">
-                    <span class="tooltip-label">Type:</span>
-                    <span>${{node.op_type || node.node_type}}</span>
-                </div>
-                <div class="tooltip-row">
-                    <span class="tooltip-label">Nodes:</span>
-                    <span>${{node.node_count || 1}}</span>
-                </div>
-                ${{node.total_flops > 0 ? `
-                <div class="tooltip-row">
-                    <span class="tooltip-label">FLOPs:</span>
-                    <span>${{formatNumber(node.total_flops)}}</span>
-                </div>
-                ` : ''}}
-                ${{node.total_memory_bytes > 0 ? `
-                <div class="tooltip-row">
-                    <span class="tooltip-label">Memory:</span>
-                    <span>${{formatBytes(node.total_memory_bytes)}}</span>
-                </div>
-                ` : ''}}
+                <div class="tooltip-title">${{opType}}</div>
+                <div class="tooltip-desc">${{description}}</div>
+                ${{details}}
             `;
 
             tooltip.html(html)
-                .style('left', (event.pageX + 10) + 'px')
-                .style('top', (event.pageY + 10) + 'px')
+                .style('left', (event.pageX + 15) + 'px')
+                .style('top', (event.pageY + 15) + 'px')
                 .classed('visible', true);
         }}
 
@@ -435,33 +598,30 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             tooltip.classed('visible', false);
         }}
 
-        // Layout nodes
+        // Force-directed layout for natural graph appearance
         function layoutNodes(nodes) {{
-            const nodeWidth = 120;
-            const nodeHeight = 40;
-            const gapX = 40;
-            const gapY = 60;
+            const width = window.innerWidth - 320;
+            const height = window.innerHeight;
+            const centerX = width / 2;
+            const centerY = height / 2;
 
-            let x = gapX;
-            let y = gapY;
-            let rowHeight = 0;
-
-            const width = window.innerWidth - 360;
+            // Simple force-directed positioning
+            const cols = Math.ceil(Math.sqrt(nodes.length * 1.5));
+            const rows = Math.ceil(nodes.length / cols);
+            const spacingX = Math.min(100, (width - 100) / cols);
+            const spacingY = Math.min(80, (height - 100) / rows);
 
             nodes.forEach((node, i) => {{
-                if (x + nodeWidth > width - gapX) {{
-                    x = gapX;
-                    y += rowHeight + gapY;
-                    rowHeight = 0;
-                }}
-
-                node.x = x;
-                node.y = y;
-                node.width = nodeWidth;
-                node.height = nodeHeight;
-
-                x += nodeWidth + gapX;
-                rowHeight = Math.max(rowHeight, nodeHeight);
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                
+                // Center the grid
+                const startX = centerX - (cols * spacingX) / 2;
+                const startY = centerY - (rows * spacingY) / 2;
+                
+                node.x = startX + col * spacingX + spacingX / 2;
+                node.y = startY + row * spacingY + spacingY / 2;
+                node.r = getNodeSize(node);
             }});
 
             return nodes;
@@ -487,7 +647,48 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             // Layout
             layoutNodes(visibleNodes);
 
-            // Draw nodes
+            // Create node lookup for edges
+            const nodeById = {{}};
+            visibleNodes.forEach(n => {{
+                nodeById[n.id] = n;
+                nodeById[n.name] = n;
+            }});
+
+            // Draw edges first (so they're behind nodes)
+            const edges = [];
+            visibleNodes.forEach(node => {{
+                if (node.outputs) {{
+                    node.outputs.forEach(output => {{
+                        // Find nodes that consume this output
+                        visibleNodes.forEach(target => {{
+                            if (target.inputs && target.inputs.includes(output)) {{
+                                edges.push({{
+                                    source: node,
+                                    target: target,
+                                    output: output
+                                }});
+                            }}
+                        }});
+                    }});
+                }}
+            }});
+
+            // Draw curved edges
+            container.selectAll('.edge')
+                .data(edges)
+                .enter()
+                .append('path')
+                .attr('class', 'edge')
+                .attr('d', d => {{
+                    const dx = d.target.x - d.source.x;
+                    const dy = d.target.y - d.source.y;
+                    const dr = Math.sqrt(dx * dx + dy * dy) * 0.5;
+                    return `M${{d.source.x}},${{d.source.y}} Q${{(d.source.x + d.target.x)/2}},${{(d.source.y + d.target.y)/2 - 20}} ${{d.target.x}},${{d.target.y}}`;
+                }})
+                .attr('stroke', 'rgba(255,255,255,0.15)')
+                .attr('stroke-width', 1.5);
+
+            // Draw nodes as circles
             const nodeGroups = container.selectAll('.node')
                 .data(visibleNodes)
                 .enter()
@@ -503,34 +704,94 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     }}
                 }});
 
-            nodeGroups.append('rect')
-                .attr('class', 'node-rect')
-                .attr('width', d => d.width)
-                .attr('height', d => d.height)
-                .attr('fill', d => getNodeColor(d))
-                .attr('stroke', d => d.children && d.children.length > 0 ? 'white' : 'none')
-                .attr('stroke-width', 2);
+            // Glow effect for nodes
+            const defs = container.append('defs');
+            defs.append('filter')
+                .attr('id', 'glow')
+                .append('feGaussianBlur')
+                .attr('stdDeviation', '3')
+                .attr('result', 'coloredBlur');
 
+            // Calculate max FLOPs for heat map
+            const maxFlops = getMaxFlops(visibleNodes);
+
+            // Circle nodes - use heat map or category colors
+            nodeGroups.append('circle')
+                .attr('class', 'node-circle')
+                .attr('r', d => d.r)
+                .attr('fill', d => {{
+                    if (heatMapMode && d.total_flops > 0) {{
+                        return getHeatColor(d.total_flops, maxFlops);
+                    }}
+                    return getNodeColor(d);
+                }})
+                .attr('opacity', d => d.node_type === 'model' ? 0.9 : 0.85)
+                .style('filter', 'url(#glow)');
+
+            // Inner highlight
+            nodeGroups.append('circle')
+                .attr('r', d => d.r - 2)
+                .attr('fill', 'none')
+                .attr('stroke', 'rgba(255,255,255,0.2)')
+                .attr('stroke-width', 1);
+
+            // Labels
             nodeGroups.append('text')
                 .attr('class', 'node-label')
-                .attr('x', d => d.width / 2)
-                .attr('y', d => d.height / 2)
-                .text(d => truncate(getNodeLabel(d), 15));
+                .attr('y', d => d.r > 30 ? 0 : 0)
+                .text(d => truncate(getNodeLabel(d), d.r > 30 ? 12 : 6));
 
-            // Add expand indicator for parent nodes
+            // Expand indicator for blocks
+            nodeGroups.filter(d => d.children && d.children.length > 0)
+                .append('circle')
+                .attr('cx', d => d.r * 0.7)
+                .attr('cy', d => -d.r * 0.7)
+                .attr('r', 8)
+                .attr('fill', '#0A84FF')
+                .attr('stroke', '#000')
+                .attr('stroke-width', 1);
+
             nodeGroups.filter(d => d.children && d.children.length > 0)
                 .append('text')
-                .attr('x', d => d.width - 8)
-                .attr('y', 12)
+                .attr('x', d => d.r * 0.7)
+                .attr('y', d => -d.r * 0.7 + 1)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
                 .attr('fill', 'white')
-                .attr('font-size', '12px')
+                .attr('font-size', '10px')
+                .attr('font-weight', '600')
                 .text(d => d.is_collapsed ? '+' : '-');
 
             // Update stats
             document.getElementById('node-count').textContent = visibleNodes.length;
-            document.getElementById('edge-count').textContent = edgeData?.num_edges || 0;
+            document.getElementById('edge-count').textContent = edges.length || edgeData?.num_edges || 0;
             document.getElementById('peak-memory').textContent = formatBytes(edgeData?.peak_activation_bytes || 0);
             document.getElementById('depth').textContent = graphData.depth || 0;
+        }}
+
+        function zoomIn() {{
+            svg.transition().duration(300).call(zoom.scaleBy, 1.3);
+        }}
+
+        function zoomOut() {{
+            svg.transition().duration(300).call(zoom.scaleBy, 0.7);
+        }}
+
+        function toggleHeatMap() {{
+            heatMapMode = !heatMapMode;
+            const btn = document.getElementById('heatmap-btn');
+            btn.style.background = heatMapMode ? 'var(--accent)' : '';
+            btn.style.color = heatMapMode ? 'white' : '';
+            render();
+        }}
+
+        // Calculate max FLOPs for heat map scaling
+        function getMaxFlops(nodes) {{
+            let max = 0;
+            nodes.forEach(n => {{
+                if (n.total_flops > max) max = n.total_flops;
+            }});
+            return max || 1;
         }}
 
         // Helper functions
