@@ -28,6 +28,16 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from .autodoc import ModelInspector
+from .autodoc.compare_visualizations import (
+    analyze_tradeoffs,
+    build_enhanced_markdown,
+    compute_tradeoff_points,
+    generate_calibration_recommendations,
+    generate_compare_html,
+    generate_memory_savings_chart,
+    generate_tradeoff_chart,
+    is_available as viz_available,
+)
 
 LOGGER = logging.getLogger("autodoc.compare")
 
@@ -136,6 +146,23 @@ Examples:
         "--quiet",
         action="store_true",
         help="Reduce logging noise; only errors are printed.",
+    )
+    parser.add_argument(
+        "--with-charts",
+        action="store_true",
+        help="Generate accuracy vs speedup and memory savings charts (requires matplotlib).",
+    )
+    parser.add_argument(
+        "--assets-dir",
+        type=Path,
+        default=None,
+        help="Directory for chart assets. Defaults to same directory as --out-md.",
+    )
+    parser.add_argument(
+        "--out-html",
+        type=Path,
+        default=None,
+        help="Output path for HTML comparison report with engine summary panel.",
     )
 
     args = parser.parse_args(argv)
@@ -741,12 +768,41 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
         # Write Markdown if requested
         if args.out_md:
-            md = _build_markdown_summary(compare_json)
+            assets_dir = args.assets_dir or args.out_md.parent
+            if args.with_charts:
+                md = build_enhanced_markdown(
+                    compare_json,
+                    include_charts=True,
+                    assets_dir=assets_dir,
+                )
+            else:
+                md = _build_markdown_summary(compare_json)
             args.out_md.parent.mkdir(parents=True, exist_ok=True)
             args.out_md.write_text(md, encoding="utf-8")
             logger.info("Comparison Markdown written to %s", args.out_md)
 
-        if not args.out_json and not args.out_md:
+            # Generate standalone charts if requested
+            if args.with_charts and viz_available():
+                points = compute_tradeoff_points(compare_json)
+                if points:
+                    chart_path = assets_dir / "tradeoff_chart.png"
+                    generate_tradeoff_chart(points, chart_path)
+                    logger.info("Tradeoff chart written to %s", chart_path)
+
+                    mem_path = assets_dir / "memory_savings.png"
+                    generate_memory_savings_chart(compare_json, mem_path)
+                    logger.info("Memory savings chart written to %s", mem_path)
+
+        # Write HTML if requested
+        if args.out_html:
+            html = generate_compare_html(
+                compare_json,
+                output_path=args.out_html,
+                include_charts=True,
+            )
+            logger.info("Comparison HTML written to %s", args.out_html)
+
+        if not args.out_json and not args.out_md and not args.out_html:
             # Default to printing JSON to stdout if no outputs specified
             print(json.dumps(compare_json, indent=2))
 

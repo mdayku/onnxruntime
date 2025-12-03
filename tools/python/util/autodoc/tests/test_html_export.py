@@ -100,7 +100,7 @@ class TestHTMLGeneration:
             html = generate_html(graph, title="Test", output_path=output_path)
 
             assert output_path.exists()
-            content = output_path.read_text()
+            content = output_path.read_text(encoding="utf-8")
             assert content == html
 
     def test_html_contains_controls(self):
@@ -159,7 +159,7 @@ class TestHTMLExporter:
             output_path = Path(tmpdir) / "model.html"
             exporter.export(graph, edge_result, output_path=output_path)
 
-            content = output_path.read_text()
+            content = output_path.read_text(encoding="utf-8")
             assert "peak_activation_bytes" in content
 
     def test_export_custom_title(self):
@@ -171,7 +171,7 @@ class TestHTMLExporter:
             output_path = Path(tmpdir) / "model.html"
             exporter.export(graph, output_path=output_path, title="My Custom Model")
 
-            content = output_path.read_text()
+            content = output_path.read_text(encoding="utf-8")
             assert "My Custom Model" in content
 
 

@@ -20,7 +20,7 @@
 | Epic 4B: PyTorch Integration | **Complete** | 2 | 14/14 | Done |
 | Epic 4C: TensorFlow/Keras/JAX | **Complete** | 3 | 15/15 | Done |
 | Epic 5: Visualization | **Complete** | 8 | 52/52 | Done |
-| Epic 6: Hardware/Compare | In Progress | 11 | 34/62 | P3 |
+| Epic 6: Hardware/Compare | In Progress | 11 | 42/62 | P3 |
 | Epic 7: LLM Integration | In Progress | 2 | 5/9 | P3 |
 | Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 | P3 |
 | Epic 10: SaaS Web App | Not Started | 5 | 0/27 | P4 |
@@ -231,15 +231,15 @@
 - [x] **Task 6.3.3**: Verify architecture compatibility
 - [x] **Task 6.3.4**: Compute deltas vs baseline
 
-### Story 6.4: Quantization Impact Report (TRT EngineXplorer-inspired)
-- [ ] **Task 6.4.1**: Generate comparison JSON schema
-- [ ] **Task 6.4.2**: Create comparison Markdown table
-- [ ] **Task 6.4.3**: Add trade-off analysis section
-- [ ] **Task 6.4.4**: Add layer-wise precision breakdown visualization
-- [ ] **Task 6.4.5**: Show accuracy vs speedup tradeoff chart
-- [ ] **Task 6.4.6**: Display memory savings per layer analysis
-- [ ] **Task 6.4.7**: Add engine summary panel
-- [ ] **Task 6.4.8**: Show quantization calibration recommendations
+### Story 6.4: Quantization Impact Report (TRT EngineXplorer-inspired) - **COMPLETE**
+- [x] **Task 6.4.1**: Generate comparison JSON schema
+- [x] **Task 6.4.2**: Create comparison Markdown table
+- [x] **Task 6.4.3**: Add trade-off analysis section
+- [x] **Task 6.4.4**: Add layer-wise precision breakdown visualization
+- [x] **Task 6.4.5**: Show accuracy vs speedup tradeoff chart
+- [x] **Task 6.4.6**: Display memory savings per layer analysis
+- [x] **Task 6.4.7**: Add engine summary panel
+- [x] **Task 6.4.8**: Show quantization calibration recommendations
 
 ### Story 6.10: Multi-Model Comparison Report
 *Compare 2+ models side-by-side - different architectures, sizes, or precisions*
