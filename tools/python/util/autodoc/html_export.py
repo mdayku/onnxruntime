@@ -256,7 +256,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         }}
 
         .tooltip {{
-            position: absolute;
+            position: fixed;
             background: rgba(20, 20, 20, 0.95);
             backdrop-filter: blur(20px);
             border: 1px solid var(--border);
@@ -268,7 +268,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             transform: translateY(4px);
             transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
             max-width: 280px;
-            z-index: 100;
+            z-index: 1000;
             box-shadow: 0 8px 32px rgba(0,0,0,0.6);
         }}
 
@@ -813,31 +813,30 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
             tooltip.html(html);
 
-            // Smart positioning to keep tooltip on screen
+            // Smart positioning using fixed coordinates (relative to viewport)
             const tooltipNode = tooltip.node();
             const tooltipWidth = tooltipNode.offsetWidth || 280;
             const tooltipHeight = tooltipNode.offsetHeight || 150;
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
-            const scrollX = window.scrollX || window.pageXOffset;
-            const scrollY = window.scrollY || window.pageYOffset;
 
-            let left = event.pageX + 15;
-            let top = event.pageY + 15;
+            // Use clientX/clientY for fixed positioning (viewport coords)
+            let left = event.clientX + 15;
+            let top = event.clientY + 15;
 
             // Check right edge - flip to left side if needed
-            if (left + tooltipWidth > scrollX + viewportWidth - 20) {{
-                left = event.pageX - tooltipWidth - 15;
+            if (left + tooltipWidth > viewportWidth - 20) {{
+                left = event.clientX - tooltipWidth - 15;
             }}
 
             // Check bottom edge - flip to top if needed
-            if (top + tooltipHeight > scrollY + viewportHeight - 20) {{
-                top = event.pageY - tooltipHeight - 15;
+            if (top + tooltipHeight > viewportHeight - 20) {{
+                top = event.clientY - tooltipHeight - 15;
             }}
 
             // Ensure not off left or top edge
-            left = Math.max(scrollX + 10, left);
-            top = Math.max(scrollY + 10, top);
+            left = Math.max(10, left);
+            top = Math.max(10, top);
 
             tooltip
                 .style('left', left + 'px')

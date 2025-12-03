@@ -23,7 +23,7 @@
 | Epic 6: Hardware/Compare | **COMPLETE** | 10 | 56/56 | P3 |
 | Epic 7: LLM Integration | In Progress | 2 | 5/9 | P3 |
 | Epic 8: Testing & CI/CD | **COMPLETE** | 4 | 18/18 | P3 |
-| Epic 9: Runtime Profiling | **COMPLETE** | 5 | 17/17 | P2 |
+| Epic 9: Runtime Profiling | **COMPLETE** | 6 | 17/22 | P2 |
 | Epic 10: SaaS Web App | Not Started | 5 | 0/27 | P4 |
 | Epic 10B: Standalone Package | Not Started | 3 | 0/17 | P0 |
 | Epic 11: Streamlit Web UI | Not Started | 3 | 0/14 | P0 |
@@ -358,6 +358,14 @@
 - [x] **Task 9.5.1**: Benchmark actual inference at different resolutions
 - [x] **Task 9.5.2**: Measure real throughput scaling with resolution
 - [x] **Task 9.5.3**: Find optimal resolution for target latency
+
+### Story 9.6: Multi-Input Model Profiling (Future)
+*Support profiling for BERT, LLMs, and other multi-input models.*
+- [ ] **Task 9.6.1**: Detect all model inputs and their shapes/dtypes
+- [ ] **Task 9.6.2**: Generate appropriate dummy inputs based on dtype (int64 for tokens, float32 for vision)
+- [ ] **Task 9.6.3**: Support common input patterns (text: input_ids/attention_mask, multimodal: image+text)
+- [ ] **Task 9.6.4**: Auto-detect sequence length from model or use sensible defaults (128, 512)
+- [ ] **Task 9.6.5**: Handle dynamic axes gracefully (batch, seq_len)
 
 ---
 
