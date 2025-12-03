@@ -19,6 +19,21 @@ Example usage:
 """
 
 from .analyzer import MetricsEngine, ONNXGraphLoader
+from .compare_visualizations import (
+    CalibrationRecommendation,
+    LayerPrecisionBreakdown,
+    TradeoffPoint,
+    analyze_tradeoffs,
+    build_enhanced_markdown,
+    compute_tradeoff_points,
+    extract_layer_precision_breakdown,
+    generate_calibration_recommendations,
+    generate_compare_html,
+    generate_layer_precision_chart,
+    generate_memory_savings_chart,
+    generate_tradeoff_chart,
+)
+from .compare_visualizations import is_available as is_compare_viz_available
 from .edge_analysis import EdgeAnalysisResult, EdgeAnalyzer
 from .hardware import (
     HARDWARE_PROFILES,
@@ -72,21 +87,6 @@ from .visualizations import (
     generate_visualizations,
 )
 from .visualizations import is_available as is_visualization_available
-from .compare_visualizations import (
-    CalibrationRecommendation,
-    LayerPrecisionBreakdown,
-    TradeoffPoint,
-    analyze_tradeoffs,
-    build_enhanced_markdown,
-    compute_tradeoff_points,
-    extract_layer_precision_breakdown,
-    generate_calibration_recommendations,
-    generate_compare_html,
-    generate_layer_precision_chart,
-    generate_memory_savings_chart,
-    generate_tradeoff_chart,
-)
-from .compare_visualizations import is_available as is_compare_viz_available
 
 __all__ = [
     "HARDWARE_PROFILES",
@@ -130,10 +130,10 @@ __all__ = [
     "extract_layer_precision_breakdown",
     "generate_calibration_recommendations",
     "generate_compare_html",
-    "generate_layer_precision_chart",
     "generate_graph_html",
     "generate_graph_summary",
     "generate_html_table",
+    "generate_layer_precision_chart",
     "generate_markdown_table",
     "generate_memory_savings_chart",
     "generate_pdf",
