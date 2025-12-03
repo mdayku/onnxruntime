@@ -56,6 +56,33 @@ python model_inspect.py model.onnx --hardware auto --with-plots --llm-summary --
 
 # Specify precision and batch size for hardware estimates
 python model_inspect.py model.onnx --hardware rtx4090 --precision fp16 --batch-size 8
+
+# Resolution sweep (vision models) - auto-detects aspect ratio and training resolution
+python model_inspect.py model.onnx --hardware rtx4090 --sweep-resolutions auto
+
+# Batch size sweep - find optimal throughput
+python model_inspect.py model.onnx --hardware rtx4090 --sweep-batch-sizes
+```
+
+### Compare Multiple Model Variants
+
+Compare quantized variants (fp32/fp16/int8) to analyze trade-offs:
+
+```bash
+# From the tools/python/util directory:
+python -m model_inspect_compare \
+  --models resnet_fp32.onnx resnet_fp16.onnx resnet_int8.onnx \
+  --eval-metrics eval_fp32.json eval_fp16.json eval_int8.json \
+  --baseline-precision fp32 \
+  --out-json quant_impact.json \
+  --out-md quant_impact.md
+
+# With visualizations (requires matplotlib)
+python -m model_inspect_compare \
+  --models resnet_fp32.onnx resnet_fp16.onnx resnet_int8.onnx \
+  --eval-metrics eval_fp32.json eval_fp16.json eval_int8.json \
+  --with-charts \
+  --out-html compare_report.html
 ```
 
 ### List Available Hardware Profiles

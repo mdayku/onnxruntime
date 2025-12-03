@@ -806,23 +806,31 @@ The tool:
 
 For computer vision models, analyze how different input resolutions and batch sizes affect performance.
 
+**Key Design Principles:**
+1. **Only sweep resolutions UP TO training resolution** - Running above trained resolution produces unreliable results
+2. **Match aspect ratio** - Resolutions should maintain the model's trained aspect ratio
+3. **GPU-aligned sizes** - Round to nearest 32 for GPU memory efficiency
+
 **CLI Usage:**
 
 ```bash
+# Auto-detect resolution range (recommended)
+python -m onnxruntime.tools.model_inspect model.onnx --hardware rtx_4090 --sweep-resolutions auto
+
+# Custom resolutions (warns if exceeding training resolution)
 python -m onnxruntime.tools.model_inspect model.onnx \
-  --input-resolution 224x224,384x384,512x512,640x640 \
-  --batch-sizes 1,2,4,8,16,32 \
+  --sweep-resolutions "224x224,384x384,512x512,640x640" \
   --hardware rtx_4090
 ```
 
-**Resolution Scaling Analysis:**
+**Resolution Scaling Analysis (for 640x640 trained model):**
 
 | Resolution | FLOPs | Memory | Latency Est. | Throughput Est. |
 |------------|-------|--------|--------------|-----------------|
-| 224x224    | 4.1G  | 1.2GB  | 2.1ms        | 476 fps         |
-| 384x384    | 12.1G | 2.8GB  | 5.8ms        | 172 fps         |
-| 512x512    | 21.5G | 4.9GB  | 10.2ms       | 98 fps          |
-| 640x640    | 33.6G | 7.6GB  | 15.9ms       | 63 fps          |
+| 160x160    | 0.6G  | 0.3GB  | 0.5ms        | 2000 fps        |
+| 320x320    | 2.6G  | 1.2GB  | 1.3ms        | 769 fps         |
+| 480x480    | 5.8G  | 2.7GB  | 2.9ms        | 345 fps         |
+| 640x640    | 10.3G | 4.8GB  | 5.1ms        | 196 fps         |
 
 **Batch Size Scaling Analysis:**
 
@@ -1839,3 +1847,6 @@ This creates a complete **optimize → analyze → deploy** workflow.
 | Dec 3, 2025 | Epics 31-32 | Added: 31 (Quantization Service, 32 tasks), 32 (Model Optimization, 14 tasks). 46 new tasks | Transform from analysis tool to optimization platform |
 | Dec 3, 2025 | Epic 5 | **COMPLETE**: All 52 tasks done. Added layer_summary.py (5.8), search in graph (5.7.6), performance mode (5.7.9), --include-graph/--include-layer-table/--layer-csv CLI flags | Full visualization suite with interactive graphs and per-layer analysis |
 | Dec 3, 2025 | Story 6.3 | **COMPLETE**: Compare Mode CLI in `model_inspect_compare.py`. Multi-model args (`--models`, `--eval-metrics`, `--precisions`), eval JSON loading/validation, architecture compatibility checks (type, I/O shapes, block counts), comprehensive delta computation (size, params, FLOPs, memory, latency, VRAM, utilization). Outputs JSON + Markdown | Quantization impact analysis foundation for Stories 6.4 and 6.10 |
+| Dec 3, 2025 | Story 6.4 | **COMPLETE**: Quantization Impact Report. `compare_visualizations.py` with tradeoff charts, memory savings charts, calibration recommendations, HTML engine summary panel. 19 tests | TRT EngineXplorer-inspired quantization analysis |
+| Dec 3, 2025 | Story 6.8 | **COMPLETE**: Resolution/Batch Impact Analysis. `--sweep-resolutions auto`, `--input-resolution`. Only sweeps UP TO training resolution, matches aspect ratio. Resolution scaling charts. `recommend_resolution()` for target FPS | Smart resolution scaling that respects training constraints |
+| Dec 3, 2025 | Story 6.11 | **MOVED** to Story 12.6 (Inference Platform). Model Leaderboard requires inference metrics for meaningful ranking | Proper placement in Inference Platform epic |

@@ -16,6 +16,7 @@ import sys
 from typing import Any
 
 from .autodoc import ModelInspector
+from .autodoc.edge_analysis import EdgeAnalyzer
 from .autodoc.hardware import (
     CLOUD_INSTANCES,
     HardwareEstimator,
@@ -24,7 +25,10 @@ from .autodoc.hardware import (
     get_cloud_instance,
     get_profile,
 )
-from .autodoc.operational_profiling import OperationalProfiler
+from .autodoc.hierarchical_graph import HierarchicalGraphBuilder
+from .autodoc.html_export import HTMLExporter
+from .autodoc.html_export import generate_html as generate_graph_html
+from .autodoc.layer_summary import LayerSummaryBuilder, generate_html_table
 from .autodoc.llm_summarizer import (
     LLMSummarizer,
 )
@@ -34,6 +38,8 @@ from .autodoc.llm_summarizer import (
 from .autodoc.llm_summarizer import (
     is_available as is_llm_available,
 )
+from .autodoc.operational_profiling import OperationalProfiler
+from .autodoc.patterns import PatternAnalyzer
 from .autodoc.pdf_generator import (
     PDFGenerator,
 )
@@ -46,11 +52,6 @@ from .autodoc.visualizations import (
 from .autodoc.visualizations import (
     is_available as is_viz_available,
 )
-from .autodoc.edge_analysis import EdgeAnalyzer
-from .autodoc.hierarchical_graph import HierarchicalGraphBuilder
-from .autodoc.html_export import HTMLExporter, generate_html as generate_graph_html
-from .autodoc.patterns import PatternAnalyzer
-from .autodoc.layer_summary import LayerSummaryBuilder, generate_html_table
 
 
 class ProgressIndicator:
@@ -130,6 +131,12 @@ Examples:
 
   # Run batch size sweep
   python -m onnxruntime.tools.model_inspect model.onnx --hardware a100 --sweep-batch-sizes
+
+  # Run resolution sweep for vision models
+  python -m onnxruntime.tools.model_inspect model.onnx --hardware rtx4090 --sweep-resolutions auto
+
+  # Custom resolutions for object detection
+  python -m onnxruntime.tools.model_inspect yolo.onnx --hardware rtx4090 --sweep-resolutions "320x320,640x640,1280x1280"
 """,
     )
 
@@ -378,6 +385,26 @@ Examples:
         "--sweep-batch-sizes",
         action="store_true",
         help="Run analysis across multiple batch sizes (1, 2, 4, ..., 128) to find optimal throughput.",
+    )
+
+    hardware_group.add_argument(
+        "--input-resolution",
+        type=str,
+        default=None,
+        help=(
+            "Override input resolution for analysis. Format: HxW (e.g., 640x640). "
+            "For vision models, affects FLOPs and memory estimates."
+        ),
+    )
+
+    hardware_group.add_argument(
+        "--sweep-resolutions",
+        type=str,
+        default=None,
+        help=(
+            "Run resolution sweep analysis. Provide comma-separated resolutions "
+            "(e.g., '224x224,384x384,512x512,640x640') or 'auto' for common resolutions."
+        ),
     )
 
     # Visualization options
@@ -755,6 +782,7 @@ def _convert_tensorflow_to_onnx(
         onnx_path.parent.mkdir(parents=True, exist_ok=True)
     else:
         import tempfile
+
         temp_file = tempfile.NamedTemporaryFile(suffix=".onnx", delete=False)
         onnx_path = pathlib.Path(temp_file.name)
         temp_file.close()
@@ -769,14 +797,20 @@ def _convert_tensorflow_to_onnx(
 
         # Use tf2onnx CLI for robustness (handles TF version quirks)
         cmd = [
-            sys.executable, "-m", "tf2onnx.convert",
-            "--saved-model", str(tf_path),
-            "--output", str(onnx_path),
-            "--opset", str(opset_version),
+            sys.executable,
+            "-m",
+            "tf2onnx.convert",
+            "--saved-model",
+            str(tf_path),
+            "--output",
+            str(onnx_path),
+            "--opset",
+            str(opset_version),
         ]
 
         result = subprocess.run(
             cmd,
+            check=False,
             capture_output=True,
             text=True,
             timeout=600,  # 10 minute timeout for large models
@@ -795,6 +829,7 @@ def _convert_tensorflow_to_onnx(
 
         # Verify the export
         import onnx
+
         onnx_model = onnx.load(str(onnx_path))
         onnx.checker.check_model(onnx_model)
         logger.info("ONNX model validated successfully")
@@ -862,6 +897,7 @@ def _convert_keras_to_onnx(
         onnx_path.parent.mkdir(parents=True, exist_ok=True)
     else:
         import tempfile
+
         temp_file = tempfile.NamedTemporaryFile(suffix=".onnx", delete=False)
         onnx_path = pathlib.Path(temp_file.name)
         temp_file.close()
@@ -876,14 +912,20 @@ def _convert_keras_to_onnx(
 
         # Use tf2onnx CLI with --keras flag
         cmd = [
-            sys.executable, "-m", "tf2onnx.convert",
-            "--keras", str(keras_path),
-            "--output", str(onnx_path),
-            "--opset", str(opset_version),
+            sys.executable,
+            "-m",
+            "tf2onnx.convert",
+            "--keras",
+            str(keras_path),
+            "--output",
+            str(onnx_path),
+            "--opset",
+            str(opset_version),
         ]
 
         result = subprocess.run(
             cmd,
+            check=False,
             capture_output=True,
             text=True,
             timeout=600,  # 10 minute timeout
@@ -902,6 +944,7 @@ def _convert_keras_to_onnx(
 
         # Verify the export
         import onnx
+
         onnx_model = onnx.load(str(onnx_path))
         onnx.checker.check_model(onnx_model)
         logger.info("ONNX model validated successfully")
@@ -976,6 +1019,7 @@ def _convert_frozen_graph_to_onnx(
         onnx_path.parent.mkdir(parents=True, exist_ok=True)
     else:
         import tempfile
+
         temp_file = tempfile.NamedTemporaryFile(suffix=".onnx", delete=False)
         onnx_path = pathlib.Path(temp_file.name)
         temp_file.close()
@@ -992,16 +1036,24 @@ def _convert_frozen_graph_to_onnx(
 
         # Use tf2onnx CLI with --graphdef flag
         cmd = [
-            sys.executable, "-m", "tf2onnx.convert",
-            "--graphdef", str(pb_path),
-            "--inputs", inputs,
-            "--outputs", outputs,
-            "--output", str(onnx_path),
-            "--opset", str(opset_version),
+            sys.executable,
+            "-m",
+            "tf2onnx.convert",
+            "--graphdef",
+            str(pb_path),
+            "--inputs",
+            inputs,
+            "--outputs",
+            outputs,
+            "--output",
+            str(onnx_path),
+            "--opset",
+            str(opset_version),
         ]
 
         result = subprocess.run(
             cmd,
+            check=False,
             capture_output=True,
             text=True,
             timeout=600,  # 10 minute timeout
@@ -1020,6 +1072,7 @@ def _convert_frozen_graph_to_onnx(
 
         # Verify the export
         import onnx
+
         onnx_model = onnx.load(str(onnx_path))
         onnx.checker.check_model(onnx_model)
         logger.info("ONNX model validated successfully")
@@ -1134,6 +1187,7 @@ def _convert_jax_to_onnx(
         onnx_path.parent.mkdir(parents=True, exist_ok=True)
     else:
         import tempfile
+
         temp_file = tempfile.NamedTemporaryFile(suffix=".onnx", delete=False)
         onnx_path = pathlib.Path(temp_file.name)
         temp_file.close()
@@ -1153,6 +1207,7 @@ def _convert_jax_to_onnx(
         if suffix == ".msgpack":
             try:
                 from flax.serialization import msgpack_restore
+
                 with open(jax_path, "rb") as f:
                     params = msgpack_restore(f.read())
                 logger.info("Loaded Flax msgpack params")
@@ -1161,15 +1216,19 @@ def _convert_jax_to_onnx(
                 return None, None
         elif suffix in (".pkl", ".pickle"):
             import pickle
+
             with open(jax_path, "rb") as f:
                 params = pickle.load(f)
             logger.info("Loaded pickle params")
         elif suffix == ".npy":
             import numpy as np
+
             params = np.load(jax_path, allow_pickle=True).item()
             logger.info("Loaded numpy params")
         else:
-            logger.error(f"Unsupported params format: {suffix}. Use .msgpack, .pkl, or .npy")
+            logger.error(
+                f"Unsupported params format: {suffix}. Use .msgpack, .pkl, or .npy"
+            )
             return None, None
 
         # Import apply function
@@ -1186,8 +1245,8 @@ def _convert_jax_to_onnx(
 
         # Convert via jax2tf (JAX -> TF -> ONNX)
         try:
-            from jax.experimental import jax2tf
             import tensorflow as tf
+            from jax.experimental import jax2tf
         except ImportError:
             logger.error(
                 "jax2tf or TensorFlow not available. Install with: "
@@ -1206,6 +1265,7 @@ def _convert_jax_to_onnx(
 
         # Create TF SavedModel
         import tempfile as tf_tempfile
+
         with tf_tempfile.TemporaryDirectory() as tf_model_dir:
             # Wrap in tf.Module for SavedModel export
             class TFModule(tf.Module):
@@ -1219,15 +1279,22 @@ def _convert_jax_to_onnx(
 
             # Convert TF SavedModel to ONNX
             import subprocess
+
             cmd = [
-                sys.executable, "-m", "tf2onnx.convert",
-                "--saved-model", tf_model_dir,
-                "--output", str(onnx_path),
-                "--opset", str(opset_version),
+                sys.executable,
+                "-m",
+                "tf2onnx.convert",
+                "--saved-model",
+                tf_model_dir,
+                "--output",
+                str(onnx_path),
+                "--opset",
+                str(opset_version),
             ]
 
             result = subprocess.run(
                 cmd,
+                check=False,
                 capture_output=True,
                 text=True,
                 timeout=600,
@@ -1246,6 +1313,7 @@ def _convert_jax_to_onnx(
 
         # Verify the export
         import onnx
+
         onnx_model = onnx.load(str(onnx_path))
         onnx.checker.check_model(onnx_model)
         logger.info("ONNX model validated successfully")
@@ -1253,6 +1321,7 @@ def _convert_jax_to_onnx(
     except Exception as e:
         logger.error(f"JAX conversion failed: {e}")
         import traceback
+
         logger.debug(traceback.format_exc())
         if temp_file:
             try:
@@ -1468,7 +1537,9 @@ def run_inspect():
 
     if len(active_conversions) > 1:
         names = [name for name, _ in active_conversions]
-        logger.error(f"Cannot use multiple conversion flags together: {', '.join(names)}")
+        logger.error(
+            f"Cannot use multiple conversion flags together: {', '.join(names)}"
+        )
         sys.exit(1)
 
     if args.from_pytorch:
@@ -1593,6 +1664,8 @@ def run_inspect():
         total_steps += 1
     if args.sweep_batch_sizes and hardware_profile:
         total_steps += 1
+    if args.sweep_resolutions and hardware_profile:
+        total_steps += 1
     if args.with_plots and is_viz_available():
         total_steps += 1
     if args.llm_summary and is_llm_available() and has_llm_api_key():
@@ -1641,7 +1714,65 @@ def run_inspect():
                     precision=args.precision,
                 )
                 report.batch_size_sweep = sweep_result
-                logger.info(f"Batch sweep complete. Optimal batch size: {sweep_result.optimal_batch_size}")
+                logger.info(
+                    f"Batch sweep complete. Optimal batch size: {sweep_result.optimal_batch_size}"
+                )
+
+            # Resolution Sweep (Story 6.8)
+            if args.sweep_resolutions:
+                progress.step("Running resolution sweep")
+                profiler = OperationalProfiler(logger=logger)
+
+                # Determine base/training resolution from model input shape
+                base_resolution = (224, 224)  # Default
+                if report.graph_summary and report.graph_summary.input_shapes:
+                    for shape in report.graph_summary.input_shapes.values():
+                        if len(shape) >= 3:
+                            # Assume NCHW or NHWC format
+                            h, w = shape[-2], shape[-1]
+                            if (
+                                isinstance(h, int)
+                                and isinstance(w, int)
+                                and h > 1
+                                and w > 1
+                            ):
+                                base_resolution = (h, w)
+                                break
+
+                # Parse resolutions from CLI argument
+                # Note: Only resolutions UP TO training resolution are reliable
+                resolutions: list[tuple[int, int]] | None = None
+                if args.sweep_resolutions != "auto":
+                    resolutions = []
+                    for res_part in args.sweep_resolutions.split(","):
+                        res_str = res_part.strip()
+                        if "x" in res_str:
+                            h, w = res_str.split("x")
+                            res_h, res_w = int(h), int(w)
+                            # Warn if resolution exceeds training resolution
+                            if res_h > base_resolution[0] or res_w > base_resolution[1]:
+                                logger.warning(
+                                    f"Resolution {res_str} exceeds training resolution "
+                                    f"{base_resolution[0]}x{base_resolution[1]}. "
+                                    "Results may be unreliable."
+                                )
+                            resolutions.append((res_h, res_w))
+
+                res_sweep_result = profiler.run_resolution_sweep(
+                    base_flops=report.flop_counts.total,
+                    base_activation_bytes=report.memory_estimates.peak_activation_bytes,
+                    base_resolution=base_resolution,
+                    model_params=report.param_counts.total,
+                    hardware=hardware_profile,
+                    resolutions=resolutions,
+                    batch_size=args.batch_size,
+                    precision=args.precision,
+                )
+                report.resolution_sweep = res_sweep_result
+                logger.info(
+                    f"Resolution sweep complete. Max resolution: {res_sweep_result.max_resolution}, "
+                    f"Optimal: {res_sweep_result.optimal_resolution}"
+                )
 
         # System Requirements (Story 6C.2)
         if (
@@ -1747,7 +1878,14 @@ def run_inspect():
         report._llm_summary = llm_summary  # type: ignore
 
     # Output results
-    has_output = args.out_json or args.out_md or args.out_html or args.out_pdf or args.html_graph or args.layer_csv
+    has_output = (
+        args.out_json
+        or args.out_md
+        or args.out_html
+        or args.out_pdf
+        or args.html_graph
+        or args.layer_csv
+    )
     if has_output:
         progress.step("Writing output files")
 
@@ -1829,6 +1967,7 @@ def run_inspect():
                     graph_info = inspector._graph_info
                 else:
                     from .autodoc.analyzer import ONNXGraphLoader
+
                     loader = ONNXGraphLoader(logger=logger)
                     _, graph_info = loader.load(model_path)
 
@@ -1861,6 +2000,7 @@ def run_inspect():
                     graph_info = inspector._graph_info
                 else:
                     from .autodoc.analyzer import ONNXGraphLoader
+
                     loader = ONNXGraphLoader(logger=logger)
                     _, graph_info = loader.load(model_path)
 
@@ -1875,9 +2015,12 @@ def run_inspect():
 
                 # Generate graph HTML (just the interactive part, not full document)
                 # For embedding, we'll use an iframe approach
-                full_graph_html = generate_graph_html(hier_graph, edge_result, model_path.stem)
+                full_graph_html = generate_graph_html(
+                    hier_graph, edge_result, model_path.stem
+                )
                 # Wrap in iframe data URI for embedding
                 import base64
+
                 graph_data = base64.b64encode(full_graph_html.encode()).decode()
                 graph_html = f'<iframe src="data:text/html;base64,{graph_data}" style="width:100%;height:100%;border:none;"></iframe>'
                 logger.debug("Generated interactive graph for HTML report")
@@ -1931,6 +2074,7 @@ def run_inspect():
             else:
                 # Re-load the model to get graph_info
                 from .autodoc.analyzer import ONNXGraphLoader
+
                 loader = ONNXGraphLoader(logger=logger)
                 _, graph_info = loader.load(model_path)
 
@@ -1950,11 +2094,14 @@ def run_inspect():
             exporter = HTMLExporter(logger=logger)
             exporter.export(hier_graph, edge_result, args.html_graph, model_path.stem)
 
-            logger.info(f"Interactive graph visualization written to: {args.html_graph}")
+            logger.info(
+                f"Interactive graph visualization written to: {args.html_graph}"
+            )
         except Exception as e:
             logger.error(f"Failed to generate graph visualization: {e}")
             if not args.quiet:
                 import traceback
+
                 traceback.print_exc()
             sys.exit(1)
 
@@ -2007,8 +2154,12 @@ def run_inspect():
         if hasattr(report, "system_requirements") and report.system_requirements:
             reqs = report.system_requirements
             print("\n--- System Requirements ---")
-            print(f"Minimum:     {reqs.minimum_gpu.name} ({reqs.minimum_vram_gb} GB VRAM)")
-            print(f"Recommended: {reqs.recommended_gpu.name} ({reqs.recommended_vram_gb} GB VRAM)")
+            print(
+                f"Minimum:     {reqs.minimum_gpu.name} ({reqs.minimum_vram_gb} GB VRAM)"
+            )
+            print(
+                f"Recommended: {reqs.recommended_gpu.name} ({reqs.recommended_vram_gb} GB VRAM)"
+            )
             print(f"Optimal:     {reqs.optimal_gpu.name}")
 
         # Batch Scaling (Console)

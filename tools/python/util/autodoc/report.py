@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     )
     from .operational_profiling import (
         BatchSizeSweep,
+        ResolutionSweep,
         SystemRequirements,
     )
     from .patterns import Block, PatternAnalyzer
@@ -245,6 +246,7 @@ class InspectionReport:
     # System Requirements & Scaling (Epic 6C)
     system_requirements: SystemRequirements | None = None
     batch_size_sweep: BatchSizeSweep | None = None
+    resolution_sweep: ResolutionSweep | None = None
 
     # LLM summary (optional, set by CLI if --llm-summary specified)
     llm_summary: dict[str, Any] | None = None
@@ -670,6 +672,36 @@ class InspectionReport:
             for i, bs in enumerate(sweep.batch_sizes):
                 lines.append(
                     f"| {bs} | {sweep.latencies[i]:.2f} | {sweep.throughputs[i]:.1f} | {sweep.vram_usage_gb[i]:.2f} |"
+                )
+            lines.append("")
+
+        # Resolution Sweep (Story 6.8)
+        if self.resolution_sweep:
+            sweep = self.resolution_sweep
+            lines.append("## Resolution Scaling")
+            lines.append("")
+            lines.append(f"**Max Resolution**: {sweep.max_resolution}")
+            lines.append(f"**Optimal Resolution**: {sweep.optimal_resolution}")
+            lines.append("")
+            lines.append(
+                "| Resolution | FLOPs | Memory (GB) | Latency (ms) | Throughput | VRAM (GB) |"
+            )
+            lines.append(
+                "|------------|-------|-------------|--------------|------------|-----------|"
+            )
+            for i, res in enumerate(sweep.resolutions):
+                flops_str = self._format_number(sweep.flops[i])
+                lat_str = (
+                    f"{sweep.latencies[i]:.2f}"
+                    if sweep.latencies[i] != float("inf")
+                    else "OOM"
+                )
+                tput_str = (
+                    f"{sweep.throughputs[i]:.1f}" if sweep.throughputs[i] > 0 else "-"
+                )
+                lines.append(
+                    f"| {res} | {flops_str} | {sweep.memory_gb[i]:.2f} | "
+                    f"{lat_str} | {tput_str} | {sweep.vram_usage_gb[i]:.2f} |"
                 )
             lines.append("")
 
@@ -1267,6 +1299,36 @@ class InspectionReport:
             for i, bs in enumerate(sweep.batch_sizes):
                 html_parts.append(
                     f"<tr><td>{bs}</td><td>{sweep.latencies[i]:.2f}</td><td>{sweep.throughputs[i]:.1f}</td><td>{sweep.vram_usage_gb[i]:.2f}</td></tr>"
+                )
+            html_parts.append("</table></section>")
+
+        # Resolution Sweep (Story 6.8)
+        if self.resolution_sweep:
+            sweep = self.resolution_sweep
+            html_parts.append('<section class="resolution-scaling">')
+            html_parts.append("<h2>Resolution Scaling</h2>")
+            html_parts.append(
+                f"<p><strong>Max Resolution:</strong> {sweep.max_resolution} | "
+                f"<strong>Optimal:</strong> {sweep.optimal_resolution}</p>"
+            )
+            html_parts.append("<table>")
+            html_parts.append(
+                "<tr><th>Resolution</th><th>FLOPs</th><th>Memory (GB)</th>"
+                "<th>Latency (ms)</th><th>Throughput</th><th>VRAM (GB)</th></tr>"
+            )
+            for i, res in enumerate(sweep.resolutions):
+                flops_str = self._format_number(sweep.flops[i])
+                lat_str = (
+                    f"{sweep.latencies[i]:.2f}"
+                    if sweep.latencies[i] != float("inf")
+                    else "OOM"
+                )
+                tput_str = (
+                    f"{sweep.throughputs[i]:.1f}" if sweep.throughputs[i] > 0 else "-"
+                )
+                html_parts.append(
+                    f"<tr><td>{res}</td><td>{flops_str}</td><td>{sweep.memory_gb[i]:.2f}</td>"
+                    f"<td>{lat_str}</td><td>{tput_str}</td><td>{sweep.vram_usage_gb[i]:.2f}</td></tr>"
                 )
             html_parts.append("</table></section>")
 

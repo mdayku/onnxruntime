@@ -427,6 +427,79 @@ class CompareEngine:
         pass
 ```
 
+### 3.9 Operational Profiler
+
+**Purpose**: Analyze scaling characteristics (batch size, resolution).
+
+```python
+class OperationalProfiler:
+    """Analyzes model operational characteristics."""
+
+    def run_batch_sweep(
+        self,
+        model_params: int,
+        model_flops: int,
+        hardware: HardwareProfile,
+        batch_sizes: List[int] = None
+    ) -> BatchSizeSweep:
+        """Analyze performance scaling across batch sizes."""
+        pass
+
+    def run_resolution_sweep(
+        self,
+        base_flops: int,
+        base_resolution: Tuple[int, int],
+        model_params: int,
+        hardware: HardwareProfile,
+        resolutions: List[Tuple[int, int]] = None
+    ) -> ResolutionSweep:
+        """
+        Analyze performance scaling across resolutions.
+
+        Key constraints:
+        1. Only sweep UP TO training resolution (not above)
+        2. Match aspect ratio of training data
+        3. Round to nearest 32 for GPU efficiency
+        """
+        pass
+
+    def recommend_resolution(
+        self,
+        base_flops: int,
+        base_resolution: Tuple[int, int],
+        hardware: HardwareProfile,
+        target_fps: float = 30.0
+    ) -> Dict[str, Any]:
+        """Recommend optimal resolution for target FPS."""
+        pass
+```
+
+### 3.10 Compare Visualizations
+
+**Purpose**: Generate charts for multi-model comparison reports.
+
+```python
+# compare_visualizations.py
+
+def compute_tradeoff_points(compare_json: Dict) -> List[TradeoffPoint]:
+    """Compute speedup/accuracy tradeoff for each variant."""
+
+def generate_tradeoff_chart(points: List[TradeoffPoint]) -> bytes:
+    """Generate accuracy vs speedup scatter chart."""
+
+def generate_memory_savings_chart(compare_json: Dict) -> bytes:
+    """Generate size/memory reduction bar chart."""
+
+def generate_compare_html(compare_json: Dict) -> str:
+    """Generate HTML report with engine summary panel."""
+
+def analyze_tradeoffs(compare_json: Dict) -> Dict[str, Any]:
+    """Identify best variants and generate recommendations."""
+
+def generate_calibration_recommendations(compare_json: Dict) -> List[CalibrationRecommendation]:
+    """Generate INT8/INT4 calibration guidance."""
+```
+
 ---
 
 ## 4. Data Flow

@@ -37,6 +37,46 @@ class BatchSweepPoint:
 
 
 @dataclass
+class ResolutionPoint:
+    """Metrics for a single resolution point."""
+
+    resolution: tuple[int, int]
+    resolution_str: str  # e.g., "224x224"
+    flops: int
+    memory_bytes: int
+    vram_required_bytes: int
+    estimated_latency_ms: float
+    throughput_fps: float
+    fits_in_vram: bool
+
+
+@dataclass
+class ResolutionSweep:
+    """Results of a resolution sweep analysis."""
+
+    resolutions: list[str]  # ["224x224", "384x384", ...]
+    flops: list[int]
+    memory_gb: list[float]
+    latencies: list[float]
+    throughputs: list[float]
+    vram_usage_gb: list[float]
+    optimal_resolution: str
+    max_resolution: str  # Largest resolution that fits in VRAM
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "resolutions": self.resolutions,
+            "flops": self.flops,
+            "memory_gb": self.memory_gb,
+            "latencies": self.latencies,
+            "throughputs": self.throughputs,
+            "vram_usage_gb": self.vram_usage_gb,
+            "optimal_resolution": self.optimal_resolution,
+            "max_resolution": self.max_resolution,
+        }
+
+
+@dataclass
 class BatchSizeSweep:
     """Results of a batch size sweep analysis."""
 
@@ -187,6 +227,254 @@ class OperationalProfiler:
             vram_usage_gb=vram_usage,
             optimal_batch_size=optimal_bs,
         )
+
+    def run_resolution_sweep(
+        self,
+        base_flops: int,
+        base_activation_bytes: int,
+        base_resolution: tuple[int, int],
+        model_params: int,
+        hardware: HardwareProfile,
+        resolutions: list[tuple[int, int]] | None = None,
+        batch_size: int = 1,
+        precision: str = "fp16",
+    ) -> ResolutionSweep:
+        """
+        Analyze performance scaling across input resolutions.
+
+        For vision models, FLOPs and memory scale approximately quadratically
+        with resolution (for most architectures like ResNet, ViT, YOLO).
+
+        Args:
+            base_flops: FLOPs at base_resolution
+            base_activation_bytes: Activation memory at base_resolution
+            base_resolution: The resolution used for base measurements (H, W)
+            model_params: Total parameters (doesn't change with resolution)
+            hardware: Target hardware profile
+            resolutions: List of (H, W) resolutions to test
+            batch_size: Batch size for estimates
+            precision: Precision ("fp32", "fp16", "int8")
+
+        Returns:
+            ResolutionSweep results
+        """
+        base_h, base_w = base_resolution
+        base_pixels = base_h * base_w
+        base_aspect = base_w / base_h if base_h > 0 else 1.0
+
+        if resolutions is None:
+            # Generate resolutions that:
+            # 1. Match the aspect ratio of training data
+            # 2. Only go UP TO (not above) the training resolution
+            # Running above training resolution typically produces poor results
+            resolutions = []
+
+            # Common scale factors (smaller than or equal to 1.0)
+            if base_aspect == 1.0:
+                # Square aspect ratio
+                candidates = [
+                    128,
+                    160,
+                    192,
+                    224,
+                    256,
+                    320,
+                    384,
+                    416,
+                    448,
+                    512,
+                    640,
+                    768,
+                    1024,
+                ]
+                for size in candidates:
+                    if size <= base_h:
+                        resolutions.append((size, size))
+            else:
+                # Non-square: generate resolutions matching aspect ratio
+                scale_factors = [0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0]
+                for scale in scale_factors:
+                    h = int(base_h * scale)
+                    w = int(base_w * scale)
+                    # Round to nearest 32 for GPU efficiency
+                    h = max(32, (h // 32) * 32)
+                    w = max(32, (w // 32) * 32)
+                    if h <= base_h and w <= base_w and (h, w) not in resolutions:
+                        resolutions.append((h, w))
+
+            # Always include the base resolution
+            if base_resolution not in resolutions:
+                resolutions.append(base_resolution)
+
+            # Sort by pixel count
+            resolutions.sort(key=lambda r: r[0] * r[1])
+
+        resolution_strs = []
+        flops_list = []
+        memory_gb_list = []
+        latencies = []
+        throughputs = []
+        vram_usage = []
+        optimal_res = f"{base_h}x{base_w}"
+        max_res = f"{base_h}x{base_w}"
+        max_throughput = 0.0
+        max_fitting_pixels = 0
+
+        for h, w in resolutions:
+            res_str = f"{h}x{w}"
+            resolution_strs.append(res_str)
+
+            # Scale FLOPs and memory quadratically with resolution
+            pixels = h * w
+            scale_factor = pixels / base_pixels
+
+            scaled_flops = int(base_flops * scale_factor)
+            scaled_activation = int(base_activation_bytes * scale_factor)
+
+            flops_list.append(scaled_flops)
+            memory_gb_list.append(scaled_activation / (1024**3))
+
+            # Get hardware estimates for this resolution
+            est = self.hw_estimator.estimate(
+                model_params=model_params,
+                model_flops=scaled_flops,
+                peak_activation_bytes=scaled_activation,
+                hardware=hardware,
+                batch_size=batch_size,
+                precision=precision,
+            )
+
+            vram_gb = est.vram_required_bytes / (1024**3)
+            vram_usage.append(vram_gb)
+
+            if est.fits_in_vram and est.theoretical_latency_ms > 0:
+                latency = est.theoretical_latency_ms
+                throughput = (1000.0 / latency) * batch_size
+
+                latencies.append(latency)
+                throughputs.append(throughput)
+
+                # Track max resolution that fits
+                if pixels > max_fitting_pixels:
+                    max_fitting_pixels = pixels
+                    max_res = res_str
+
+                # Track optimal (highest throughput)
+                if throughput > max_throughput:
+                    max_throughput = throughput
+                    optimal_res = res_str
+            else:
+                latencies.append(float("inf"))
+                throughputs.append(0.0)
+
+        return ResolutionSweep(
+            resolutions=resolution_strs,
+            flops=flops_list,
+            memory_gb=memory_gb_list,
+            latencies=latencies,
+            throughputs=throughputs,
+            vram_usage_gb=vram_usage,
+            optimal_resolution=optimal_res,
+            max_resolution=max_res,
+        )
+
+    def recommend_resolution(
+        self,
+        base_flops: int,
+        base_activation_bytes: int,
+        base_resolution: tuple[int, int],
+        model_params: int,
+        hardware: HardwareProfile,
+        target_fps: float = 30.0,
+        batch_size: int = 1,
+        precision: str = "fp16",
+    ) -> dict[str, Any]:
+        """
+        Recommend optimal resolution for target hardware and latency requirements.
+
+        Task 6.8.5: Resolution recommendations for target hardware
+
+        Args:
+            base_flops: FLOPs at base_resolution
+            base_activation_bytes: Activation memory at base_resolution
+            base_resolution: The resolution used for base measurements (H, W)
+            model_params: Total parameters
+            hardware: Target hardware profile
+            target_fps: Desired frames per second (default: 30 fps)
+            batch_size: Batch size
+            precision: Precision for estimates
+
+        Returns:
+            Dict with recommended_resolution, max_resolution, and rationale
+        """
+        target_latency_ms = 1000.0 / target_fps
+
+        # Run sweep with common resolutions
+        sweep = self.run_resolution_sweep(
+            base_flops=base_flops,
+            base_activation_bytes=base_activation_bytes,
+            base_resolution=base_resolution,
+            model_params=model_params,
+            hardware=hardware,
+            batch_size=batch_size,
+            precision=precision,
+        )
+
+        # Find resolution that meets target FPS
+        recommended = None
+        recommended_idx = -1
+        for i, (res, lat) in enumerate(
+            zip(sweep.resolutions, sweep.latencies, strict=False)
+        ):
+            if lat != float("inf") and lat <= target_latency_ms:
+                recommended = res
+                recommended_idx = i
+
+        # Build recommendation rationale
+        rationale_parts = []
+
+        if recommended:
+            rationale_parts.append(
+                f"Resolution **{recommended}** meets {target_fps} FPS target "
+                f"({sweep.latencies[recommended_idx]:.1f}ms latency)."
+            )
+        else:
+            # Find closest resolution that fits
+            for i, (res, lat) in enumerate(
+                zip(sweep.resolutions, sweep.latencies, strict=False)
+            ):
+                if lat != float("inf"):
+                    recommended = res
+                    recommended_idx = i
+                    break
+
+            if recommended:
+                actual_fps = 1000.0 / sweep.latencies[recommended_idx]
+                rationale_parts.append(
+                    f"Cannot meet {target_fps} FPS. Best achievable: "
+                    f"**{recommended}** at {actual_fps:.1f} FPS."
+                )
+            else:
+                rationale_parts.append("No resolution fits in available VRAM.")
+
+        if sweep.max_resolution and sweep.max_resolution != recommended:
+            rationale_parts.append(
+                f"Maximum resolution that fits in VRAM: **{sweep.max_resolution}**."
+            )
+
+        return {
+            "recommended_resolution": recommended,
+            "max_resolution": sweep.max_resolution,
+            "optimal_resolution": sweep.optimal_resolution,
+            "target_fps": target_fps,
+            "achievable_fps": (
+                1000.0 / sweep.latencies[recommended_idx]
+                if recommended and recommended_idx >= 0
+                else 0.0
+            ),
+            "rationale": " ".join(rationale_parts),
+            "sweep_results": sweep.to_dict(),
+        }
 
     def determine_system_requirements(
         self,

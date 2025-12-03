@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .analyzer import FlopCounts, GraphInfo, ParamCounts
+    from .operational_profiling import BatchSizeSweep, ResolutionSweep
     from .report import InspectionReport
 
 # Attempt to import matplotlib with Agg backend (non-interactive)
@@ -210,8 +211,228 @@ class VisualizationGenerator:
         except Exception as e:
             self.logger.warning(f"Failed to generate complexity summary: {e}")
 
+        # Resolution sweep chart (Story 6.8)
+        try:
+            if hasattr(report, "resolution_sweep") and report.resolution_sweep:
+                path = self.resolution_scaling_chart(
+                    report.resolution_sweep,
+                    output_dir / "resolution_scaling.png",
+                )
+                if path:
+                    paths["resolution_scaling"] = path
+        except Exception as e:
+            self.logger.warning(f"Failed to generate resolution scaling chart: {e}")
+
+        # Batch size sweep chart
+        try:
+            if hasattr(report, "batch_size_sweep") and report.batch_size_sweep:
+                path = self.batch_scaling_chart(
+                    report.batch_size_sweep,
+                    output_dir / "batch_scaling.png",
+                )
+                if path:
+                    paths["batch_scaling"] = path
+        except Exception as e:
+            self.logger.warning(f"Failed to generate batch scaling chart: {e}")
+
         self.logger.info(f"Generated {len(paths)} visualization assets in {output_dir}")
         return paths
+
+    def resolution_scaling_chart(
+        self,
+        sweep: ResolutionSweep,
+        output_path: Path,
+    ) -> Path | None:
+        """
+        Generate resolution scaling chart.
+
+        Shows how latency, throughput, and VRAM scale with resolution.
+        """
+        if not _MATPLOTLIB_AVAILABLE:
+            return None
+
+        # Import at runtime for isinstance check (avoid circular import)
+        from .operational_profiling import ResolutionSweep  # noqa: PLC0415
+
+        if not isinstance(sweep, ResolutionSweep):
+            return None
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        fig.patch.set_facecolor(THEME.background)
+
+        resolutions = sweep.resolutions
+        x = range(len(resolutions))
+
+        # Latency chart
+        ax1 = axes[0]
+        ax1.set_facecolor(THEME.plot_background)
+        latencies = [lat if lat != float("inf") else 0 for lat in sweep.latencies]
+        ax1.bar(x, latencies, color=THEME.colors[0], alpha=0.8)
+        ax1.set_xlabel("Resolution", color=THEME.text, fontsize=10)
+        ax1.set_ylabel("Latency (ms)", color=THEME.text, fontsize=10)
+        ax1.set_title(
+            "Latency vs Resolution", color=THEME.text, fontsize=12, fontweight="bold"
+        )
+        ax1.set_xticks(list(x))
+        ax1.set_xticklabels(resolutions, rotation=45, ha="right", fontsize=8)
+        ax1.tick_params(colors=THEME.text)
+        for spine in ax1.spines.values():
+            spine.set_color(THEME.grid)
+        ax1.grid(True, alpha=0.3, color=THEME.grid)
+
+        # Mark OOM points
+        for i, lat in enumerate(sweep.latencies):
+            if lat == float("inf"):
+                ax1.annotate(
+                    "OOM",
+                    (i, 0),
+                    ha="center",
+                    va="bottom",
+                    color=THEME.accent,
+                    fontsize=8,
+                )
+
+        # Throughput chart
+        ax2 = axes[1]
+        ax2.set_facecolor(THEME.plot_background)
+        ax2.bar(x, sweep.throughputs, color=THEME.colors[1], alpha=0.8)
+        ax2.set_xlabel("Resolution", color=THEME.text, fontsize=10)
+        ax2.set_ylabel("Throughput (inf/s)", color=THEME.text, fontsize=10)
+        ax2.set_title(
+            "Throughput vs Resolution", color=THEME.text, fontsize=12, fontweight="bold"
+        )
+        ax2.set_xticks(list(x))
+        ax2.set_xticklabels(resolutions, rotation=45, ha="right", fontsize=8)
+        ax2.tick_params(colors=THEME.text)
+        for spine in ax2.spines.values():
+            spine.set_color(THEME.grid)
+        ax2.grid(True, alpha=0.3, color=THEME.grid)
+
+        # VRAM chart
+        ax3 = axes[2]
+        ax3.set_facecolor(THEME.plot_background)
+        ax3.bar(x, sweep.vram_usage_gb, color=THEME.colors[2], alpha=0.8)
+        ax3.set_xlabel("Resolution", color=THEME.text, fontsize=10)
+        ax3.set_ylabel("VRAM (GB)", color=THEME.text, fontsize=10)
+        ax3.set_title(
+            "VRAM vs Resolution", color=THEME.text, fontsize=12, fontweight="bold"
+        )
+        ax3.set_xticks(list(x))
+        ax3.set_xticklabels(resolutions, rotation=45, ha="right", fontsize=8)
+        ax3.tick_params(colors=THEME.text)
+        for spine in ax3.spines.values():
+            spine.set_color(THEME.grid)
+        ax3.grid(True, alpha=0.3, color=THEME.grid)
+
+        plt.tight_layout()
+        fig.savefig(output_path, dpi=150, facecolor=THEME.background)
+        plt.close(fig)
+
+        return output_path
+
+    def batch_scaling_chart(
+        self,
+        sweep: BatchSizeSweep,
+        output_path: Path,
+    ) -> Path | None:
+        """
+        Generate batch size scaling chart.
+
+        Shows how latency, throughput, and VRAM scale with batch size.
+        """
+        if not _MATPLOTLIB_AVAILABLE:
+            return None
+
+        # Import at runtime for isinstance check (avoid circular import)
+        from .operational_profiling import BatchSizeSweep  # noqa: PLC0415
+
+        if not isinstance(sweep, BatchSizeSweep):
+            return None
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        fig.patch.set_facecolor(THEME.background)
+
+        batch_sizes = sweep.batch_sizes
+
+        # Latency chart
+        ax1 = axes[0]
+        ax1.set_facecolor(THEME.plot_background)
+        latencies = [lat if lat != float("inf") else 0 for lat in sweep.latencies]
+        ax1.plot(
+            batch_sizes,
+            latencies,
+            color=THEME.colors[0],
+            marker="o",
+            linewidth=2,
+            markersize=6,
+        )
+        ax1.set_xlabel("Batch Size", color=THEME.text, fontsize=10)
+        ax1.set_ylabel("Latency (ms)", color=THEME.text, fontsize=10)
+        ax1.set_title(
+            "Latency vs Batch Size", color=THEME.text, fontsize=12, fontweight="bold"
+        )
+        ax1.tick_params(colors=THEME.text)
+        for spine in ax1.spines.values():
+            spine.set_color(THEME.grid)
+        ax1.grid(True, alpha=0.3, color=THEME.grid)
+
+        # Throughput chart
+        ax2 = axes[1]
+        ax2.set_facecolor(THEME.plot_background)
+        ax2.plot(
+            batch_sizes,
+            sweep.throughputs,
+            color=THEME.colors[1],
+            marker="o",
+            linewidth=2,
+            markersize=6,
+        )
+        ax2.axvline(
+            x=sweep.optimal_batch_size,
+            color=THEME.accent,
+            linestyle="--",
+            alpha=0.7,
+            label=f"Optimal: {sweep.optimal_batch_size}",
+        )
+        ax2.set_xlabel("Batch Size", color=THEME.text, fontsize=10)
+        ax2.set_ylabel("Throughput (inf/s)", color=THEME.text, fontsize=10)
+        ax2.set_title(
+            "Throughput vs Batch Size", color=THEME.text, fontsize=12, fontweight="bold"
+        )
+        ax2.tick_params(colors=THEME.text)
+        ax2.legend(
+            facecolor=THEME.plot_background, edgecolor=THEME.grid, labelcolor=THEME.text
+        )
+        for spine in ax2.spines.values():
+            spine.set_color(THEME.grid)
+        ax2.grid(True, alpha=0.3, color=THEME.grid)
+
+        # VRAM chart
+        ax3 = axes[2]
+        ax3.set_facecolor(THEME.plot_background)
+        ax3.plot(
+            batch_sizes,
+            sweep.vram_usage_gb,
+            color=THEME.colors[2],
+            marker="o",
+            linewidth=2,
+            markersize=6,
+        )
+        ax3.set_xlabel("Batch Size", color=THEME.text, fontsize=10)
+        ax3.set_ylabel("VRAM (GB)", color=THEME.text, fontsize=10)
+        ax3.set_title(
+            "VRAM vs Batch Size", color=THEME.text, fontsize=12, fontweight="bold"
+        )
+        ax3.tick_params(colors=THEME.text)
+        for spine in ax3.spines.values():
+            spine.set_color(THEME.grid)
+        ax3.grid(True, alpha=0.3, color=THEME.grid)
+
+        plt.tight_layout()
+        fig.savefig(output_path, dpi=150, facecolor=THEME.background)
+        plt.close(fig)
+
+        return output_path
 
     def operator_histogram(
         self,
