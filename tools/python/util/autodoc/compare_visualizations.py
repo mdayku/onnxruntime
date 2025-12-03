@@ -952,6 +952,26 @@ def generate_calibration_recommendations(
     recommendations: list[CalibrationRecommendation] = []
     points = compute_tradeoff_points(compare_json)
 
+    # Check for INT8 models - warn about GPU inference limitations
+    has_int8 = any("int8" in p.precision.lower() for p in points)
+    if has_int8:
+        recommendations.append(
+            CalibrationRecommendation(
+                recommendation="Use TensorRT EP for INT8 GPU inference",
+                reason="ONNX Runtime's CUDA EP lacks optimized INT8 kernels, falling back to CPU",
+                severity="warning",
+                affected_layers=["ConvInteger", "MatMulInteger"],
+            )
+        )
+        recommendations.append(
+            CalibrationRecommendation(
+                recommendation="Alternative: Export to TensorRT engine for native INT8 GPU",
+                reason="TensorRT has full INT8 GPU kernel support with tensor cores",
+                severity="info",
+                affected_layers=["all"],
+            )
+        )
+
     # Check for significant int8 accuracy drop
     for p in points:
         if "int8" in p.precision.lower() and p.accuracy_delta < -0.02:

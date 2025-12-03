@@ -58,9 +58,11 @@ def main():
         estimates = estimator.estimate(
             flops=report.flop_counts.total if report.flop_counts else 0,
             params=report.param_counts.total if report.param_counts else 0,
-            activation_bytes=report.memory_estimates.peak_activation_bytes
-            if report.memory_estimates
-            else 0,
+            activation_bytes=(
+                report.memory_estimates.peak_activation_bytes
+                if report.memory_estimates
+                else 0
+            ),
             hardware=profile,
             precision="fp16",
             batch_size=1,
@@ -76,4 +78,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

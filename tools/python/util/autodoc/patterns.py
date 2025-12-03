@@ -1025,8 +1025,13 @@ class PatternAnalyzer:
             for b in blocks
         )
 
-        conv_count = op_counts.get("Conv", 0)
-        matmul_count = op_counts.get("MatMul", 0) + op_counts.get("Gemm", 0)
+        # Include quantized variants (ConvInteger, MatMulInteger) for INT8 models
+        conv_count = op_counts.get("Conv", 0) + op_counts.get("ConvInteger", 0)
+        matmul_count = (
+            op_counts.get("MatMul", 0)
+            + op_counts.get("Gemm", 0)
+            + op_counts.get("MatMulInteger", 0)
+        )
         softmax_count = op_counts.get("Softmax", 0)
 
         # Classification heuristics - more specific

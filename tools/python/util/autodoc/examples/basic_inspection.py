@@ -39,7 +39,7 @@ def main():
 
     # Basic stats
     if report.graph_summary:
-        print(f"\nGraph Structure:")
+        print("\nGraph Structure:")
         print(f"  Nodes: {report.graph_summary.num_nodes}")
         print(f"  Inputs: {report.graph_summary.num_inputs}")
         print(f"  Outputs: {report.graph_summary.num_outputs}")
@@ -60,7 +60,7 @@ def main():
 
     # Memory
     if report.memory_estimates:
-        print(f"\nMemory:")
+        print("\nMemory:")
         print(f"  Model size: {report.memory_estimates.model_size_mb:.1f} MB")
         print(f"  Peak activation: {report.memory_estimates.peak_activation_mb:.1f} MB")
 
@@ -72,4 +72,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

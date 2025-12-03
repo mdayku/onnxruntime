@@ -12,7 +12,6 @@ Usage:
     python compare_models.py model_fp32.onnx model_fp16.onnx model_int8.onnx
 """
 
-import json
 import sys
 from pathlib import Path
 
@@ -32,7 +31,9 @@ def format_size(bytes_val: int) -> str:
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: python compare_models.py <model1.onnx> <model2.onnx> [model3.onnx ...]")
+        print(
+            "Usage: python compare_models.py <model1.onnx> <model2.onnx> [model3.onnx ...]"
+        )
         sys.exit(1)
 
     model_paths = [Path(p) for p in sys.argv[1:]]
@@ -67,7 +68,7 @@ def main():
 
     # File size
     print(f"{'File Size':<25}", end="")
-    for path, report in zip(model_paths, reports, strict=True):
+    for path, _report in zip(model_paths, reports, strict=True):
         size = path.stat().st_size
         print(f"{format_size(size):<20}", end="")
     print()
@@ -89,7 +90,11 @@ def main():
     # Memory
     print(f"{'Peak Activation (MB)':<25}", end="")
     for _, report in reports:
-        mem = report[1].memory_estimates.peak_activation_mb if report[1].memory_estimates else 0
+        mem = (
+            report[1].memory_estimates.peak_activation_mb
+            if report[1].memory_estimates
+            else 0
+        )
         print(f"{mem:.1f}".ljust(20), end="")
     print()
 
@@ -101,13 +106,19 @@ def main():
     print(f"DELTAS vs {baseline_name} (baseline)")
     print(f"{'='*80}")
 
-    for i, (path, (name, report)) in enumerate(zip(model_paths[1:], reports[1:], strict=True)):
+    for _i, (path, (name, report)) in enumerate(
+        zip(model_paths[1:], reports[1:], strict=True)
+    ):
         size = path.stat().st_size
         size_delta = (size - baseline_size) / baseline_size * 100
 
         params = report.param_counts.total if report.param_counts else 0
-        baseline_params = baseline_report.param_counts.total if baseline_report.param_counts else 0
-        params_delta = (params - baseline_params) / baseline_params * 100 if baseline_params else 0
+        baseline_params = (
+            baseline_report.param_counts.total if baseline_report.param_counts else 0
+        )
+        params_delta = (
+            (params - baseline_params) / baseline_params * 100 if baseline_params else 0
+        )
 
         print(f"\n{name}:")
         print(f"  Size: {size_delta:+.1f}%")
@@ -116,4 +127,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

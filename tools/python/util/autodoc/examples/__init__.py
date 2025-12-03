@@ -13,4 +13,3 @@ This package contains example scripts demonstrating common use cases:
 Run from the tools/python directory:
     python -m util.autodoc.examples.basic_inspection model.onnx
 """
-

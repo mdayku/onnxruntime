@@ -825,9 +825,13 @@ class MetricsEngine:
             if name in graph_info.initializers:
                 continue
 
-            if shape and all(isinstance(d, int) for d in shape):
-                # Assume float32
-                int_shape: list[int] = [d for d in shape if isinstance(d, int)]
+            if shape:
+                # Handle symbolic dimensions (e.g., 'N' for batch) by treating as 1
+                int_shape: list[int] = [d if isinstance(d, int) else 1 for d in shape]
+                # Skip if all dims are symbolic (no meaningful size)
+                if all(d == 1 for d in int_shape) and len(int_shape) > 1:
+                    continue
+                # Assume float32 for activations
                 tensor_bytes = int(np.prod(int_shape)) * 4
                 activation_sizes.append((name, tensor_bytes))
                 estimates.per_layer_activation_bytes[name] = tensor_bytes

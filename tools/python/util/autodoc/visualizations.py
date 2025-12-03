@@ -274,7 +274,7 @@ class VisualizationGenerator:
         ax1 = axes[0]
         ax1.set_facecolor(THEME.plot_background)
         latencies = [lat if lat != float("inf") else 0 for lat in sweep.latencies]
-        ax1.bar(x, latencies, color=THEME.colors[0], alpha=0.8)
+        ax1.bar(x, latencies, color=THEME.palette[0], alpha=0.8)
         ax1.set_xlabel("Resolution", color=THEME.text, fontsize=10)
         ax1.set_ylabel("Latency (ms)", color=THEME.text, fontsize=10)
         ax1.set_title(
@@ -302,7 +302,7 @@ class VisualizationGenerator:
         # Throughput chart
         ax2 = axes[1]
         ax2.set_facecolor(THEME.plot_background)
-        ax2.bar(x, sweep.throughputs, color=THEME.colors[1], alpha=0.8)
+        ax2.bar(x, sweep.throughputs, color=THEME.palette[1], alpha=0.8)
         ax2.set_xlabel("Resolution", color=THEME.text, fontsize=10)
         ax2.set_ylabel("Throughput (inf/s)", color=THEME.text, fontsize=10)
         ax2.set_title(
@@ -318,7 +318,7 @@ class VisualizationGenerator:
         # VRAM chart
         ax3 = axes[2]
         ax3.set_facecolor(THEME.plot_background)
-        ax3.bar(x, sweep.vram_usage_gb, color=THEME.colors[2], alpha=0.8)
+        ax3.bar(x, sweep.vram_usage_gb, color=THEME.palette[2], alpha=0.8)
         ax3.set_xlabel("Resolution", color=THEME.text, fontsize=10)
         ax3.set_ylabel("VRAM (GB)", color=THEME.text, fontsize=10)
         ax3.set_title(
@@ -356,8 +356,9 @@ class VisualizationGenerator:
         if not isinstance(sweep, BatchSizeSweep):
             return None
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        fig, axes = plt.subplots(1, 3, figsize=(18, 6))
         fig.patch.set_facecolor(THEME.background)
+        plt.subplots_adjust(wspace=0.3)  # Add spacing between subplots
 
         batch_sizes = sweep.batch_sizes
 
@@ -368,17 +369,17 @@ class VisualizationGenerator:
         ax1.plot(
             batch_sizes,
             latencies,
-            color=THEME.colors[0],
+            color=THEME.palette[0],
             marker="o",
             linewidth=2,
-            markersize=6,
+            markersize=8,
         )
-        ax1.set_xlabel("Batch Size", color=THEME.text, fontsize=10)
-        ax1.set_ylabel("Latency (ms)", color=THEME.text, fontsize=10)
+        ax1.set_xlabel("Batch Size", color=THEME.text, fontsize=12)
+        ax1.set_ylabel("Latency (ms)", color=THEME.text, fontsize=12)
         ax1.set_title(
-            "Latency vs Batch Size", color=THEME.text, fontsize=12, fontweight="bold"
+            "Latency vs Batch Size", color=THEME.text, fontsize=14, fontweight="bold"
         )
-        ax1.tick_params(colors=THEME.text)
+        ax1.tick_params(colors=THEME.text, labelsize=10)
         for spine in ax1.spines.values():
             spine.set_color(THEME.grid)
         ax1.grid(True, alpha=0.3, color=THEME.grid)
@@ -389,26 +390,28 @@ class VisualizationGenerator:
         ax2.plot(
             batch_sizes,
             sweep.throughputs,
-            color=THEME.colors[1],
+            color=THEME.palette[1],
             marker="o",
             linewidth=2,
-            markersize=6,
+            markersize=8,
         )
         ax2.axvline(
             x=sweep.optimal_batch_size,
-            color=THEME.accent,
+            color=THEME.accent_tertiary,
             linestyle="--",
-            alpha=0.7,
+            linewidth=2,
+            alpha=0.8,
             label=f"Optimal: {sweep.optimal_batch_size}",
         )
-        ax2.set_xlabel("Batch Size", color=THEME.text, fontsize=10)
-        ax2.set_ylabel("Throughput (inf/s)", color=THEME.text, fontsize=10)
+        ax2.set_xlabel("Batch Size", color=THEME.text, fontsize=12)
+        ax2.set_ylabel("Throughput (inf/s)", color=THEME.text, fontsize=12)
         ax2.set_title(
-            "Throughput vs Batch Size", color=THEME.text, fontsize=12, fontweight="bold"
+            "Throughput vs Batch Size", color=THEME.text, fontsize=14, fontweight="bold"
         )
-        ax2.tick_params(colors=THEME.text)
+        ax2.tick_params(colors=THEME.text, labelsize=10)
         ax2.legend(
-            facecolor=THEME.plot_background, edgecolor=THEME.grid, labelcolor=THEME.text
+            facecolor=THEME.plot_background, edgecolor=THEME.grid, labelcolor=THEME.text,
+            fontsize=11,
         )
         for spine in ax2.spines.values():
             spine.set_color(THEME.grid)
@@ -420,17 +423,17 @@ class VisualizationGenerator:
         ax3.plot(
             batch_sizes,
             sweep.vram_usage_gb,
-            color=THEME.colors[2],
+            color=THEME.palette[2],
             marker="o",
             linewidth=2,
-            markersize=6,
+            markersize=8,
         )
-        ax3.set_xlabel("Batch Size", color=THEME.text, fontsize=10)
-        ax3.set_ylabel("VRAM (GB)", color=THEME.text, fontsize=10)
+        ax3.set_xlabel("Batch Size", color=THEME.text, fontsize=12)
+        ax3.set_ylabel("VRAM (GB)", color=THEME.text, fontsize=12)
         ax3.set_title(
-            "VRAM vs Batch Size", color=THEME.text, fontsize=12, fontweight="bold"
+            "VRAM vs Batch Size", color=THEME.text, fontsize=14, fontweight="bold"
         )
-        ax3.tick_params(colors=THEME.text)
+        ax3.tick_params(colors=THEME.text, labelsize=10)
         for spine in ax3.spines.values():
             spine.set_color(THEME.grid)
         ax3.grid(True, alpha=0.3, color=THEME.grid)

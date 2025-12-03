@@ -1743,12 +1743,18 @@ class HardwareEstimator:
             peak_tflops = hardware.peak_fp32_tflops
 
         # Theoretical compute time
+        # Model includes per-batch overhead that's amortized over larger batches
+        # This captures real GPU behavior: small batches underutilize the GPU
         total_flops = model_flops * batch_size
-        compute_time_ms = (
+        base_compute_ms = (
             (total_flops / (peak_tflops * 1e12)) * 1000
             if peak_tflops > 0
             else float("inf")
         )
+        # Add fixed per-batch overhead (kernel launch, memory setup)
+        # ~0.1ms overhead amortized over batch → better throughput at larger batches
+        batch_overhead_ms = 0.1  # Fixed overhead per inference call
+        compute_time_ms = base_compute_ms + batch_overhead_ms
 
         # Memory bandwidth time (moving activations)
         total_memory_access = (
