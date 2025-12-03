@@ -518,12 +518,14 @@ class VisualizationGenerator:
         self,
         params_by_op: dict[str, float],
         output_path: Path,
-        max_ops: int = 10,
+        max_slices: int = 6,
+        min_pct_for_label: float = 3.0,
     ) -> Path | None:
         """
         Generate parameter distribution pie chart.
 
         Shows how parameters are distributed across operator types.
+        Uses a legend to avoid label overlap on small slices.
         """
         if not _MATPLOTLIB_AVAILABLE or not params_by_op:
             return None
@@ -533,37 +535,69 @@ class VisualizationGenerator:
         if not nonzero_ops:
             return None
 
+        total = sum(nonzero_ops.values())
         sorted_ops = sorted(nonzero_ops.items(), key=lambda x: -x[1])
-        if len(sorted_ops) > max_ops:
-            top_ops = sorted_ops[:max_ops]
-            other_count = sum(count for _, count in sorted_ops[max_ops:])
-            if other_count > 0:
-                top_ops.append(("Other", other_count))
-        else:
-            top_ops = sorted_ops
 
-        labels = [f"{op}\n({_format_count(int(count))})" for op, count in top_ops]
+        # Group small slices into "Other" more aggressively
+        top_ops = []
+        other_count = 0.0
+        for op, count in sorted_ops:
+            pct = (count / total) * 100
+            if len(top_ops) < max_slices and pct >= min_pct_for_label:
+                top_ops.append((op, count))
+            else:
+                other_count += count
+
+        if other_count > 0:
+            top_ops.append(("Other", other_count))
+
+        # If we only have "Other", show top ops anyway
+        if len(top_ops) == 1 and top_ops[0][0] == "Other":
+            top_ops = sorted_ops[:max_slices]
+            if len(sorted_ops) > max_slices:
+                other_count = sum(count for _, count in sorted_ops[max_slices:])
+                if other_count > 0:
+                    top_ops.append(("Other", other_count))
+
         sizes = [count for _, count in top_ops]
         colors = THEME.palette[: len(sizes)]
 
-        # Create figure
-        fig, ax = plt.subplots(
-            figsize=(THEME.figure_height, THEME.figure_height), dpi=THEME.figure_dpi
-        )
+        # Create figure with space for legend
+        fig, ax = plt.subplots(figsize=(10, 7), dpi=THEME.figure_dpi)
 
-        _wedges, _texts, autotexts = ax.pie(
+        # Create pie with no labels (use legend instead)
+        wedges, _texts, autotexts = ax.pie(
             sizes,
-            labels=labels,
+            labels=None,  # No inline labels
             colors=colors,
-            autopct=lambda pct: f"{pct:.1f}%" if pct > 5 else "",
+            autopct=lambda pct: f"{pct:.1f}%" if pct >= 5 else "",
             startangle=90,
-            textprops={"color": THEME.text, "fontsize": THEME.tick_size},
+            pctdistance=0.75,
+            textprops={"color": THEME.text, "fontsize": 11, "fontweight": "bold"},
         )
 
         # Style the percentage text
         for autotext in autotexts:
-            autotext.set_color(THEME.background)
+            autotext.set_color("#ffffff")
             autotext.set_fontweight("bold")
+
+        # Create legend with op names and param counts
+        legend_labels = [
+            f"{op} ({_format_count(int(count))})" for op, count in top_ops
+        ]
+        ax.legend(
+            wedges,
+            legend_labels,
+            title="Operator Type",
+            loc="center left",
+            bbox_to_anchor=(1.0, 0.5),
+            fontsize=10,
+            title_fontsize=11,
+            frameon=True,
+            facecolor=THEME.plot_background,
+            edgecolor=THEME.grid,
+            labelcolor=THEME.text,
+        )
 
         ax.set_title(
             "Parameter Distribution by Operator Type",

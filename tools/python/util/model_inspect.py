@@ -2090,9 +2090,16 @@ def run_inspect():
             builder = HierarchicalGraphBuilder(logger=logger)
             hier_graph = builder.build(graph_info, blocks, model_path.stem)
 
-            # Export HTML
+            # Export HTML with model size
+            model_size = model_path.stat().st_size if model_path.exists() else None
             exporter = HTMLExporter(logger=logger)
-            exporter.export(hier_graph, edge_result, args.html_graph, model_path.stem)
+            exporter.export(
+                hier_graph,
+                edge_result,
+                args.html_graph,
+                model_path.stem,
+                model_size_bytes=model_size,
+            )
 
             logger.info(
                 f"Interactive graph visualization written to: {args.html_graph}"

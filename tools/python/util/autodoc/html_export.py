@@ -451,11 +451,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="peak-memory">0</div>
-                    <div class="stat-label">Peak Memory</div>
+                    <div class="stat-label">Peak Activation</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="depth">0</div>
-                    <div class="stat-label">Depth</div>
+                    <div class="stat-value" id="model-size">-</div>
+                    <div class="stat-label">Model Size</div>
                 </div>
             </div>
 
@@ -746,9 +746,37 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 ${{details}}
             `;
 
-            tooltip.html(html)
-                .style('left', (event.pageX + 15) + 'px')
-                .style('top', (event.pageY + 15) + 'px')
+            tooltip.html(html);
+
+            // Smart positioning to keep tooltip on screen
+            const tooltipNode = tooltip.node();
+            const tooltipWidth = tooltipNode.offsetWidth || 280;
+            const tooltipHeight = tooltipNode.offsetHeight || 150;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const scrollX = window.scrollX || window.pageXOffset;
+            const scrollY = window.scrollY || window.pageYOffset;
+
+            let left = event.pageX + 15;
+            let top = event.pageY + 15;
+
+            // Check right edge - flip to left side if needed
+            if (left + tooltipWidth > scrollX + viewportWidth - 20) {{
+                left = event.pageX - tooltipWidth - 15;
+            }}
+
+            // Check bottom edge - flip to top if needed
+            if (top + tooltipHeight > scrollY + viewportHeight - 20) {{
+                top = event.pageY - tooltipHeight - 15;
+            }}
+
+            // Ensure not off left or top edge
+            left = Math.max(scrollX + 10, left);
+            top = Math.max(scrollY + 10, top);
+
+            tooltip
+                .style('left', left + 'px')
+                .style('top', top + 'px')
                 .classed('visible', true);
         }}
 
@@ -1025,7 +1053,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             document.getElementById('node-count').textContent = visibleNodes.length;
             document.getElementById('edge-count').textContent = edges.length || edgeData?.num_edges || 0;
             document.getElementById('peak-memory').textContent = formatBytes(edgeData?.peak_activation_bytes || 0);
-            document.getElementById('depth').textContent = graphData.depth || 0;
+            document.getElementById('model-size').textContent = formatBytes(graphData.model_size_bytes || 0);
         }}
 
         function zoomIn() {{
@@ -1315,6 +1343,7 @@ def generate_html(
     edge_result: EdgeAnalysisResult | None = None,
     title: str = "Model Architecture",
     output_path: Path | str | None = None,
+    model_size_bytes: int | None = None,
 ) -> str:
     """
     Generate interactive HTML visualization.
@@ -1326,12 +1355,16 @@ def generate_html(
         edge_result: Optional edge analysis results.
         title: Page title.
         output_path: Optional path to save HTML file.
+        model_size_bytes: Optional model file size in bytes.
 
     Returns:
         HTML content as string.
     """
-    # Convert graph to JSON
-    graph_json = graph.to_json(indent=None)
+    # Convert graph to JSON, adding model_size_bytes
+    graph_dict = graph.to_dict()
+    if model_size_bytes is not None:
+        graph_dict["model_size_bytes"] = model_size_bytes
+    graph_json = json.dumps(graph_dict)
 
     # Convert edge analysis to JSON
     if edge_result:
@@ -1371,6 +1404,7 @@ class HTMLExporter:
         edge_result: EdgeAnalysisResult | None = None,
         output_path: Path | str = "model_graph.html",
         title: str | None = None,
+        model_size_bytes: int | None = None,
     ) -> Path:
         """
         Export graph to HTML file.
@@ -1380,6 +1414,7 @@ class HTMLExporter:
             edge_result: Optional EdgeAnalysisResult for edge data.
             output_path: Output file path.
             title: Optional page title.
+            model_size_bytes: Optional model file size in bytes.
 
         Returns:
             Path to generated HTML file.
@@ -1394,6 +1429,7 @@ class HTMLExporter:
             edge_result=edge_result,
             title=title,
             output_path=output_path,
+            model_size_bytes=model_size_bytes,
         )
 
         self.logger.info(f"HTML visualization exported to {output_path}")
