@@ -1602,3 +1602,4 @@ If ONNX Autodoc gains traction, the natural evolution is a full MLOps platform:
 | Dec 3, 2025 | Backlog | Added Epics 18-25: Universal IR, SafeTensors, CoreML, TFLite, TensorRT, OpenVINO, GGUF, Privacy/Trust | Format-agnostic vision: read/write any model format |
 | Dec 3, 2025 | Git | Merged feature/onnx-autodoc to main branch, now working on main | This is our IP, not a Microsoft contribution |
 | Dec 3, 2025 | Backlog | Removed Epic 9 (Demo/Deliverables), reordered to original epic numbers | User preference: feature work tonight, deployment tomorrow |
+| Dec 3, 2025 | Epic 4C | **COMPLETE**: TensorFlow/Keras/JAX to ONNX conversion. --from-tensorflow (SavedModel), --from-keras (.h5/.keras), --from-frozen-graph (.pb), --from-jax (Flax). 15/15 tasks, 17 tests | ONNX as universal hub: any format -> ONNX -> any format (max 2 hops) |
