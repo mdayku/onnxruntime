@@ -103,6 +103,21 @@ Examples:
 
   # Specify precision and batch size for hardware estimates
   python -m onnxruntime.tools.model_inspect model.onnx --hardware t4 --precision fp16 --batch-size 8
+
+  # Convert PyTorch model to ONNX and analyze
+  python -m onnxruntime.tools.model_inspect --from-pytorch model.pt --input-shape 1,3,224,224
+
+  # Convert TensorFlow SavedModel to ONNX and analyze
+  python -m onnxruntime.tools.model_inspect --from-tensorflow ./saved_model_dir --out-html report.html
+
+  # Convert Keras .h5 model to ONNX and analyze
+  python -m onnxruntime.tools.model_inspect --from-keras model.h5 --keep-onnx converted.onnx
+
+  # Convert TensorFlow frozen graph to ONNX (requires input/output names)
+  python -m onnxruntime.tools.model_inspect --from-frozen-graph model.pb --tf-inputs input:0 --tf-outputs output:0
+
+  # Convert JAX model to ONNX (requires apply function and input shape)
+  python -m onnxruntime.tools.model_inspect --from-jax params.pkl --jax-apply-fn my_model:apply --input-shape 1,3,224,224
 """,
     )
 
@@ -177,6 +192,62 @@ Examples:
         metavar="PATH",
         help="Path to original PyTorch weights (.pt) to extract class names/metadata. "
         "Useful when analyzing a pre-converted ONNX file.",
+    )
+
+    # TensorFlow/Keras conversion options
+    tf_group = parser.add_argument_group("TensorFlow/Keras Conversion Options")
+    tf_group.add_argument(
+        "--from-tensorflow",
+        type=pathlib.Path,
+        default=None,
+        metavar="MODEL_PATH",
+        help="Convert a TensorFlow SavedModel directory to ONNX before analysis. Requires tf2onnx.",
+    )
+    tf_group.add_argument(
+        "--from-keras",
+        type=pathlib.Path,
+        default=None,
+        metavar="MODEL_PATH",
+        help="Convert a Keras model (.h5, .keras) to ONNX before analysis. Requires tf2onnx.",
+    )
+    tf_group.add_argument(
+        "--from-frozen-graph",
+        type=pathlib.Path,
+        default=None,
+        metavar="MODEL_PATH",
+        help="Convert a TensorFlow frozen graph (.pb) to ONNX. Requires --tf-inputs and --tf-outputs.",
+    )
+    tf_group.add_argument(
+        "--tf-inputs",
+        type=str,
+        default=None,
+        metavar="NAMES",
+        help="Comma-separated input tensor names for frozen graph conversion, e.g., 'input:0'.",
+    )
+    tf_group.add_argument(
+        "--tf-outputs",
+        type=str,
+        default=None,
+        metavar="NAMES",
+        help="Comma-separated output tensor names for frozen graph conversion, e.g., 'output:0'.",
+    )
+
+    # JAX conversion options
+    jax_group = parser.add_argument_group("JAX/Flax Conversion Options")
+    jax_group.add_argument(
+        "--from-jax",
+        type=pathlib.Path,
+        default=None,
+        metavar="MODEL_PATH",
+        help="Convert a JAX/Flax model to ONNX before analysis. Requires jax and tf2onnx. "
+        "Expects a saved params file (.msgpack, .pkl) with --jax-apply-fn.",
+    )
+    jax_group.add_argument(
+        "--jax-apply-fn",
+        type=str,
+        default=None,
+        metavar="MODULE:FUNCTION",
+        help="JAX apply function path, e.g., 'my_model:apply'. Required with --from-jax.",
     )
 
     # Hardware options
@@ -569,6 +640,555 @@ def _convert_pytorch_to_onnx(
     return onnx_path, temp_file
 
 
+def _convert_tensorflow_to_onnx(
+    tf_path: pathlib.Path,
+    output_path: pathlib.Path | None,
+    opset_version: int,
+    logger: logging.Logger,
+) -> tuple[pathlib.Path | None, Any]:
+    """
+    Convert a TensorFlow SavedModel to ONNX format.
+
+    Args:
+        tf_path: Path to TensorFlow SavedModel directory
+        output_path: Where to save ONNX file (None = temp file)
+        opset_version: ONNX opset version
+        logger: Logger instance
+
+    Returns:
+        Tuple of (onnx_path, temp_file_handle_or_None)
+    """
+    # Check if tf2onnx is available
+    try:
+        import tf2onnx
+        from tf2onnx import tf_loader
+    except ImportError:
+        logger.error(
+            "tf2onnx not installed. Install with: pip install tf2onnx tensorflow"
+        )
+        return None, None
+
+    tf_path = tf_path.resolve()
+    if not tf_path.exists():
+        logger.error(f"TensorFlow model not found: {tf_path}")
+        return None, None
+
+    # Determine output path
+    temp_file = None
+    if output_path:
+        onnx_path = output_path.resolve()
+        onnx_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        import tempfile
+        temp_file = tempfile.NamedTemporaryFile(suffix=".onnx", delete=False)
+        onnx_path = pathlib.Path(temp_file.name)
+        temp_file.close()
+
+    logger.info(f"Converting TensorFlow SavedModel to ONNX...")
+    logger.info(f"  Source: {tf_path}")
+    logger.info(f"  Target: {onnx_path}")
+
+    try:
+        import subprocess
+        import sys
+
+        # Use tf2onnx CLI for robustness (handles TF version quirks)
+        cmd = [
+            sys.executable, "-m", "tf2onnx.convert",
+            "--saved-model", str(tf_path),
+            "--output", str(onnx_path),
+            "--opset", str(opset_version),
+        ]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=600,  # 10 minute timeout for large models
+        )
+
+        if result.returncode != 0:
+            logger.error(f"tf2onnx conversion failed:\n{result.stderr}")
+            if temp_file:
+                try:
+                    onnx_path.unlink()
+                except Exception:
+                    pass
+            return None, None
+
+        logger.info("TensorFlow model converted successfully")
+
+        # Verify the export
+        import onnx
+        onnx_model = onnx.load(str(onnx_path))
+        onnx.checker.check_model(onnx_model)
+        logger.info("ONNX model validated successfully")
+
+    except subprocess.TimeoutExpired:
+        logger.error("tf2onnx conversion timed out after 10 minutes")
+        if temp_file:
+            try:
+                onnx_path.unlink()
+            except Exception:
+                pass
+        return None, None
+    except Exception as e:
+        logger.error(f"TensorFlow conversion failed: {e}")
+        if temp_file:
+            try:
+                onnx_path.unlink()
+            except Exception:
+                pass
+        return None, None
+
+    return onnx_path, temp_file
+
+
+def _convert_keras_to_onnx(
+    keras_path: pathlib.Path,
+    output_path: pathlib.Path | None,
+    opset_version: int,
+    logger: logging.Logger,
+) -> tuple[pathlib.Path | None, Any]:
+    """
+    Convert a Keras model (.h5, .keras) to ONNX format.
+
+    Args:
+        keras_path: Path to Keras model file (.h5 or .keras)
+        output_path: Where to save ONNX file (None = temp file)
+        opset_version: ONNX opset version
+        logger: Logger instance
+
+    Returns:
+        Tuple of (onnx_path, temp_file_handle_or_None)
+    """
+    # Check if tf2onnx is available
+    try:
+        import tf2onnx
+    except ImportError:
+        logger.error(
+            "tf2onnx not installed. Install with: pip install tf2onnx tensorflow"
+        )
+        return None, None
+
+    keras_path = keras_path.resolve()
+    if not keras_path.exists():
+        logger.error(f"Keras model not found: {keras_path}")
+        return None, None
+
+    suffix = keras_path.suffix.lower()
+    if suffix not in (".h5", ".keras", ".hdf5"):
+        logger.warning(f"Unexpected Keras file extension: {suffix}. Proceeding anyway.")
+
+    # Determine output path
+    temp_file = None
+    if output_path:
+        onnx_path = output_path.resolve()
+        onnx_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        import tempfile
+        temp_file = tempfile.NamedTemporaryFile(suffix=".onnx", delete=False)
+        onnx_path = pathlib.Path(temp_file.name)
+        temp_file.close()
+
+    logger.info(f"Converting Keras model to ONNX...")
+    logger.info(f"  Source: {keras_path}")
+    logger.info(f"  Target: {onnx_path}")
+
+    try:
+        import subprocess
+        import sys
+
+        # Use tf2onnx CLI with --keras flag
+        cmd = [
+            sys.executable, "-m", "tf2onnx.convert",
+            "--keras", str(keras_path),
+            "--output", str(onnx_path),
+            "--opset", str(opset_version),
+        ]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=600,  # 10 minute timeout
+        )
+
+        if result.returncode != 0:
+            logger.error(f"tf2onnx conversion failed:\n{result.stderr}")
+            if temp_file:
+                try:
+                    onnx_path.unlink()
+                except Exception:
+                    pass
+            return None, None
+
+        logger.info("Keras model converted successfully")
+
+        # Verify the export
+        import onnx
+        onnx_model = onnx.load(str(onnx_path))
+        onnx.checker.check_model(onnx_model)
+        logger.info("ONNX model validated successfully")
+
+    except subprocess.TimeoutExpired:
+        logger.error("tf2onnx conversion timed out after 10 minutes")
+        if temp_file:
+            try:
+                onnx_path.unlink()
+            except Exception:
+                pass
+        return None, None
+    except Exception as e:
+        logger.error(f"Keras conversion failed: {e}")
+        if temp_file:
+            try:
+                onnx_path.unlink()
+            except Exception:
+                pass
+        return None, None
+
+    return onnx_path, temp_file
+
+
+def _convert_frozen_graph_to_onnx(
+    pb_path: pathlib.Path,
+    inputs: str,
+    outputs: str,
+    output_path: pathlib.Path | None,
+    opset_version: int,
+    logger: logging.Logger,
+) -> tuple[pathlib.Path | None, Any]:
+    """
+    Convert a TensorFlow frozen graph (.pb) to ONNX format.
+
+    Args:
+        pb_path: Path to frozen graph .pb file
+        inputs: Comma-separated input tensor names (e.g., "input:0")
+        outputs: Comma-separated output tensor names (e.g., "output:0")
+        output_path: Where to save ONNX file (None = temp file)
+        opset_version: ONNX opset version
+        logger: Logger instance
+
+    Returns:
+        Tuple of (onnx_path, temp_file_handle_or_None)
+    """
+    # Check if tf2onnx is available
+    try:
+        import tf2onnx
+    except ImportError:
+        logger.error(
+            "tf2onnx not installed. Install with: pip install tf2onnx tensorflow"
+        )
+        return None, None
+
+    pb_path = pb_path.resolve()
+    if not pb_path.exists():
+        logger.error(f"Frozen graph not found: {pb_path}")
+        return None, None
+
+    if not inputs or not outputs:
+        logger.error(
+            "--tf-inputs and --tf-outputs are required for frozen graph conversion.\n"
+            "Example: --from-frozen-graph model.pb --tf-inputs input:0 --tf-outputs output:0"
+        )
+        return None, None
+
+    # Determine output path
+    temp_file = None
+    if output_path:
+        onnx_path = output_path.resolve()
+        onnx_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        import tempfile
+        temp_file = tempfile.NamedTemporaryFile(suffix=".onnx", delete=False)
+        onnx_path = pathlib.Path(temp_file.name)
+        temp_file.close()
+
+    logger.info(f"Converting TensorFlow frozen graph to ONNX...")
+    logger.info(f"  Source: {pb_path}")
+    logger.info(f"  Inputs: {inputs}")
+    logger.info(f"  Outputs: {outputs}")
+    logger.info(f"  Target: {onnx_path}")
+
+    try:
+        import subprocess
+        import sys
+
+        # Use tf2onnx CLI with --graphdef flag
+        cmd = [
+            sys.executable, "-m", "tf2onnx.convert",
+            "--graphdef", str(pb_path),
+            "--inputs", inputs,
+            "--outputs", outputs,
+            "--output", str(onnx_path),
+            "--opset", str(opset_version),
+        ]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=600,  # 10 minute timeout
+        )
+
+        if result.returncode != 0:
+            logger.error(f"tf2onnx conversion failed:\n{result.stderr}")
+            if temp_file:
+                try:
+                    onnx_path.unlink()
+                except Exception:
+                    pass
+            return None, None
+
+        logger.info("Frozen graph converted successfully")
+
+        # Verify the export
+        import onnx
+        onnx_model = onnx.load(str(onnx_path))
+        onnx.checker.check_model(onnx_model)
+        logger.info("ONNX model validated successfully")
+
+    except subprocess.TimeoutExpired:
+        logger.error("tf2onnx conversion timed out after 10 minutes")
+        if temp_file:
+            try:
+                onnx_path.unlink()
+            except Exception:
+                pass
+        return None, None
+    except Exception as e:
+        logger.error(f"Frozen graph conversion failed: {e}")
+        if temp_file:
+            try:
+                onnx_path.unlink()
+            except Exception:
+                pass
+        return None, None
+
+    return onnx_path, temp_file
+
+
+def _convert_jax_to_onnx(
+    jax_path: pathlib.Path,
+    apply_fn_path: str | None,
+    input_shape_str: str | None,
+    output_path: pathlib.Path | None,
+    opset_version: int,
+    logger: logging.Logger,
+) -> tuple[pathlib.Path | None, Any]:
+    """
+    Convert a JAX/Flax model to ONNX format.
+
+    This is more complex than other conversions because JAX doesn't have a standard
+    serialization format. The typical flow is:
+    1. Load model params from file (.msgpack, .pkl, etc.)
+    2. Import the apply function from user's code
+    3. Convert JAX -> TF SavedModel -> ONNX
+
+    Args:
+        jax_path: Path to JAX params file (.msgpack, .pkl, .npy)
+        apply_fn_path: Module:function path to the apply function
+        input_shape_str: Input shape for tracing
+        output_path: Where to save ONNX file (None = temp file)
+        opset_version: ONNX opset version
+        logger: Logger instance
+
+    Returns:
+        Tuple of (onnx_path, temp_file_handle_or_None)
+    """
+    # Check dependencies
+    try:
+        import jax
+        import jax.numpy as jnp
+    except ImportError:
+        logger.error("JAX not installed. Install with: pip install jax jaxlib")
+        return None, None
+
+    try:
+        import tf2onnx
+    except ImportError:
+        logger.error(
+            "tf2onnx not installed. Install with: pip install tf2onnx tensorflow"
+        )
+        return None, None
+
+    jax_path = jax_path.resolve()
+    if not jax_path.exists():
+        logger.error(f"JAX params file not found: {jax_path}")
+        return None, None
+
+    if not apply_fn_path:
+        logger.error(
+            "--jax-apply-fn is required for JAX conversion.\n"
+            "Example: --from-jax params.pkl --jax-apply-fn my_model:apply --input-shape 1,3,224,224"
+        )
+        return None, None
+
+    if not input_shape_str:
+        logger.error(
+            "--input-shape is required for JAX conversion.\n"
+            "Example: --from-jax params.pkl --jax-apply-fn my_model:apply --input-shape 1,3,224,224"
+        )
+        return None, None
+
+    # Parse input shape
+    try:
+        input_shape = tuple(int(x.strip()) for x in input_shape_str.split(","))
+    except ValueError:
+        logger.error(
+            f"Invalid --input-shape format: '{input_shape_str}'. "
+            "Use comma-separated integers, e.g., '1,3,224,224'"
+        )
+        return None, None
+
+    # Parse apply function path (module:function)
+    if ":" not in apply_fn_path:
+        logger.error(
+            f"Invalid --jax-apply-fn format: '{apply_fn_path}'. "
+            "Use module:function format, e.g., 'my_model:apply'"
+        )
+        return None, None
+
+    module_path, fn_name = apply_fn_path.rsplit(":", 1)
+
+    # Determine output path
+    temp_file = None
+    if output_path:
+        onnx_path = output_path.resolve()
+        onnx_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        import tempfile
+        temp_file = tempfile.NamedTemporaryFile(suffix=".onnx", delete=False)
+        onnx_path = pathlib.Path(temp_file.name)
+        temp_file.close()
+
+    logger.info(f"Converting JAX model to ONNX...")
+    logger.info(f"  Params: {jax_path}")
+    logger.info(f"  Apply fn: {apply_fn_path}")
+    logger.info(f"  Input shape: {input_shape}")
+    logger.info(f"  Target: {onnx_path}")
+
+    try:
+        import importlib.util
+        import sys
+
+        # Load params
+        suffix = jax_path.suffix.lower()
+        if suffix == ".msgpack":
+            try:
+                from flax.serialization import msgpack_restore
+                with open(jax_path, "rb") as f:
+                    params = msgpack_restore(f.read())
+                logger.info("Loaded Flax msgpack params")
+            except ImportError:
+                logger.error("Flax not installed. Install with: pip install flax")
+                return None, None
+        elif suffix in (".pkl", ".pickle"):
+            import pickle
+            with open(jax_path, "rb") as f:
+                params = pickle.load(f)
+            logger.info("Loaded pickle params")
+        elif suffix == ".npy":
+            import numpy as np
+            params = np.load(jax_path, allow_pickle=True).item()
+            logger.info("Loaded numpy params")
+        else:
+            logger.error(f"Unsupported params format: {suffix}. Use .msgpack, .pkl, or .npy")
+            return None, None
+
+        # Import apply function
+        # Add current directory to path for local imports
+        sys.path.insert(0, str(pathlib.Path.cwd()))
+
+        try:
+            module = importlib.import_module(module_path)
+            apply_fn = getattr(module, fn_name)
+            logger.info(f"Loaded apply function: {apply_fn_path}")
+        except (ImportError, AttributeError) as e:
+            logger.error(f"Could not import {apply_fn_path}: {e}")
+            return None, None
+
+        # Convert via jax2tf (JAX -> TF -> ONNX)
+        try:
+            from jax.experimental import jax2tf
+            import tensorflow as tf
+        except ImportError:
+            logger.error(
+                "jax2tf or TensorFlow not available. Install with: "
+                "pip install tensorflow"
+            )
+            return None, None
+
+        # Create a concrete function
+        dummy_input = jnp.zeros(input_shape, dtype=jnp.float32)
+
+        # Convert JAX function to TF
+        tf_fn = jax2tf.convert(
+            lambda x: apply_fn(params, x),
+            enable_xla=False,
+        )
+
+        # Create TF SavedModel
+        import tempfile as tf_tempfile
+        with tf_tempfile.TemporaryDirectory() as tf_model_dir:
+            # Wrap in tf.Module for SavedModel export
+            class TFModule(tf.Module):
+                @tf.function(input_signature=[tf.TensorSpec(input_shape, tf.float32)])
+                def __call__(self, x):
+                    return tf_fn(x)
+
+            tf_module = TFModule()
+            tf.saved_model.save(tf_module, tf_model_dir)
+            logger.info("Created temporary TF SavedModel")
+
+            # Convert TF SavedModel to ONNX
+            import subprocess
+            cmd = [
+                sys.executable, "-m", "tf2onnx.convert",
+                "--saved-model", tf_model_dir,
+                "--output", str(onnx_path),
+                "--opset", str(opset_version),
+            ]
+
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=600,
+            )
+
+            if result.returncode != 0:
+                logger.error(f"tf2onnx conversion failed:\n{result.stderr}")
+                if temp_file:
+                    try:
+                        onnx_path.unlink()
+                    except Exception:
+                        pass
+                return None, None
+
+        logger.info("JAX model converted successfully")
+
+        # Verify the export
+        import onnx
+        onnx_model = onnx.load(str(onnx_path))
+        onnx.checker.check_model(onnx_model)
+        logger.info("ONNX model validated successfully")
+
+    except Exception as e:
+        logger.error(f"JAX conversion failed: {e}")
+        import traceback
+        logger.debug(traceback.format_exc())
+        if temp_file:
+            try:
+                onnx_path.unlink()
+            except Exception:
+                pass
+        return None, None
+
+    return onnx_path, temp_file
+
+
 def run_inspect():
     """Main entry point for the model_inspect CLI."""
     args = parse_args()
@@ -760,8 +1380,22 @@ def run_inspect():
         print("=" * 70 + "\n")
         sys.exit(0)
 
-    # Handle PyTorch conversion if requested
+    # Handle model conversion if requested
     temp_onnx_file = None
+    conversion_sources = [
+        ("--from-pytorch", args.from_pytorch),
+        ("--from-tensorflow", args.from_tensorflow),
+        ("--from-keras", args.from_keras),
+        ("--from-frozen-graph", args.from_frozen_graph),
+        ("--from-jax", args.from_jax),
+    ]
+    active_conversions = [(name, path) for name, path in conversion_sources if path]
+
+    if len(active_conversions) > 1:
+        names = [name for name, _ in active_conversions]
+        logger.error(f"Cannot use multiple conversion flags together: {', '.join(names)}")
+        sys.exit(1)
+
     if args.from_pytorch:
         model_path, temp_onnx_file = _convert_pytorch_to_onnx(
             args.from_pytorch,
@@ -772,12 +1406,53 @@ def run_inspect():
         )
         if model_path is None:
             sys.exit(1)
+    elif args.from_tensorflow:
+        model_path, temp_onnx_file = _convert_tensorflow_to_onnx(
+            args.from_tensorflow,
+            args.keep_onnx,
+            args.opset_version,
+            logger,
+        )
+        if model_path is None:
+            sys.exit(1)
+    elif args.from_keras:
+        model_path, temp_onnx_file = _convert_keras_to_onnx(
+            args.from_keras,
+            args.keep_onnx,
+            args.opset_version,
+            logger,
+        )
+        if model_path is None:
+            sys.exit(1)
+    elif args.from_frozen_graph:
+        model_path, temp_onnx_file = _convert_frozen_graph_to_onnx(
+            args.from_frozen_graph,
+            args.tf_inputs,
+            args.tf_outputs,
+            args.keep_onnx,
+            args.opset_version,
+            logger,
+        )
+        if model_path is None:
+            sys.exit(1)
+    elif args.from_jax:
+        model_path, temp_onnx_file = _convert_jax_to_onnx(
+            args.from_jax,
+            args.jax_apply_fn,
+            args.input_shape,
+            args.keep_onnx,
+            args.opset_version,
+            logger,
+        )
+        if model_path is None:
+            sys.exit(1)
     else:
-        # Validate model path
+        # Validate model path (no conversion requested)
         if args.model_path is None:
             logger.error(
                 "Model path is required. Use --list-hardware to see available profiles, "
-                "or --from-pytorch to convert a PyTorch model."
+                "or use a conversion flag (--from-pytorch, --from-tensorflow, --from-keras, "
+                "--from-frozen-graph, --from-jax)."
             )
             sys.exit(1)
 
