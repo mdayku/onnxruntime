@@ -20,7 +20,7 @@
 | Epic 4B: PyTorch Integration | **Complete** | 2 | 14/14 | Done |
 | Epic 4C: TensorFlow/Keras/JAX | **Complete** | 3 | 15/15 | Done |
 | Epic 5: Visualization | In Progress | 8 | 13/47 | P3 |
-| Epic 6: Hardware/Compare | In Progress | 9 | 27/47 | P3 |
+| Epic 6: Hardware/Compare | In Progress | 11 | 27/62 | P3 |
 | Epic 7: LLM Integration | In Progress | 2 | 5/9 | P3 |
 | Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 | P3 |
 | Epic 10: SaaS Web App | Not Started | 5 | 0/27 | P4 |
@@ -240,6 +240,27 @@
 - [ ] **Task 6.4.6**: Display memory savings per layer analysis
 - [ ] **Task 6.4.7**: Add engine summary panel
 - [ ] **Task 6.4.8**: Show quantization calibration recommendations
+
+### Story 6.10: Multi-Model Comparison Report
+*Compare 2+ models side-by-side - different architectures, sizes, or precisions*
+- [ ] **Task 6.10.1**: Design comparison report layout (side-by-side vs tabular)
+- [ ] **Task 6.10.2**: Implement normalized metrics (FLOPs/param, memory/param, etc.)
+- [ ] **Task 6.10.3**: Add radar chart comparing key metrics across models
+- [ ] **Task 6.10.4**: Add bar charts for params, FLOPs, memory comparison
+- [ ] **Task 6.10.5**: Generate executive summary ("Model A is 2x faster, 30% smaller")
+- [ ] **Task 6.10.6**: Handle different architectures gracefully (apples-to-oranges warning)
+- [ ] **Task 6.10.7**: Add `--compare` CLI flag for N models
+- [ ] **Task 6.10.8**: Generate comparison HTML report
+- [ ] **Task 6.10.9**: Generate comparison PDF report
+
+### Story 6.11: Model Leaderboard View
+*When comparing many models, show ranked leaderboard*
+- [ ] **Task 6.11.1**: Define ranking criteria (speed, size, efficiency, accuracy)
+- [ ] **Task 6.11.2**: Generate sortable leaderboard table
+- [ ] **Task 6.11.3**: Add Pareto frontier visualization (no model dominates)
+- [ ] **Task 6.11.4**: Highlight "best in class" for each metric
+- [ ] **Task 6.11.5**: Export leaderboard as CSV/JSON
+- [ ] **Task 6.11.6**: Add filtering by architecture type, size range, etc.
 
 ### Story 6.5: Expanded VRAM Variants - **COMPLETE**
 - [x] **Task 6.5.1-6.5.8**: All GPU variants added (40+ profiles)

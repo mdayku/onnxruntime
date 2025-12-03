@@ -555,5 +555,233 @@ class TestArchitectureClassification:
             model_path.unlink()
 
 
+def create_transformer_block_model() -> onnx.ModelProto:
+    """Create a simple transformer-like model with attention pattern."""
+    # Input: [batch, seq, hidden]
+    X = helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 128, 768])
+
+    # Q, K, V projections
+    Wq = helper.make_tensor(
+        "Wq",
+        TensorProto.FLOAT,
+        [768, 768],
+        np.random.randn(768, 768).astype(np.float32).flatten().tolist(),
+    )
+    Wk = helper.make_tensor(
+        "Wk",
+        TensorProto.FLOAT,
+        [768, 768],
+        np.random.randn(768, 768).astype(np.float32).flatten().tolist(),
+    )
+    Wv = helper.make_tensor(
+        "Wv",
+        TensorProto.FLOAT,
+        [768, 768],
+        np.random.randn(768, 768).astype(np.float32).flatten().tolist(),
+    )
+    Wo = helper.make_tensor(
+        "Wo",
+        TensorProto.FLOAT,
+        [768, 768],
+        np.random.randn(768, 768).astype(np.float32).flatten().tolist(),
+    )
+
+    # LayerNorm scale and bias
+    ln_scale = helper.make_tensor(
+        "ln_scale", TensorProto.FLOAT, [768], np.ones(768, dtype=np.float32).tolist()
+    )
+    ln_bias = helper.make_tensor(
+        "ln_bias", TensorProto.FLOAT, [768], np.zeros(768, dtype=np.float32).tolist()
+    )
+
+    Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 128, 768])
+
+    # Nodes
+    nodes = [
+        # Pre-norm
+        helper.make_node(
+            "LayerNormalization", ["X", "ln_scale", "ln_bias"], ["ln_out"], axis=-1
+        ),
+        # Q, K, V projections
+        helper.make_node("MatMul", ["ln_out", "Wq"], ["Q"]),
+        helper.make_node("MatMul", ["ln_out", "Wk"], ["K"]),
+        helper.make_node("MatMul", ["ln_out", "Wv"], ["V"]),
+        # Attention: Q @ K^T
+        helper.make_node("Transpose", ["K"], ["K_T"], perm=[0, 2, 1]),
+        helper.make_node("MatMul", ["Q", "K_T"], ["attn_scores"]),
+        # Scale
+        helper.make_node("Div", ["attn_scores", "scale"], ["scaled_scores"]),
+        # Softmax
+        helper.make_node("Softmax", ["scaled_scores"], ["attn_probs"], axis=-1),
+        # @ V
+        helper.make_node("MatMul", ["attn_probs", "V"], ["attn_out"]),
+        # Output projection
+        helper.make_node("MatMul", ["attn_out", "Wo"], ["proj_out"]),
+        # Residual
+        helper.make_node("Add", ["X", "proj_out"], ["Y"]),
+    ]
+
+    # Scale constant
+    scale = helper.make_tensor(
+        "scale", TensorProto.FLOAT, [], [np.sqrt(768).astype(np.float32).item()]
+    )
+
+    graph = helper.make_graph(
+        nodes, "transformer_block", [X], [Y], [Wq, Wk, Wv, Wo, ln_scale, ln_bias, scale]
+    )
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 17)])
+    return model
+
+
+def create_mlp_block_model() -> onnx.ModelProto:
+    """Create a model with MLP/FFN pattern."""
+    X = helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 128, 768])
+
+    # Up and down projections
+    W_up = helper.make_tensor(
+        "W_up",
+        TensorProto.FLOAT,
+        [768, 3072],
+        np.random.randn(768, 3072).astype(np.float32).flatten().tolist(),
+    )
+    W_down = helper.make_tensor(
+        "W_down",
+        TensorProto.FLOAT,
+        [3072, 768],
+        np.random.randn(3072, 768).astype(np.float32).flatten().tolist(),
+    )
+
+    Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 128, 768])
+
+    nodes = [
+        helper.make_node("MatMul", ["X", "W_up"], ["up_out"]),
+        helper.make_node("Gelu", ["up_out"], ["act_out"]),
+        helper.make_node("MatMul", ["act_out", "W_down"], ["Y"]),
+    ]
+
+    graph = helper.make_graph(nodes, "mlp_block", [X], [Y], [W_up, W_down])
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 17)])
+    return model
+
+
+class TestLLMPatterns:
+    """Tests for LLM-specific pattern detection (Task 5.4)."""
+
+    def test_detect_attention_heads(self):
+        """Test detection of attention head patterns."""
+        model = create_transformer_block_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            analyzer = PatternAnalyzer()
+            blocks = analyzer.group_into_blocks(graph_info)
+
+            # Should detect attention pattern
+            attention_blocks = [b for b in blocks if "Attention" in b.block_type]
+            assert (
+                len(attention_blocks) >= 1
+            ), f"Expected attention blocks, got: {[b.block_type for b in blocks]}"
+        finally:
+            model_path.unlink()
+
+    def test_detect_mlp_blocks(self):
+        """Test detection of MLP/FFN patterns."""
+        model = create_mlp_block_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            analyzer = PatternAnalyzer()
+            blocks = analyzer.group_into_blocks(graph_info)
+
+            # Should detect MLP pattern
+            mlp_blocks = [b for b in blocks if b.block_type == "MLPBlock"]
+            assert (
+                len(mlp_blocks) >= 1
+            ), f"Expected MLP blocks, got: {[b.block_type for b in blocks]}"
+        finally:
+            model_path.unlink()
+
+    def test_detect_normalization_pattern(self):
+        """Test detection of pre-norm vs post-norm."""
+        model = create_transformer_block_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            analyzer = PatternAnalyzer()
+            norm_info = analyzer.detect_normalization_pattern(graph_info)
+
+            # Should detect normalization
+            assert norm_info["num_layernorms"] >= 1
+            assert norm_info["pattern"] in ("pre_norm", "post_norm", "mixed", "unknown")
+        finally:
+            model_path.unlink()
+
+    def test_architecture_summary(self):
+        """Test comprehensive architecture summary."""
+        model = create_transformer_block_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            analyzer = PatternAnalyzer()
+            blocks = analyzer.group_into_blocks(graph_info)
+            summary = analyzer.get_architecture_summary(graph_info, blocks)
+
+            # Check summary structure
+            assert "architecture_type" in summary
+            assert "normalization" in summary
+            assert "block_counts" in summary
+            assert "attention" in summary
+            assert "mlp" in summary
+        finally:
+            model_path.unlink()
+
+    def test_classify_transformer(self):
+        """Test transformer architecture classification."""
+        model = create_transformer_block_model()
+
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx.save(model, f.name)
+            model_path = Path(f.name)
+
+        try:
+            loader = ONNXGraphLoader()
+            _, graph_info = loader.load(model_path)
+
+            analyzer = PatternAnalyzer()
+            blocks = analyzer.group_into_blocks(graph_info)
+            arch_type = analyzer.classify_architecture(graph_info, blocks)
+
+            # Should classify as transformer
+            assert (
+                "transformer" in arch_type or arch_type == "mlp"
+            ), f"Expected transformer, got: {arch_type}"
+        finally:
+            model_path.unlink()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
