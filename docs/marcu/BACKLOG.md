@@ -13,33 +13,35 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 
 | Epic | Status | Stories | Tasks Complete | Priority |
 |------|--------|---------|----------------|----------|
-| **DONE** |||||
+| **COMPLETE** |||||
 | Epic 1: Environment Setup | **Complete** | 3 | 11/11 | Done |
 | Epic 2: Core Analysis Engine | **Complete** | 4 | 17/17 | Done |
 | Epic 3: Pattern Analysis | **Complete** | 2 | 9/9 | Done |
 | Epic 4: CLI and Output | **Complete** | 4 | 18/18 | Done |
 | Epic 4B: PyTorch Integration | **Complete** | 2 | 14/14 | Done |
-| **P0 - SHIP NOW** |||||
-| Epic 10B: Standalone Package | **NEXT** | 3 | 0/17 | **P0** |
+| **PHASE 1: SHIP IT (P0)** | *Challenge deadline* ||||
+| Epic 10B: Standalone Package | **CRITICAL** | 3 | 0/17 | **P0** |
+| Epic 9: Demo/Deliverables | **CRITICAL** | 3 | 0/13 | **P0** |
 | Epic 11: Streamlit Web UI | **NEXT** | 3 | 0/14 | **P0** |
-| **P1 - HIGH VALUE** |||||
-| Epic 18: Universal IR | Not Started | 3 | 0/12 | P1 |
+| **PHASE 2: FOUNDATION (P1)** | *Complete the value prop* ||||
 | Epic 12: Inference Platform | Not Started | 5 | 0/24 | P1 |
-| Epic 4C: TensorFlow/Keras | Not Started | 3 | 0/15 | P1 |
-| **P2 - MEDIUM** |||||
-| Epic 5: Visualization | In Progress | 5 | 13/22 | P2 |
-| Epic 6: Hardware/Compare | In Progress | 9 | 27/47 | P2 |
-| Epic 7: LLM Integration | In Progress | 2 | 5/9 | P2 |
-| Epic 19: SafeTensors Format | Not Started | 2 | 0/8 | P2 |
-| Epic 20: CoreML Format | Not Started | 2 | 0/10 | P2 |
-| Epic 21: TFLite Format | Not Started | 2 | 0/10 | P2 |
-| **P3 - LOWER** |||||
+| Epic 18: Universal IR | Not Started | 3 | 0/12 | P1 |
+| Epic 25: Privacy/Trust | Not Started | 3 | 0/9 | P1 |
+| **PHASE 3: FORMAT EXPANSION (P2)** | *Read any model* ||||
+| Epic 4C: TensorFlow/Keras | Not Started | 3 | 0/15 | P2 |
+| Epic 19: SafeTensors | Not Started | 2 | 0/8 | P2 |
+| Epic 20: CoreML | Not Started | 2 | 0/10 | P2 |
+| Epic 21: TFLite | Not Started | 2 | 0/10 | P2 |
+| **PHASE 4: POLISH (P3)** | *Finish what's started* ||||
+| Epic 5: Visualization | In Progress | 5 | 13/22 | P3 |
+| Epic 6: Hardware/Compare | In Progress | 9 | 27/47 | P3 |
+| Epic 7: LLM Integration | In Progress | 2 | 5/9 | P3 |
 | Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 | P3 |
-| Epic 9: Demo/Deliverables | Not Started | 3 | 0/13 | P3 |
-| Epic 22: TensorRT Format | Not Started | 2 | 0/8 | P3 |
-| Epic 23: OpenVINO Format | Not Started | 2 | 0/8 | P3 |
-| Epic 24: GGUF Format | Not Started | 2 | 0/6 | P3 |
-| **P4+ - FUTURE** |||||
+| **PHASE 5: SPECIALIZED (P3)** | *Niche formats* ||||
+| Epic 22: TensorRT | Not Started | 2 | 0/8 | P3 |
+| Epic 23: OpenVINO | Not Started | 2 | 0/8 | P3 |
+| Epic 24: GGUF | Not Started | 2 | 0/6 | P3 |
+| **PHASE 6: FUTURE (P4+)** | *When there's demand* ||||
 | Epic 10: SaaS Web App | Not Started | 5 | 0/27 | P4 |
 | Epic 13-17: MLOps Platform | Future | 5 | 0/? | P5 |
 
@@ -441,7 +443,9 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [ ] **Task 10B.2.4**: Publish to Docker Hub / GitHub Container Registry
 - [ ] **Task 10B.2.5**: Create docker-compose.yml for easy local setup
 
-## Epic 12: Inference Platform (Wide Hole)
+## Epic 12: Inference Platform (P1 - The Other Half)
+
+*Architecture analysis + Inference metrics = Complete picture. User feedback: 2/2 want familiar metrics (accuracy, mAP, F1) not just architecture stats.*
 
 ### Story 12.1: Inference Runner Core
 - [ ] **Task 12.1.1**: Create `InferenceRunner` class wrapping ORT InferenceSession
@@ -561,6 +565,29 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [ ] **Task 18.3.1**: Define conversion capability enum (FULL, LOSSY, PARTIAL, NONE)
 - [ ] **Task 18.3.2**: Implement conversion matrix lookup
 - [ ] **Task 18.3.3**: Add CLI flag `--convert-to <format>` for format conversion
+
+---
+
+## Epic 25: Privacy and Trust Architecture (P1 - Customer Confidence)
+
+*Enterprise customers need proof we won't steal their model IP.*
+
+### Story 25.1: Local-First Architecture
+- [ ] **Task 25.1.1**: Document "model never leaves your machine" guarantee
+- [ ] **Task 25.1.2**: Audit code for any network calls or telemetry
+- [ ] **Task 25.1.3**: Add `--offline` CLI flag (fail if network detected)
+- [ ] **Task 25.1.4**: Create architecture diagram showing data flow
+
+### Story 25.2: Output Controls
+- [ ] **Task 25.2.1**: Add `--redact-names` flag (anonymize layer/tensor names)
+- [ ] **Task 25.2.2**: Add `--summary-only` flag (stats only, no graph structure)
+- [ ] **Task 25.2.3**: Document what information each output format reveals
+
+### Story 25.3: Enterprise Trust Documentation
+- [ ] **Task 25.3.1**: Write Privacy Policy / Data Handling document
+- [ ] **Task 25.3.2**: Document open-source audit path ("read our code")
+
+*Future: Confidential Computing (TEE) for cloud analysis - see Epic 10 SaaS.*
 
 ---
 
