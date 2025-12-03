@@ -23,19 +23,21 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any
 
 from .autodoc import ModelInspector
 from .autodoc.compare_visualizations import (
-    analyze_tradeoffs,
     build_enhanced_markdown,
     compute_tradeoff_points,
-    generate_calibration_recommendations,
     generate_compare_html,
+    generate_compare_pdf,
     generate_memory_savings_chart,
     generate_tradeoff_chart,
+)
+from .autodoc.compare_visualizations import (
     is_available as viz_available,
 )
 
@@ -48,7 +50,7 @@ class VariantInputs:
 
     model_path: Path
     eval_metrics_path: Path
-    precision: Optional[str] = None
+    precision: str | None = None
 
 
 @dataclass
@@ -60,7 +62,7 @@ class VariantReport:
     quantization_scheme: str
     size_bytes: int
     report: Any  # InspectionReport
-    metrics: Dict[str, Any]
+    metrics: dict[str, Any]
 
 
 @dataclass
@@ -68,11 +70,11 @@ class ArchCompatResult:
     """Result of architecture compatibility check between model variants."""
 
     is_compatible: bool
-    warnings: List[str]
-    details: Dict[str, Any]
+    warnings: list[str]
+    details: dict[str, Any]
 
 
-def _parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
+def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="model_inspect_compare",
         description=(
@@ -164,6 +166,12 @@ Examples:
         default=None,
         help="Output path for HTML comparison report with engine summary panel.",
     )
+    parser.add_argument(
+        "--out-pdf",
+        type=Path,
+        default=None,
+        help="Output path for PDF comparison report (requires Playwright).",
+    )
 
     args = parser.parse_args(argv)
 
@@ -182,7 +190,7 @@ Examples:
     return args
 
 
-def _infer_precision_from_name(path: Path) -> Optional[str]:
+def _infer_precision_from_name(path: Path) -> str | None:
     """Heuristic to infer precision from filename."""
     name = path.stem.lower()
     if "int8" in name or "qdq" in name or "int_8" in name:
@@ -198,7 +206,7 @@ def _infer_precision_from_name(path: Path) -> Optional[str]:
     return None
 
 
-def _load_eval_metrics(path: Path) -> Dict[str, Any]:
+def _load_eval_metrics(path: Path) -> dict[str, Any]:
     """
     Load eval/perf metrics JSON.
 
@@ -211,8 +219,10 @@ def _load_eval_metrics(path: Path) -> Dict[str, Any]:
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
 
-    if isinstance(data, dict) and "metrics" in data and isinstance(
-        data["metrics"], dict
+    if (
+        isinstance(data, dict)
+        and "metrics" in data
+        and isinstance(data["metrics"], dict)
     ):
         return data["metrics"]
 
@@ -222,17 +232,17 @@ def _load_eval_metrics(path: Path) -> Dict[str, Any]:
     raise ValueError(f"Unsupported metrics JSON structure in {path}")
 
 
-def _build_variant_inputs(args: argparse.Namespace) -> List[VariantInputs]:
-    variants: List[VariantInputs] = []
+def _build_variant_inputs(args: argparse.Namespace) -> list[VariantInputs]:
+    variants: list[VariantInputs] = []
     for idx, (model_path, metrics_path) in enumerate(
-        zip(args.models, args.eval_metrics)
+        zip(args.models, args.eval_metrics, strict=True)
     ):
         if not model_path.is_file():
             raise FileNotFoundError(f"Model not found: {model_path}")
         if not metrics_path.is_file():
             raise FileNotFoundError(f"Eval metrics JSON not found: {metrics_path}")
 
-        precision: Optional[str] = None
+        precision: str | None = None
         if args.precisions is not None:
             precision = args.precisions[idx]
         else:
@@ -260,7 +270,7 @@ def _run_inspection(model_path: Path, logger: logging.Logger) -> Any:
 
 
 def _determine_baseline_index(
-    variants: Sequence[VariantReport], baseline_precision: Optional[str]
+    variants: Sequence[VariantReport], baseline_precision: str | None
 ) -> int:
     if baseline_precision is None:
         return 0
@@ -289,8 +299,8 @@ def _check_architecture_compatibility(
     - Compatible input/output shapes
     - Similar detected block patterns
     """
-    warnings: List[str] = []
-    details: Dict[str, Any] = {}
+    warnings: list[str] = []
+    details: dict[str, Any] = {}
 
     if len(variants) < 2:
         return ArchCompatResult(is_compatible=True, warnings=[], details={})
@@ -304,8 +314,8 @@ def _check_architecture_compatibility(
     baseline_blocks = getattr(baseline_report, "detected_blocks", [])
 
     # Get baseline I/O shapes
-    baseline_inputs: Dict[str, Any] = {}
-    baseline_outputs: Dict[str, Any] = {}
+    baseline_inputs: dict[str, Any] = {}
+    baseline_outputs: dict[str, Any] = {}
     if baseline_graph:
         baseline_inputs = getattr(baseline_graph, "input_shapes", {}) or {}
         baseline_outputs = getattr(baseline_graph, "output_shapes", {}) or {}
@@ -315,7 +325,7 @@ def _check_architecture_compatibility(
     details["baseline_outputs"] = baseline_outputs
 
     # Count block types in baseline
-    baseline_block_counts: Dict[str, int] = {}
+    baseline_block_counts: dict[str, int] = {}
     for block in baseline_blocks:
         block_type = getattr(block, "block_type", "unknown")
         baseline_block_counts[block_type] = baseline_block_counts.get(block_type, 0) + 1
@@ -358,7 +368,7 @@ def _check_architecture_compatibility(
                 )
 
         # Check block pattern counts (some variation is OK for quantization)
-        v_block_counts: Dict[str, int] = {}
+        v_block_counts: dict[str, int] = {}
         for block in v_blocks:
             block_type = getattr(block, "block_type", "unknown")
             v_block_counts[block_type] = v_block_counts.get(block_type, 0) + 1
@@ -380,7 +390,7 @@ def _check_architecture_compatibility(
     )
 
 
-def _get_numeric_metric(report: Any, *path: str) -> Optional[float]:
+def _get_numeric_metric(report: Any, *path: str) -> float | None:
     """Safely extract a numeric metric from a nested report structure."""
     obj = report
     for key in path:
@@ -397,9 +407,7 @@ def _get_numeric_metric(report: Any, *path: str) -> Optional[float]:
     return None
 
 
-def _compute_deltas(
-    baseline: VariantReport, other: VariantReport
-) -> Dict[str, Any]:
+def _compute_deltas(baseline: VariantReport, other: VariantReport) -> dict[str, Any]:
     """
     Compute deltas between baseline and another variant.
 
@@ -411,7 +419,7 @@ def _compute_deltas(
     - Hardware estimates (if available)
     - Eval/perf metrics
     """
-    deltas: Dict[str, Any] = {}
+    deltas: dict[str, Any] = {}
 
     # Model file size
     deltas["size_bytes"] = other.size_bytes - baseline.size_bytes
@@ -481,7 +489,7 @@ def _build_compare_json(
     variants: Sequence[VariantReport],
     baseline_index: int,
     arch_compat: ArchCompatResult,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     baseline = variants[baseline_index]
 
     # Derive a simple model_family_id from baseline metadata
@@ -492,7 +500,7 @@ def _build_compare_json(
     else:
         model_family_id = baseline.model_path.stem
 
-    out: Dict[str, Any] = {
+    out: dict[str, Any] = {
         "model_family_id": model_family_id,
         "baseline_precision": baseline.precision,
         "architecture_compatible": arch_compat.is_compatible,
@@ -501,7 +509,7 @@ def _build_compare_json(
     }
 
     for idx, v in enumerate(variants):
-        deltas_vs_baseline: Optional[Dict[str, Any]]
+        deltas_vs_baseline: dict[str, Any] | None
         if idx == baseline_index:
             deltas_vs_baseline = None
         else:
@@ -515,17 +523,21 @@ def _build_compare_json(
         flop_counts = getattr(v.report, "flop_counts", None)
         memory_estimates = getattr(v.report, "memory_estimates", None)
 
-        out_variant: Dict[str, Any] = {
+        out_variant: dict[str, Any] = {
             "precision": v.precision,
             "quantization_scheme": v.quantization_scheme,
             "model_path": str(v.model_path),
             "size_bytes": int(v.size_bytes),
             # Structural metrics from inspection
             "total_params": (
-                param_counts.total if param_counts and hasattr(param_counts, "total") else None
+                param_counts.total
+                if param_counts and hasattr(param_counts, "total")
+                else None
             ),
             "total_flops": (
-                flop_counts.total if flop_counts and hasattr(flop_counts, "total") else None
+                flop_counts.total
+                if flop_counts and hasattr(flop_counts, "total")
+                else None
             ),
             "memory_bytes": (
                 memory_estimates.total_bytes
@@ -547,10 +559,10 @@ def _build_compare_json(
     return out
 
 
-def _format_number(n: Optional[float], suffix: str = "") -> str:
+def _format_number(n: float | None, suffix: str = "") -> str:
     """Format a number with K/M/G suffixes for readability."""
     if n is None:
-        return "–"
+        return "-"
     if abs(n) >= 1e9:
         return f"{n / 1e9:.2f}G{suffix}"
     if abs(n) >= 1e6:
@@ -562,10 +574,10 @@ def _format_number(n: Optional[float], suffix: str = "") -> str:
     return f"{int(n)}{suffix}"
 
 
-def _format_delta(val: Optional[float], suffix: str = "") -> str:
+def _format_delta(val: float | None, suffix: str = "") -> str:
     """Format a delta with +/- prefix and K/M/G suffixes."""
     if val is None:
-        return "–"
+        return "-"
     sign = "+" if val >= 0 else ""
     if abs(val) >= 1e9:
         return f"{sign}{val / 1e9:.2f}G{suffix}"
@@ -579,10 +591,10 @@ def _format_delta(val: Optional[float], suffix: str = "") -> str:
 
 
 def _build_markdown_summary(
-    compare_json: Dict[str, Any],
+    compare_json: dict[str, Any],
 ) -> str:
     """Generate a Markdown summary for compare mode with rich metrics."""
-    lines: List[str] = []
+    lines: list[str] = []
 
     model_family_id = compare_json.get("model_family_id", "unknown_model")
     baseline_precision = compare_json.get("baseline_precision", "unknown")
@@ -613,12 +625,8 @@ def _build_markdown_summary(
     # Summary table with comprehensive metrics
     lines.append("## Variant Comparison")
     lines.append("")
-    lines.append(
-        "| Precision | Size | Params | FLOPs | Δ Size | Δ Params | Δ FLOPs |"
-    )
-    lines.append(
-        "|-----------|------|--------|-------|--------|----------|---------|"
-    )
+    lines.append("| Precision | Size | Params | FLOPs | Δ Size | Δ Params | Δ FLOPs |")
+    lines.append("|-----------|------|--------|-------|--------|----------|---------|")
 
     for v in compare_json.get("variants", []):
         precision = v.get("precision", "unknown")
@@ -634,9 +642,9 @@ def _build_markdown_summary(
 
         # Format deltas
         if deltas is None:
-            delta_size = "–"
-            delta_params = "–"
-            delta_flops = "–"
+            delta_size = "-"
+            delta_params = "-"
+            delta_flops = "-"
         else:
             delta_size = _format_delta(deltas.get("size_bytes"), "B")
             delta_params = _format_delta(deltas.get("total_params"))
@@ -653,7 +661,10 @@ def _build_markdown_summary(
     has_perf_metrics = False
     for v in compare_json.get("variants", []):
         metrics = v.get("metrics", {})
-        if any(k in metrics for k in ["latency_ms_p50", "throughput_qps", "f1_macro", "accuracy"]):
+        if any(
+            k in metrics
+            for k in ["latency_ms_p50", "throughput_qps", "f1_macro", "accuracy"]
+        ):
             has_perf_metrics = True
             break
 
@@ -676,18 +687,20 @@ def _build_markdown_summary(
             throughput = metrics.get("throughput_qps") or metrics.get("throughput")
             accuracy = metrics.get("f1_macro") or metrics.get("accuracy")
 
-            lat_str = f"{latency:.2f}" if latency is not None else "–"
-            tput_str = _format_number(throughput, " qps") if throughput is not None else "–"
-            acc_str = f"{accuracy:.4f}" if accuracy is not None else "–"
+            lat_str = f"{latency:.2f}" if latency is not None else "-"
+            tput_str = (
+                _format_number(throughput, " qps") if throughput is not None else "-"
+            )
+            acc_str = f"{accuracy:.4f}" if accuracy is not None else "-"
 
             if deltas is None:
-                delta_lat = "–"
-                delta_acc = "–"
+                delta_lat = "-"
+                delta_acc = "-"
             else:
                 d_lat = deltas.get("latency_ms_p50") or deltas.get("latency_ms")
                 d_acc = deltas.get("f1_macro") or deltas.get("accuracy")
-                delta_lat = f"{d_lat:+.2f}ms" if d_lat is not None else "–"
-                delta_acc = f"{d_acc:+.4f}" if d_acc is not None else "–"
+                delta_lat = f"{d_lat:+.2f}ms" if d_lat is not None else "-"
+                delta_acc = f"{d_acc:+.4f}" if d_acc is not None else "-"
 
             lines.append(
                 f"| {precision} | {lat_str} | {tput_str} | {acc_str} | "
@@ -705,8 +718,8 @@ def _build_markdown_summary(
 def _build_variants(
     variant_inputs: Sequence[VariantInputs],
     logger: logging.Logger,
-) -> List[VariantReport]:
-    variants: List[VariantReport] = []
+) -> list[VariantReport]:
+    variants: list[VariantReport] = []
 
     for v in variant_inputs:
         metrics = _load_eval_metrics(v.eval_metrics_path)
@@ -730,7 +743,7 @@ def _build_variants(
     return variants
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
 
     logging.basicConfig(
@@ -744,9 +757,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         variant_inputs = _build_variant_inputs(args)
         variants = _build_variants(variant_inputs, logger=logger)
 
-        baseline_index = _determine_baseline_index(
-            variants, args.baseline_precision
-        )
+        baseline_index = _determine_baseline_index(variants, args.baseline_precision)
 
         # Task 6.3.3: Check architecture compatibility
         arch_compat = _check_architecture_compatibility(variants)
@@ -795,14 +806,33 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
         # Write HTML if requested
         if args.out_html:
-            html = generate_compare_html(
+            generate_compare_html(
                 compare_json,
                 output_path=args.out_html,
                 include_charts=True,
             )
             logger.info("Comparison HTML written to %s", args.out_html)
 
-        if not args.out_json and not args.out_md and not args.out_html:
+        # Write PDF if requested (Task 6.10.9)
+        if args.out_pdf:
+            pdf_path = generate_compare_pdf(
+                compare_json,
+                output_path=args.out_pdf,
+                include_charts=True,
+            )
+            if pdf_path:
+                logger.info("Comparison PDF written to %s", pdf_path)
+            else:
+                logger.warning(
+                    "PDF generation failed (Playwright may not be installed)"
+                )
+
+        if (
+            not args.out_json
+            and not args.out_md
+            and not args.out_html
+            and not args.out_pdf
+        ):
             # Default to printing JSON to stdout if no outputs specified
             print(json.dumps(compare_json, indent=2))
 

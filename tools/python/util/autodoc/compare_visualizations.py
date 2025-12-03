@@ -687,6 +687,258 @@ def analyze_tradeoffs(
     return analysis
 
 
+@dataclass
+class NormalizedMetrics:
+    """Normalized efficiency metrics for a model variant."""
+
+    precision: str
+    flops_per_param: float  # Compute intensity
+    memory_per_param: float  # Memory efficiency
+    params_per_mb: float  # Storage efficiency
+    efficiency_score: float  # Composite efficiency (0-100)
+
+
+def compute_normalized_metrics(
+    compare_json: dict[str, Any],
+) -> list[NormalizedMetrics]:
+    """
+    Compute normalized metrics for comparison.
+
+    Task 6.10.2: Implement normalized metrics (FLOPs/param, memory/param, etc.)
+
+    Returns normalized efficiency metrics for each variant.
+    """
+    variants = compare_json.get("variants", [])
+    metrics_list: list[NormalizedMetrics] = []
+
+    for v in variants:
+        precision = v.get("precision", "unknown")
+        size_bytes = v.get("size_bytes", 0)
+        report = v.get("report", {})
+
+        # Extract raw metrics
+        param_counts = report.get("param_counts", {})
+        flop_counts = report.get("flop_counts", {})
+        memory_est = report.get("memory_estimates", {})
+
+        total_params = param_counts.get("total", 0) or 1  # Avoid div by zero
+        total_flops = flop_counts.get("total", 0)
+        peak_memory = memory_est.get("peak_activation_bytes", 0)
+
+        # Compute normalized metrics
+        flops_per_param = total_flops / total_params if total_params > 0 else 0
+        memory_per_param = peak_memory / total_params if total_params > 0 else 0
+        size_mb = size_bytes / (1024 * 1024) if size_bytes > 0 else 1
+        params_per_mb = total_params / size_mb
+
+        # Composite efficiency score (higher = more efficient)
+        # Favors: higher FLOPs/param (more compute per weight), lower memory/param
+        efficiency_score = min(
+            100, max(0, (flops_per_param / 100) - (memory_per_param / 1000))
+        )
+
+        metrics_list.append(
+            NormalizedMetrics(
+                precision=precision,
+                flops_per_param=flops_per_param,
+                memory_per_param=memory_per_param,
+                params_per_mb=params_per_mb,
+                efficiency_score=efficiency_score,
+            )
+        )
+
+    return metrics_list
+
+
+def generate_radar_chart(
+    compare_json: dict[str, Any],
+    output_path: Path | None = None,
+) -> bytes | None:
+    """
+    Generate radar chart comparing key metrics across model variants.
+
+    Task 6.10.3: Add radar chart comparing key metrics across models
+
+    Compares: Size, Params, FLOPs, Memory, Latency (if available)
+    Each axis is normalized 0-1 where lower is better.
+    """
+    if not MATPLOTLIB_AVAILABLE:
+        LOGGER.warning("matplotlib not available, skipping radar chart")
+        return None
+
+    import numpy as np  # noqa: PLC0415
+
+    variants = compare_json.get("variants", [])
+    if not variants:
+        return None
+
+    baseline_precision = compare_json.get("baseline_precision", "fp32")
+
+    # Find baseline for normalization
+    baseline = None
+    for v in variants:
+        if v.get("precision") == baseline_precision:
+            baseline = v
+            break
+    if baseline is None:
+        baseline = variants[0]
+
+    # Extract baseline values for normalization
+    baseline_size = baseline.get("size_bytes", 1) or 1
+    baseline_report = baseline.get("report", {})
+    baseline_params = baseline_report.get("param_counts", {}).get("total", 1) or 1
+    baseline_flops = baseline_report.get("flop_counts", {}).get("total", 1) or 1
+    baseline_memory = (
+        baseline_report.get("memory_estimates", {}).get("peak_activation_bytes", 1) or 1
+    )
+    baseline_metrics = baseline.get("metrics", {})
+    baseline_latency = (
+        baseline_metrics.get("latency_ms_p50")
+        or baseline_metrics.get("latency_ms")
+        or 1
+    )
+
+    # Define radar categories (lower is better for all)
+    categories = ["Size", "Params", "FLOPs", "Memory", "Latency"]
+    num_vars = len(categories)
+
+    # Compute angles for radar
+    angles = [n / float(num_vars) * 2 * np.pi for n in range(num_vars)]
+    angles += angles[:1]  # Complete the loop
+
+    # Create figure
+    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw={"polar": True})
+    fig.patch.set_facecolor("#1a1a2e")
+    ax.set_facecolor("#16213e")
+
+    # Colors for each variant
+    colors = ["#4361ee", "#f72585", "#4cc9f0", "#7209b7", "#3a0ca3"]
+
+    for idx, v in enumerate(variants):
+        precision = v.get("precision", "unknown")
+        size = v.get("size_bytes", baseline_size)
+        report = v.get("report", {})
+        params = (
+            report.get("param_counts", {}).get("total", baseline_params)
+            or baseline_params
+        )
+        flops = (
+            report.get("flop_counts", {}).get("total", baseline_flops) or baseline_flops
+        )
+        memory = (
+            report.get("memory_estimates", {}).get(
+                "peak_activation_bytes", baseline_memory
+            )
+            or baseline_memory
+        )
+        metrics = v.get("metrics", {})
+        latency = (
+            metrics.get("latency_ms_p50")
+            or metrics.get("latency_ms")
+            or baseline_latency
+        )
+
+        # Normalize (0-1 scale, relative to baseline, capped at 2x)
+        values = [
+            min(2.0, size / baseline_size),
+            min(2.0, params / baseline_params),
+            min(2.0, flops / baseline_flops),
+            min(2.0, memory / baseline_memory),
+            min(2.0, latency / baseline_latency),
+        ]
+        values += values[:1]  # Complete the loop
+
+        color = colors[idx % len(colors)]
+        ax.plot(angles, values, "o-", linewidth=2, label=precision, color=color)
+        ax.fill(angles, values, alpha=0.25, color=color)
+
+    # Styling
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(categories, color="#e0e0e0", size=10)
+    ax.tick_params(colors="#e0e0e0")
+
+    # Set radial limits
+    ax.set_ylim(0, 2.0)
+    ax.set_yticks([0.5, 1.0, 1.5, 2.0])
+    ax.set_yticklabels(["0.5x", "1x", "1.5x", "2x"], color="#a0a0a0", size=8)
+
+    # Grid styling
+    ax.grid(True, color="#404060", linestyle="-", linewidth=0.5)
+
+    # Legend
+    legend = ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
+    legend.get_frame().set_facecolor("#16213e")
+    legend.get_frame().set_edgecolor("#404060")
+    for text in legend.get_texts():
+        text.set_color("#e0e0e0")
+
+    ax.set_title(
+        "Model Comparison (lower = better)",
+        color="#e0e0e0",
+        size=14,
+        fontweight="bold",
+        pad=20,
+    )
+
+    # Save to bytes
+    buf = BytesIO()
+    fig.savefig(buf, format="png", dpi=150, facecolor="#1a1a2e", bbox_inches="tight")
+    buf.seek(0)
+    chart_bytes = buf.getvalue()
+    plt.close(fig)
+
+    if output_path:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(chart_bytes)
+        LOGGER.info(f"Radar chart saved to {output_path}")
+
+    return chart_bytes
+
+
+def generate_compare_pdf(
+    compare_json: dict[str, Any],
+    output_path: Path,
+    include_charts: bool = True,
+) -> Path | None:
+    """
+    Generate PDF report for model comparison.
+
+    Task 6.10.9: Generate comparison PDF report
+
+    Uses the existing PDF generator infrastructure if available.
+    """
+    try:
+        from .pdf_generator import PDFGenerator  # noqa: PLC0415
+        from .pdf_generator import is_available as is_pdf_available  # noqa: PLC0415
+    except ImportError:
+        LOGGER.warning("PDF generator not available")
+        return None
+
+    if not is_pdf_available():
+        LOGGER.warning("PDF generation not available (Playwright not installed)")
+        return None
+
+    # First generate HTML content
+    html_content = generate_compare_html(
+        compare_json,
+        include_charts=include_charts,
+    )
+
+    # Use PDF generator to convert HTML to PDF
+    generator = PDFGenerator()
+    try:
+        generator.generate_from_html(
+            html_content=html_content,
+            output_path=output_path,
+            title="Model Comparison Report",
+        )
+        LOGGER.info(f"Comparison PDF saved to {output_path}")
+        return output_path
+    except Exception as e:
+        LOGGER.error(f"Failed to generate PDF: {e}")
+        return None
+
+
 def generate_calibration_recommendations(
     compare_json: dict[str, Any],
 ) -> list[CalibrationRecommendation]:

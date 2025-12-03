@@ -20,7 +20,7 @@
 | Epic 4B: PyTorch Integration | **Complete** | 2 | 14/14 | Done |
 | Epic 4C: TensorFlow/Keras/JAX | **Complete** | 3 | 15/15 | Done |
 | Epic 5: Visualization | **Complete** | 8 | 52/52 | Done |
-| Epic 6: Hardware/Compare | In Progress | 11 | 46/62 | P3 |
+| Epic 6: Hardware/Compare | **COMPLETE** | 10 | 56/56 | P3 |
 | Epic 7: LLM Integration | In Progress | 2 | 5/9 | P3 |
 | Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 | P3 |
 | Epic 10: SaaS Web App | Not Started | 5 | 0/27 | P4 |
@@ -210,7 +210,7 @@
 
 ---
 
-## Epic 6: Hardware Profiles and Compare Mode (P3 - 31/47 done)
+## Epic 6: Hardware Profiles and Compare Mode (P3) - **COMPLETE**
 
 ### Story 6.1: Hardware Profile System - **COMPLETE**
 - [x] **Task 6.1.1**: Define hardware profile dataclass (HardwareProfile)
@@ -241,18 +241,18 @@
 - [x] **Task 6.4.7**: Add engine summary panel
 - [x] **Task 6.4.8**: Show quantization calibration recommendations
 
-### Story 6.10: Multi-Model Comparison Report
+### Story 6.10: Multi-Model Comparison Report - **COMPLETE**
 *Compare 2+ models side-by-side - different architectures, sizes, or precisions*
 *Note: Many tasks completed in Story 6.3/6.4 via model_inspect_compare CLI*
 - [x] **Task 6.10.1**: Design comparison report layout (side-by-side vs tabular) - *Done in 6.4*
-- [ ] **Task 6.10.2**: Implement normalized metrics (FLOPs/param, memory/param, etc.)
-- [ ] **Task 6.10.3**: Add radar chart comparing key metrics across models
+- [x] **Task 6.10.2**: Implement normalized metrics (FLOPs/param, memory/param, etc.)
+- [x] **Task 6.10.3**: Add radar chart comparing key metrics across models
 - [x] **Task 6.10.4**: Add bar charts for params, FLOPs, memory comparison - *Done in 6.4*
 - [x] **Task 6.10.5**: Generate executive summary ("Model A is 2x faster, 30% smaller") - *Done in 6.4*
 - [x] **Task 6.10.6**: Handle different architectures gracefully (apples-to-oranges warning) - *Done in 6.3*
 - [x] **Task 6.10.7**: Add `--compare` CLI flag for N models - *Done in 6.3 (model_inspect_compare)*
 - [x] **Task 6.10.8**: Generate comparison HTML report - *Done in 6.4*
-- [ ] **Task 6.10.9**: Generate comparison PDF report
+- [x] **Task 6.10.9**: Generate comparison PDF report - `--out-pdf` flag
 
 ### Story 6.11: MOVED to Epic 12 (Story 12.6)
 *Model Leaderboard requires inference metrics - moved to Inference Platform epic*
