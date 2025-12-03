@@ -37,6 +37,7 @@
 15. [Inference Platform](#15-inference-platform-wide-hole-architecture)
 16. [Future Vision: MLOps Platform](#16-future-vision-mlops-platform-p5)
 17. [LLM-Scale Analysis (Epics 26-30)](#17-llm-scale-analysis-epics-26-30)
+18. [Model Optimization Service (Epics 31-32)](#18-model-optimization-service-epics-31-32)
 
 ---
 
@@ -1657,6 +1658,132 @@ Production LLM inference has unique characteristics:
 
 ---
 
+## 18. Model Optimization Service (Epics 31-32)
+
+### 18.1 Overview
+
+**Key Insight**: Don't just analyze quantization - DO the quantization.
+
+```
+Current Workflow:
+  User → learns quantization tools → quantizes model → uploads → we analyze
+
+New Workflow:
+  User → uploads model + test data → we quantize + analyze + compare → user downloads optimized model
+```
+
+This transforms us from an **analysis tool** to an **optimization platform**.
+
+### 18.2 Epic 31: Automated Quantization Service
+
+**User Flow:**
+
+```bash
+# User provides model + calibration data
+model-analyzer optimize model.onnx \
+  --calibration-data ./test_images/ \
+  --quantize int8 \
+  --target-accuracy 0.99 \
+  --out-dir ./optimized/
+```
+
+**Output:**
+- `model_int8.onnx` - Quantized model
+- `optimization_report.html` - Before/after comparison
+- `accuracy_validation.json` - Per-layer error analysis
+
+**Supported Quantization Schemes:**
+
+| Scheme | Use Case | Size Reduction | Accuracy Impact |
+|--------|----------|----------------|-----------------|
+| INT8 Dynamic | Quick, no calibration | 4x | Low |
+| INT8 Static | Best accuracy, needs calibration | 4x | Very Low |
+| INT4 | LLMs, aggressive compression | 8x | Medium |
+| GPTQ | LLMs, high quality INT4 | 8x | Low |
+| AWQ | LLMs, activation-aware | 8x | Low |
+| Mixed Precision | Sensitive layers stay FP16 | 2-4x | Minimal |
+
+**Multi-Variant Generation:**
+
+Generate all variants, benchmark, and recommend:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Quantization Variants - ResNet50                                │
+├─────────────┬──────────┬──────────┬───────────┬────────────────┤
+│ Variant     │ Size     │ Speedup  │ Accuracy  │ Recommendation │
+├─────────────┼──────────┼──────────┼───────────┼────────────────┤
+│ FP32 (orig) │ 97.8 MB  │ 1.0x     │ 93.1%     │                │
+│ FP16        │ 48.9 MB  │ 1.8x     │ 93.0%     │ Recommended    │
+│ INT8 Static │ 24.5 MB  │ 3.1x     │ 92.7%     │ Best tradeoff  │
+│ INT8 Dynamic│ 24.5 MB  │ 2.4x     │ 92.3%     │                │
+│ Mixed       │ 36.2 MB  │ 2.2x     │ 92.9%     │ High accuracy  │
+└─────────────┴──────────┴──────────┴───────────┴────────────────┘
+```
+
+### 18.3 Epic 32: Model Optimization Suite
+
+Beyond quantization - graph-level optimizations:
+
+| Optimization | What It Does | Impact |
+|--------------|--------------|--------|
+| Constant Folding | Pre-compute constant expressions | Fewer ops |
+| Node Fusion | Conv+BN → single op, MatMul+Add → single op | Faster execution |
+| Dead Code Elimination | Remove unused branches | Smaller graph |
+| Shape Fixing | Dynamic → static shapes | Faster, simpler |
+
+**CLI Usage:**
+
+```bash
+# Apply all optimizations
+model-analyzer optimize model.onnx --optimize --out optimized.onnx
+
+# Fix shapes for deployment
+model-analyzer optimize model.onnx --fix-batch-size 1 --fix-sequence-length 512
+```
+
+### 18.4 Calibration Data Interface
+
+Support multiple data formats:
+
+| Model Type | Calibration Data | Format |
+|------------|-----------------|--------|
+| Image Classification | Folder of images | `./images/*.jpg` |
+| Object Detection | Images + annotations | COCO JSON |
+| NLP/LLM | Text prompts | `prompts.txt` or JSON |
+| Tabular | CSV/JSON records | Standard formats |
+| Generic | NumPy arrays | `.npy` files |
+
+**Example:**
+
+```python
+# Python API
+from model_analyzer import optimize_model
+
+result = optimize_model(
+    model_path="model.onnx",
+    calibration_data="./test_images/",
+    schemes=["int8", "int4", "mixed"],
+    accuracy_threshold=0.99,
+)
+
+print(result.best_variant)  # "int8 - 3.1x speedup, 0.4% accuracy loss"
+result.save_all("./optimized/")
+```
+
+### 18.5 Integration with Analysis
+
+Quantization service integrates with existing analysis:
+
+1. **Pre-quantization**: Full analysis of original model
+2. **Quantization**: Apply selected scheme with calibration
+3. **Post-quantization**: Full analysis of quantized model
+4. **Comparison**: Side-by-side report showing impact
+
+This creates a complete **optimize → analyze → deploy** workflow.
+
+---
+
 ## Appendix: Delta Log
 
 *Use this section to track changes to the PRD over time.*
@@ -1708,3 +1835,5 @@ Production LLM inference has unique characteristics:
 | Dec 3, 2025 | Epic 5 | Expanded visualization for LLM-scale: 5.4 (patterns), 5.5 (icons), 5.6 (edges), 5.7 (graph, BLOCKED), 5.8 (table). 13/47 tasks | Must handle 70B+ param models with 20k+ ops |
 | Dec 3, 2025 | Section 17 | Added LLM-Scale Analysis section covering Epics 26-30 | Gap analysis for Opus 4.5-class models |
 | Dec 3, 2025 | Epics 26-30 | Added: 26 (Quantization), 27 (Attention Variants), 28 (Memory Patterns), 29 (Sparse/Efficient), 30 (LLM Deployment). 88 new tasks | Complete LLM analysis capability |
+| Dec 3, 2025 | Section 18 | Added Model Optimization Service (Epics 31-32). Automated quantization, graph optimization, multi-variant generation | Don't just analyze - optimize. User uploads model + test data, we handle quantization |
+| Dec 3, 2025 | Epics 31-32 | Added: 31 (Quantization Service, 32 tasks), 32 (Model Optimization, 14 tasks). 46 new tasks | Transform from analysis tool to optimization platform |

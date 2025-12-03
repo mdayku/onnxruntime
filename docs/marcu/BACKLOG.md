@@ -42,6 +42,9 @@
 | Epic 28: Memory Patterns | Not Started | 4 | 0/18 | P3 |
 | Epic 29: Sparse/Efficient | Not Started | 4 | 0/16 | P3 |
 | Epic 30: LLM Deployment | Not Started | 4 | 0/19 | P3 |
+| **OPTIMIZATION** ||||
+| Epic 31: Quantization Service | Not Started | 6 | 0/32 | **P2** |
+| Epic 32: Model Optimization | Not Started | 3 | 0/14 | P3 |
 
 ---
 
@@ -754,3 +757,88 @@
 - [ ] **Task 30.4.3**: Check llama.cpp compatibility
 - [ ] **Task 30.4.4**: Check Triton Inference Server compatibility
 - [ ] **Task 30.4.5**: Report recommended serving framework for model characteristics
+
+---
+
+## Epic 31: Automated Quantization Service (P2)
+
+*Don't just analyze quantization - DO the quantization. Users upload model + test data, we handle the rest.*
+
+**Value Proposition:**
+- Users don't need to learn quantization tooling
+- Automatic before/after comparison
+- Recommend best scheme for their accuracy/speed tradeoff
+- Download optimized model ready for deployment
+
+### Story 31.1: Calibration Dataset Interface
+- [ ] **Task 31.1.1**: Define calibration dataset format (images, tensors, text)
+- [ ] **Task 31.1.2**: Implement image folder loader for CV models
+- [ ] **Task 31.1.3**: Implement JSON/CSV loader for tabular data
+- [ ] **Task 31.1.4**: Implement text file loader for LLMs (prompts)
+- [ ] **Task 31.1.5**: Add `--calibration-data` CLI flag
+- [ ] **Task 31.1.6**: Validate calibration data matches model input spec
+
+### Story 31.2: ONNX Runtime Quantization
+- [ ] **Task 31.2.1**: Integrate onnxruntime.quantization module
+- [ ] **Task 31.2.2**: Implement dynamic quantization (no calibration needed)
+- [ ] **Task 31.2.3**: Implement static INT8 quantization with calibration
+- [ ] **Task 31.2.4**: Implement QDQ (Quantize-Dequantize) format for TensorRT
+- [ ] **Task 31.2.5**: Add `--quantize int8|int8-dynamic|qdq` CLI flag
+- [ ] **Task 31.2.6**: Save quantized model to user-specified path
+
+### Story 31.3: Advanced Quantization Backends
+- [ ] **Task 31.3.1**: Integrate Intel Neural Compressor (INC) for advanced PTQ
+- [ ] **Task 31.3.2**: Integrate ONNX GPTQ quantization (for LLMs)
+- [ ] **Task 31.3.3**: Integrate AWQ quantization support
+- [ ] **Task 31.3.4**: Add INT4 quantization option
+- [ ] **Task 31.3.5**: Add mixed-precision quantization (sensitive layers stay fp16)
+- [ ] **Task 31.3.6**: Add `--quantize-scheme gptq|awq|int4` CLI flag
+
+### Story 31.4: Accuracy Validation
+- [ ] **Task 31.4.1**: Run inference on calibration set with original model
+- [ ] **Task 31.4.2**: Run inference on calibration set with quantized model
+- [ ] **Task 31.4.3**: Calculate output difference (MSE, cosine similarity)
+- [ ] **Task 31.4.4**: Report per-layer quantization error
+- [ ] **Task 31.4.5**: Flag layers with high error (candidates for mixed precision)
+- [ ] **Task 31.4.6**: Generate accuracy comparison report
+
+### Story 31.5: Multi-Variant Generation
+- [ ] **Task 31.5.1**: Generate multiple quantized variants (int8, int4, mixed)
+- [ ] **Task 31.5.2**: Benchmark all variants on calibration set
+- [ ] **Task 31.5.3**: Generate Pareto frontier chart (accuracy vs size vs speed)
+- [ ] **Task 31.5.4**: Recommend best variant for user's constraints
+- [ ] **Task 31.5.5**: Package all variants in downloadable archive
+
+### Story 31.6: Quantization Report
+- [ ] **Task 31.6.1**: Add quantization section to HTML report
+- [ ] **Task 31.6.2**: Show size comparison (original vs quantized)
+- [ ] **Task 31.6.3**: Show accuracy comparison
+- [ ] **Task 31.6.4**: Show per-layer precision breakdown
+- [ ] **Task 31.6.5**: Include download links for quantized models
+- [ ] **Task 31.6.6**: Add quantization recommendations
+
+---
+
+## Epic 32: Model Optimization Suite (P3)
+
+*Beyond quantization - graph optimizations, layer fusion, pruning.*
+
+### Story 32.1: ONNX Graph Optimizations
+- [ ] **Task 32.1.1**: Integrate onnxruntime graph optimizers
+- [ ] **Task 32.1.2**: Apply constant folding
+- [ ] **Task 32.1.3**: Apply node fusion (Conv+BN, MatMul+Add)
+- [ ] **Task 32.1.4**: Eliminate redundant ops (Identity, Dropout in inference)
+- [ ] **Task 32.1.5**: Add `--optimize` CLI flag
+- [ ] **Task 32.1.6**: Report optimizations applied and impact
+
+### Story 32.2: Shape Optimization
+- [ ] **Task 32.2.1**: Fix dynamic shapes to static for deployment
+- [ ] **Task 32.2.2**: Add `--fix-batch-size N` CLI flag
+- [ ] **Task 32.2.3**: Add `--fix-sequence-length N` CLI flag
+- [ ] **Task 32.2.4**: Warn about shape changes that affect flexibility
+
+### Story 32.3: Weight Pruning (Experimental)
+- [ ] **Task 32.3.1**: Research structured pruning integration
+- [ ] **Task 32.3.2**: Implement magnitude-based pruning
+- [ ] **Task 32.3.3**: Report sparsity achieved
+- [ ] **Task 32.3.4**: Validate accuracy after pruning
