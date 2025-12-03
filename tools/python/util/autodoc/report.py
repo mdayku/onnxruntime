@@ -25,7 +25,14 @@ if TYPE_CHECKING:
         ONNXGraphLoader,
         ParamCounts,
     )
-    from .hardware import HardwareEstimates, HardwareProfile
+    from .hardware import (
+        HardwareEstimates,
+        HardwareProfile,
+    )
+    from .operational_profiling import (
+        BatchSizeSweep,
+        SystemRequirements,
+    )
     from .patterns import Block, PatternAnalyzer
     from .risks import RiskAnalyzer, RiskSignal
 
@@ -234,6 +241,10 @@ class InspectionReport:
     # Hardware estimates (optional, set by CLI if --hardware specified)
     hardware_profile: HardwareProfile | None = None
     hardware_estimates: HardwareEstimates | None = None
+
+    # System Requirements & Scaling (Epic 6C)
+    system_requirements: SystemRequirements | None = None
+    batch_size_sweep: BatchSizeSweep | None = None
 
     # LLM summary (optional, set by CLI if --llm-summary specified)
     llm_summary: dict[str, Any] | None = None
@@ -618,6 +629,50 @@ class InspectionReport:
                 lines.append(f"- **TDP**: {self.hardware_profile.tdp_watts}W")
             lines.append("")
 
+        # System Requirements (Story 6C.2)
+        if self.system_requirements:
+            reqs = self.system_requirements
+            lines.append("## System Requirements")
+            lines.append("")
+            lines.append("| Level | Device | VRAM |")
+            lines.append("|-------|--------|------|")
+            min_name = reqs.minimum_gpu.device if reqs.minimum_gpu else "N/A"
+            rec_name = reqs.recommended_gpu.device if reqs.recommended_gpu else "N/A"
+            opt_name = reqs.optimal_gpu.device if reqs.optimal_gpu else "N/A"
+            min_vram = (
+                f"{reqs.minimum_vram_gb} GB"
+                if reqs.minimum_vram_gb is not None
+                else "-"
+            )
+            rec_vram = (
+                f"{reqs.recommended_vram_gb} GB"
+                if reqs.recommended_vram_gb is not None
+                else "-"
+            )
+            lines.append(f"| Minimum | {min_name} | {min_vram} |")
+            lines.append(f"| Recommended | {rec_name} | {rec_vram} |")
+            lines.append(f"| Optimal | {opt_name} | - |")
+            lines.append("")
+
+        # Batch Size Sweep (Story 6C.1)
+        if self.batch_size_sweep:
+            sweep = self.batch_size_sweep
+            lines.append("## Batch Size Scaling")
+            lines.append("")
+            lines.append(f"**Optimal Batch Size**: {sweep.optimal_batch_size}")
+            lines.append("")
+            lines.append(
+                "| Batch Size | Latency (ms) | Throughput (inf/s) | VRAM (GB) |"
+            )
+            lines.append(
+                "|------------|--------------|--------------------|-----------|"
+            )
+            for i, bs in enumerate(sweep.batch_sizes):
+                lines.append(
+                    f"| {bs} | {sweep.latencies[i]:.2f} | {sweep.throughputs[i]:.1f} | {sweep.vram_usage_gb[i]:.2f} |"
+                )
+            lines.append("")
+
         # Risks
         if self.risk_signals:
             lines.append("## Risk Signals")
@@ -657,13 +712,21 @@ class InspectionReport:
             return f"{b / 1e3:.2f} KB"
         return f"{b} bytes"
 
-    def to_html(self, image_paths: dict[str, pathlib.Path] | None = None) -> str:
+    def to_html(
+        self,
+        image_paths: dict[str, pathlib.Path] | None = None,
+        graph_html: str | None = None,
+        layer_table_html: str | None = None,
+    ) -> str:
         """
         Generate a self-contained HTML report with embedded images.
 
         Args:
             image_paths: Dictionary mapping image names to file paths.
                          Images will be embedded as base64.
+            graph_html: Optional HTML for interactive graph visualization (Task 5.7.8).
+                        This should be the inner graph container, not full HTML document.
+            layer_table_html: Optional HTML for per-layer summary table (Story 5.8).
 
         Returns:
             Complete HTML document as a string.
@@ -903,6 +966,29 @@ class InspectionReport:
                     )
             html_parts.append("</div></section>")
 
+        # Interactive Graph Visualization (Task 5.7.8)
+        if graph_html:
+            html_parts.append('<section class="graph-section">')
+            html_parts.append("<h2>Interactive Graph</h2>")
+            html_parts.append(
+                '<p class="section-desc">Click nodes to expand/collapse blocks. '
+                "Use the search box to find specific operations.</p>"
+            )
+            html_parts.append('<div class="graph-container">')
+            html_parts.append(graph_html)
+            html_parts.append("</div></section>")
+
+        # Per-Layer Summary Table (Story 5.8)
+        if layer_table_html:
+            html_parts.append('<section class="layer-summary">')
+            html_parts.append("<h2>Layer-by-Layer Analysis</h2>")
+            html_parts.append(
+                '<p class="section-desc">Click column headers to sort. '
+                "Use the search box to filter layers.</p>"
+            )
+            html_parts.append(layer_table_html)
+            html_parts.append("</section>")
+
         # Model Details
         html_parts.append('<section class="details">')
         html_parts.append("<h2>Model Details</h2>")
@@ -1137,6 +1223,53 @@ class InspectionReport:
                 )
             html_parts.append("</ul></section>")
 
+        # System Requirements
+        if self.system_requirements:
+            reqs = self.system_requirements
+            html_parts.append('<section class="system-requirements">')
+            html_parts.append("<h2>System Requirements</h2>")
+            html_parts.append("<table>")
+            html_parts.append("<tr><th>Level</th><th>Device</th><th>VRAM</th></tr>")
+            min_name = reqs.minimum_gpu.device if reqs.minimum_gpu else "N/A"
+            rec_name = reqs.recommended_gpu.device if reqs.recommended_gpu else "N/A"
+            opt_name = reqs.optimal_gpu.device if reqs.optimal_gpu else "N/A"
+            min_vram = (
+                f"{reqs.minimum_vram_gb} GB"
+                if reqs.minimum_vram_gb is not None
+                else "-"
+            )
+            rec_vram = (
+                f"{reqs.recommended_vram_gb} GB"
+                if reqs.recommended_vram_gb is not None
+                else "-"
+            )
+            html_parts.append(
+                f"<tr><td>Minimum</td><td>{min_name}</td><td>{min_vram}</td></tr>"
+            )
+            html_parts.append(
+                f"<tr><td>Recommended</td><td>{rec_name}</td><td>{rec_vram}</td></tr>"
+            )
+            html_parts.append(f"<tr><td>Optimal</td><td>{opt_name}</td><td>-</td></tr>")
+            html_parts.append("</table></section>")
+
+        # Batch Size Sweep
+        if self.batch_size_sweep:
+            sweep = self.batch_size_sweep
+            html_parts.append('<section class="batch-scaling">')
+            html_parts.append("<h2>Batch Size Scaling</h2>")
+            html_parts.append(
+                f"<p><strong>Optimal Batch Size:</strong> {sweep.optimal_batch_size}</p>"
+            )
+            html_parts.append("<table>")
+            html_parts.append(
+                "<tr><th>Batch Size</th><th>Latency (ms)</th><th>Throughput (inf/s)</th><th>VRAM (GB)</th></tr>"
+            )
+            for i, bs in enumerate(sweep.batch_sizes):
+                html_parts.append(
+                    f"<tr><td>{bs}</td><td>{sweep.latencies[i]:.2f}</td><td>{sweep.throughputs[i]:.1f}</td><td>{sweep.vram_usage_gb[i]:.2f}</td></tr>"
+                )
+            html_parts.append("</table></section>")
+
         # Risk Signals
         if self.risk_signals:
             html_parts.append('<section class="risks">')
@@ -1322,6 +1455,38 @@ class InspectionReport:
             background: var(--bg-card);
             padding: 1rem;
             border-radius: 12px;
+        }}
+
+        /* Section descriptions */
+        .section-desc {{
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }}
+
+        /* Interactive Graph Section (Task 5.7.8) */
+        .graph-section {{
+            margin-bottom: 3rem;
+        }}
+
+        .graph-container {{
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            height: 600px;
+            overflow: hidden;
+            position: relative;
+        }}
+
+        .graph-container iframe {{
+            width: 100%;
+            height: 100%;
+            border: none;
+        }}
+
+        /* Layer Summary Section (Story 5.8) */
+        .layer-summary {{
+            margin-bottom: 3rem;
             border: 1px solid var(--border);
         }}
 

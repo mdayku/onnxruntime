@@ -357,6 +357,81 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             background: var(--bg-elevated);
             color: var(--text-primary);
         }}
+
+        /* Search functionality - Task 5.7.6 */
+        .search-input {{
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }}
+
+        .search-input:focus {{
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }}
+
+        .search-input::placeholder {{
+            color: var(--text-tertiary);
+        }}
+
+        .search-results {{
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+        }}
+
+        .search-result {{
+            padding: 8px 12px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.15s;
+        }}
+
+        .search-result:hover {{
+            background: rgba(255,255,255,0.05);
+        }}
+
+        .search-result .result-name {{
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }}
+
+        .search-result .result-type {{
+            font-size: 0.65rem;
+            color: var(--text-tertiary);
+            padding: 2px 6px;
+            background: var(--bg-glass);
+            border-radius: 4px;
+        }}
+
+        .search-highlight {{
+            filter: drop-shadow(0 0 20px var(--accent)) brightness(1.5);
+            z-index: 100;
+        }}
+
+        /* Performance mode indicator */
+        .perf-mode {{
+            font-size: 0.65rem;
+            color: var(--warning);
+            padding: 4px 8px;
+            background: rgba(255, 214, 10, 0.1);
+            border-radius: 4px;
+            margin-bottom: 12px;
+            text-align: center;
+        }}
     </style>
 </head>
 <body>
@@ -383,6 +458,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     <div class="stat-label">Depth</div>
                 </div>
             </div>
+
+            <h2>Search</h2>
+            <input type="text" id="nodeSearch" class="search-input"
+                   placeholder="Search nodes..." oninput="searchNodes(this.value)">
+            <div id="searchResults" class="search-results"></div>
 
             <h2>Navigation</h2>
             <div class="controls">
@@ -757,12 +837,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             return nodes;
         }}
 
-        // Render graph
+        // Render graph with performance optimizations (Task 5.7.9)
         function render() {{
             container.selectAll('*').remove();
 
             // Flatten visible nodes
-            const visibleNodes = [];
+            let visibleNodes = [];
             function collectVisible(node) {{
                 visibleNodes.push(node);
                 if (!node.is_collapsed && node.children) {{
@@ -772,6 +852,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
             if (graphData.root) {{
                 collectVisible(graphData.root);
+            }}
+
+            // Performance: limit visible nodes in performance mode
+            if (performanceMode && visibleNodes.length > 1000) {{
+                console.log(`Limiting display to 1000 nodes (had ${visibleNodes.length})`);
+                // Prioritize by FLOPs/importance
+                visibleNodes = visibleNodes
+                    .sort((a, b) => (b.total_flops || 0) - (a.total_flops || 0))
+                    .slice(0, 1000);
             }}
 
             // Layout
@@ -1056,6 +1145,161 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
             );
         }}
+
+        // Task 5.7.6: Search functionality
+        let allFlatNodes = [];
+
+        function buildSearchIndex() {{
+            allFlatNodes = [];
+            function collect(node) {{
+                allFlatNodes.push(node);
+                if (node.children) node.children.forEach(collect);
+            }}
+            if (graphData.root) collect(graphData.root);
+        }}
+
+        function searchNodes(query) {{
+            const resultsDiv = document.getElementById('searchResults');
+            resultsDiv.innerHTML = '';
+
+            if (!query || query.length < 2) {{
+                // Clear highlights
+                container.selectAll('.node').classed('search-highlight', false);
+                return;
+            }}
+
+            query = query.toLowerCase();
+            const matches = allFlatNodes.filter(node => {{
+                const name = (node.name || '').toLowerCase();
+                const opType = (node.op_type || '').toLowerCase();
+                const blockType = (node.attributes?.block_type || '').toLowerCase();
+                return name.includes(query) || opType.includes(query) || blockType.includes(query);
+            }}).slice(0, 20);  // Limit to 20 results
+
+            if (matches.length === 0) {{
+                resultsDiv.innerHTML = '<div style="font-size: 0.7rem; color: var(--text-tertiary); padding: 8px;">No matches found</div>';
+                return;
+            }}
+
+            matches.forEach(node => {{
+                const div = document.createElement('div');
+                div.className = 'search-result';
+                div.innerHTML = `
+                    <span class="result-name">${{node.name}}</span>
+                    <span class="result-type">${{node.op_type || node.node_type}}</span>
+                `;
+                div.onclick = () => highlightAndFocusNode(node);
+                resultsDiv.appendChild(div);
+            }});
+        }}
+
+        function highlightAndFocusNode(targetNode) {{
+            // Expand path to node if collapsed
+            function expandToNode(node, target) {{
+                if (node.id === target.id) return true;
+                if (node.children) {{
+                    for (const child of node.children) {{
+                        if (expandToNode(child, target)) {{
+                            node.is_collapsed = false;
+                            return true;
+                        }}
+                    }}
+                }}
+                return false;
+            }}
+
+            if (graphData.root) expandToNode(graphData.root, targetNode);
+            render();
+
+            // Highlight the node
+            setTimeout(() => {{
+                container.selectAll('.node').classed('search-highlight', false);
+                container.selectAll('.node')
+                    .filter(d => d.id === targetNode.id)
+                    .classed('search-highlight', true);
+
+                // Pan to node
+                const nodeElem = container.selectAll('.node').filter(d => d.id === targetNode.id);
+                if (!nodeElem.empty()) {{
+                    const d = nodeElem.datum();
+                    const width = window.innerWidth - 320;
+                    const height = window.innerHeight;
+                    const scale = 1.5;
+                    const x = width / 2 - d.x * scale;
+                    const y = height / 2 - d.y * scale;
+
+                    svg.transition().duration(500).call(
+                        zoom.transform,
+                        d3.zoomIdentity.translate(x, y).scale(scale)
+                    );
+                }}
+            }}, 100);
+        }}
+
+        // Task 5.7.9: Performance mode for large graphs
+        const LARGE_GRAPH_THRESHOLD = 500;
+        const VERY_LARGE_THRESHOLD = 5000;
+        let performanceMode = false;
+        let cullingEnabled = false;
+
+        function checkPerformanceMode() {{
+            const totalNodes = graphData.total_nodes || 0;
+
+            if (totalNodes > VERY_LARGE_THRESHOLD) {{
+                performanceMode = true;
+                cullingEnabled = true;
+                console.log(`Performance mode: ON (${totalNodes} nodes). Culling enabled.`);
+
+                // Add indicator
+                const sidebar = document.querySelector('.sidebar');
+                const perfDiv = document.createElement('div');
+                perfDiv.className = 'perf-mode';
+                perfDiv.innerHTML = `Large model (${formatNumber(totalNodes)} nodes) - simplified view`;
+                sidebar.insertBefore(perfDiv, sidebar.firstChild.nextSibling);
+
+                // Auto-collapse to depth 1
+                if (graphData.root) {{
+                    function collapseDeep(node, depth) {{
+                        if (depth > 1 && node.children && node.children.length > 0) {{
+                            node.is_collapsed = true;
+                        }}
+                        if (node.children) node.children.forEach(c => collapseDeep(c, depth + 1));
+                    }}
+                    collapseDeep(graphData.root, 0);
+                }}
+            }} else if (totalNodes > LARGE_GRAPH_THRESHOLD) {{
+                performanceMode = true;
+                console.log(`Performance mode: ON (${totalNodes} nodes). Simplified rendering.`);
+            }}
+        }}
+
+        // Viewport culling for very large graphs
+        function getViewportBounds() {{
+            const transform = d3.zoomTransform(svg.node());
+            const width = window.innerWidth - 320;
+            const height = window.innerHeight;
+
+            return {{
+                x: -transform.x / transform.k - 100,
+                y: -transform.y / transform.k - 100,
+                width: width / transform.k + 200,
+                height: height / transform.k + 200
+            }};
+        }}
+
+        function isInViewport(node, bounds) {{
+            if (!cullingEnabled) return true;
+            if (!node.x || !node.y) return true;
+            const r = node.r || 30;
+            return node.x + r >= bounds.x &&
+                   node.x - r <= bounds.x + bounds.width &&
+                   node.y + r >= bounds.y &&
+                   node.y - r <= bounds.y + bounds.height;
+        }}
+
+        // Initialize
+        buildSearchIndex();
+        checkPerformanceMode();
 
         // Initial render
         render();

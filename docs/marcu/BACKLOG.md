@@ -19,8 +19,8 @@
 | Epic 4: CLI and Output | **Complete** | 4 | 18/18 | Done |
 | Epic 4B: PyTorch Integration | **Complete** | 2 | 14/14 | Done |
 | Epic 4C: TensorFlow/Keras/JAX | **Complete** | 3 | 15/15 | Done |
-| Epic 5: Visualization | In Progress | 8 | 47/52 | P3 |
-| Epic 6: Hardware/Compare | In Progress | 11 | 27/62 | P3 |
+| Epic 5: Visualization | **Complete** | 8 | 52/52 | Done |
+| Epic 6: Hardware/Compare | In Progress | 11 | 34/62 | P3 |
 | Epic 7: LLM Integration | In Progress | 2 | 5/9 | P3 |
 | Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 | P3 |
 | Epic 10: SaaS Web App | Not Started | 5 | 0/27 | P4 |
@@ -118,7 +118,7 @@
 
 ---
 
-## Epic 5: Visualization Module (P3 - 13/47 tasks)
+## Epic 5: Visualization Module (COMPLETE - 52/52 tasks)
 
 *Expanded for LLM-scale models (70B+ params, 80+ layers, 20k+ ops)*
 
@@ -150,7 +150,7 @@
 - [x] **Task 5.4.5**: Detect repetition - "N identical blocks" → collapse with ×N count
 - [x] **Task 5.4.6**: Add `AttentionHead`, `MLPBlock`, `PositionEncoding`, `MoERouter` types
 - [x] **Task 5.4.7**: Handle MoE (Mixture of Experts) routing patterns (TopK detection)
-- [ ] **Task 5.4.8**: Tests with BERT, GPT-2, LLaMA (needs real model files)
+- [x] **Task 5.4.8**: Tests with BERT, GPT-2, LLaMA (test_llm_patterns.py with mini models + model zoo tests)
 
 ### Story 5.5: Op Type Icon System and Visual Vocabulary - **COMPLETE**
 *180+ ONNX ops → ~20 visual categories*
@@ -190,27 +190,27 @@
 - [x] **Task 5.6.7**: Calculate peak memory point in graph (memory profile)
 - [x] **Task 5.6.8**: For attention: detect O(seq²) edges (is_attention_qk flag)
 
-### Story 5.7: Interactive Hierarchical Graph Visualization - **MOSTLY COMPLETE**
+### Story 5.7: Interactive Hierarchical Graph Visualization - **COMPLETE**
 *Depends on: 5.4 (patterns), 5.5 (icons), 5.6 (edges) - ALL DONE*
 - [x] **Task 5.7.1**: Build hierarchical graph data structure (Model → Layers → Blocks → Ops)
 - [x] **Task 5.7.2**: Implement D3.js or Cytoscape.js renderer (D3.js in HTML export)
 - [x] **Task 5.7.3**: Default view: collapsed (Input → [Block×N] → Output)
 - [x] **Task 5.7.4**: Click-to-expand: show internal ops of any block
 - [x] **Task 5.7.5**: Pan/zoom for large graphs (d3-zoom)
-- [ ] **Task 5.7.6**: Search by op type, layer name, or tensor name
+- [x] **Task 5.7.6**: Search by op type, layer name, or tensor name (search input + highlightAndFocusNode)
 - [x] **Task 5.7.7**: Export as standalone HTML (self-contained, shareable)
-- [ ] **Task 5.7.8**: Integrate with existing HTML report (--out-html includes graph)
-- [ ] **Task 5.7.9**: Performance: handle 20k+ nodes via virtualization/culling
+- [x] **Task 5.7.8**: Integrate with existing HTML report (--include-graph flag embeds via iframe)
+- [x] **Task 5.7.9**: Performance: handle 20k+ nodes via virtualization/culling (performanceMode, node limit)
 
-### Story 5.8: Per-Layer Summary Table
-- [ ] **Task 5.8.1**: Create per-layer summary table (params, FLOPs, latency estimate, memory)
-- [ ] **Task 5.8.2**: Add sortable/filterable table to HTML report
-- [ ] **Task 5.8.3**: Click row to highlight in graph visualization
-- [ ] **Task 5.8.4**: Export table as CSV
+### Story 5.8: Per-Layer Summary Table - **COMPLETE**
+- [x] **Task 5.8.1**: Create per-layer summary table (LayerSummary, LayerSummaryBuilder in layer_summary.py)
+- [x] **Task 5.8.2**: Add sortable/filterable table to HTML report (generate_html_table with JS)
+- [x] **Task 5.8.3**: Click row to highlight in graph visualization (layer-selected custom event)
+- [x] **Task 5.8.4**: Export table as CSV (--layer-csv flag, LayerSummary.to_csv())
 
 ---
 
-## Epic 6: Hardware Profiles and Compare Mode (P3 - 27/47 done)
+## Epic 6: Hardware Profiles and Compare Mode (P3 - 31/47 done)
 
 ### Story 6.1: Hardware Profile System - **COMPLETE**
 - [x] **Task 6.1.1**: Define hardware profile dataclass (HardwareProfile)
@@ -225,11 +225,11 @@
 - [x] **Task 6.2.4**: Identify bottleneck (compute vs memory vs vram)
 - [x] **Task 6.2.5**: Add GPU Saturation metric
 
-### Story 6.3: Compare Mode CLI
-- [ ] **Task 6.3.1**: Implement multi-model argument parsing
-- [ ] **Task 6.3.2**: Load and validate eval metrics JSONs
-- [ ] **Task 6.3.3**: Verify architecture compatibility
-- [ ] **Task 6.3.4**: Compute deltas vs baseline
+### Story 6.3: Compare Mode CLI - **COMPLETE**
+- [x] **Task 6.3.1**: Implement multi-model argument parsing
+- [x] **Task 6.3.2**: Load and validate eval metrics JSONs
+- [x] **Task 6.3.3**: Verify architecture compatibility
+- [x] **Task 6.3.4**: Compute deltas vs baseline
 
 ### Story 6.4: Quantization Impact Report (TRT EngineXplorer-inspired)
 - [ ] **Task 6.4.1**: Generate comparison JSON schema
@@ -274,17 +274,17 @@
 ### Story 6.8: Resolution and Batch Size Impact Analysis
 - [ ] **Task 6.8.1**: Add `--input-resolution` CLI flag
 - [ ] **Task 6.8.2**: Implement resolution scaling impact estimator
-- [ ] **Task 6.8.3**: Add batch size sweep analysis
+- [x] **Task 6.8.3**: Add batch size sweep analysis
 - [ ] **Task 6.8.4**: Generate resolution/batch vs latency/memory charts
 - [ ] **Task 6.8.5**: Add resolution recommendations for target hardware
 
-### Story 6.9: Hardware Requirements Recommendations (Steam-style)
-- [ ] **Task 6.9.1**: Define deployment target categories
-- [ ] **Task 6.9.2**: Calculate minimum HW spec
-- [ ] **Task 6.9.3**: Calculate recommended HW spec
-- [ ] **Task 6.9.4**: Add `--deployment-target` CLI flag
-- [ ] **Task 6.9.5**: Generate "System Requirements" section
-- [ ] **Task 6.9.6**: Factor in latency/throughput requirements
+### Story 6.9: Hardware Requirements Recommendations (Steam-style) - **COMPLETE**
+- [x] **Task 6.9.1**: Define deployment target categories
+- [x] **Task 6.9.2**: Calculate minimum HW spec
+- [x] **Task 6.9.3**: Calculate recommended HW spec
+- [x] **Task 6.9.4**: Add `--deployment-target` CLI flag
+- [x] **Task 6.9.5**: Generate "System Requirements" section
+- [x] **Task 6.9.6**: Factor in latency/throughput requirements
 
 ---
 

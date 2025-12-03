@@ -24,6 +24,7 @@ from .autodoc.hardware import (
     get_cloud_instance,
     get_profile,
 )
+from .autodoc.operational_profiling import OperationalProfiler
 from .autodoc.llm_summarizer import (
     LLMSummarizer,
 )
@@ -47,8 +48,9 @@ from .autodoc.visualizations import (
 )
 from .autodoc.edge_analysis import EdgeAnalyzer
 from .autodoc.hierarchical_graph import HierarchicalGraphBuilder
-from .autodoc.html_export import HTMLExporter
+from .autodoc.html_export import HTMLExporter, generate_html as generate_graph_html
 from .autodoc.patterns import PatternAnalyzer
+from .autodoc.layer_summary import LayerSummaryBuilder, generate_html_table
 
 
 class ProgressIndicator:
@@ -122,6 +124,12 @@ Examples:
 
   # Convert JAX model to ONNX (requires apply function and input shape)
   python -m onnxruntime.tools.model_inspect --from-jax params.pkl --jax-apply-fn my_model:apply --input-shape 1,3,224,224
+
+  # Generate Steam-style system requirements
+  python -m onnxruntime.tools.model_inspect model.onnx --system-requirements
+
+  # Run batch size sweep
+  python -m onnxruntime.tools.model_inspect model.onnx --hardware a100 --sweep-batch-sizes
 """,
     )
 
@@ -165,6 +173,25 @@ Examples:
         type=pathlib.Path,
         default=None,
         help="Output path for interactive graph visualization (standalone HTML with D3.js).",
+    )
+
+    parser.add_argument(
+        "--layer-csv",
+        type=pathlib.Path,
+        default=None,
+        help="Output path for per-layer metrics CSV (params, FLOPs, memory per layer).",
+    )
+
+    parser.add_argument(
+        "--include-graph",
+        action="store_true",
+        help="Include interactive graph in --out-html report (makes HTML larger but more informative).",
+    )
+
+    parser.add_argument(
+        "--include-layer-table",
+        action="store_true",
+        help="Include per-layer summary table in --out-html report.",
     )
 
     # PyTorch conversion options
@@ -314,6 +341,43 @@ Examples:
         "--list-cloud",
         action="store_true",
         help="List all available cloud instance profiles and exit.",
+    )
+
+    hardware_group.add_argument(
+        "--deployment-target",
+        type=str,
+        choices=["edge", "local", "cloud"],
+        default=None,
+        help="High-level deployment target to guide system requirement recommendations "
+        "(edge device, local server, or cloud server).",
+    )
+
+    hardware_group.add_argument(
+        "--target-latency-ms",
+        type=float,
+        default=None,
+        help="Optional latency target (ms) for system requirements. "
+        "If set, this is converted into a throughput target for recommendations.",
+    )
+
+    hardware_group.add_argument(
+        "--target-throughput-fps",
+        type=float,
+        default=None,
+        help="Optional throughput target (frames/requests per second) for system requirements.",
+    )
+
+    # Epic 6C features
+    hardware_group.add_argument(
+        "--system-requirements",
+        action="store_true",
+        help="Generate Steam-style system requirements (Minimum, Recommended, Optimal).",
+    )
+
+    hardware_group.add_argument(
+        "--sweep-batch-sizes",
+        action="store_true",
+        help="Run analysis across multiple batch sizes (1, 2, 4, ..., 128) to find optimal throughput.",
     )
 
     # Visualization options
@@ -1525,6 +1589,10 @@ def run_inspect():
     total_steps = 2  # Load + Analyze always
     if hardware_profile:
         total_steps += 1
+    if args.system_requirements:
+        total_steps += 1
+    if args.sweep_batch_sizes and hardware_profile:
+        total_steps += 1
     if args.with_plots and is_viz_available():
         total_steps += 1
     if args.llm_summary and is_llm_available() and has_llm_api_key():
@@ -1560,6 +1628,63 @@ def run_inspect():
             )
             report.hardware_estimates = hw_estimates
             report.hardware_profile = hardware_profile
+
+            # Batch Size Sweep (Story 6C.1)
+            if args.sweep_batch_sizes:
+                progress.step("Running batch size sweep")
+                profiler = OperationalProfiler(logger=logger)
+                sweep_result = profiler.run_batch_sweep(
+                    model_params=report.param_counts.total,
+                    model_flops=report.flop_counts.total,
+                    peak_activation_bytes=report.memory_estimates.peak_activation_bytes,
+                    hardware=hardware_profile,
+                    precision=args.precision,
+                )
+                report.batch_size_sweep = sweep_result
+                logger.info(f"Batch sweep complete. Optimal batch size: {sweep_result.optimal_batch_size}")
+
+        # System Requirements (Story 6C.2)
+        if (
+            args.system_requirements
+            and report.param_counts
+            and report.flop_counts
+            and report.memory_estimates
+        ):
+            progress.step("Generating system requirements")
+            profiler = OperationalProfiler(logger=logger)
+
+            # Derive a target FPS based on deployment target / explicit knobs
+            target_fps: float | None = None
+            if getattr(args, "target_throughput_fps", None):
+                target_fps = float(args.target_throughput_fps)
+            elif getattr(args, "target_latency_ms", None):
+                # latency (ms) -> fps
+                if args.target_latency_ms > 0:
+                    target_fps = 1000.0 / float(args.target_latency_ms)
+
+            # Fallback targets based on deployment target category
+            if target_fps is None:
+                if args.deployment_target == "edge":
+                    target_fps = 30.0
+                elif args.deployment_target == "local":
+                    target_fps = 60.0
+                elif args.deployment_target == "cloud":
+                    target_fps = 120.0
+                else:
+                    target_fps = 30.0
+
+            sys_reqs = profiler.determine_system_requirements(
+                model_params=report.param_counts.total,
+                model_flops=report.flop_counts.total,
+                peak_activation_bytes=report.memory_estimates.peak_activation_bytes,
+                precision=args.precision,
+                target_fps=target_fps,
+            )
+            report.system_requirements = sys_reqs
+            if sys_reqs.recommended_gpu:
+                logger.info(f"Recommended device: {sys_reqs.recommended_gpu.device}")
+            elif sys_reqs.minimum_gpu:
+                logger.info(f"Minimum device: {sys_reqs.minimum_gpu.device}")
 
     except Exception as e:
         logger.error(f"Failed to inspect model: {e}")
@@ -1622,7 +1747,7 @@ def run_inspect():
         report._llm_summary = llm_summary  # type: ignore
 
     # Output results
-    has_output = args.out_json or args.out_md or args.out_html or args.out_pdf or args.html_graph
+    has_output = args.out_json or args.out_md or args.out_html or args.out_pdf or args.html_graph or args.layer_csv
     if has_output:
         progress.step("Writing output files")
 
@@ -1695,8 +1820,77 @@ def run_inspect():
                 "detailed_summary": llm_summary.detailed_summary,
                 "model": args.llm_model,
             }
-        # Generate HTML with embedded images
-        html_content = report.to_html(image_paths=viz_paths)
+        # Generate layer table HTML if requested
+        layer_table_html = None
+        if args.include_layer_table or args.layer_csv:
+            try:
+                # Re-load graph info if needed
+                if hasattr(inspector, "_graph_info") and inspector._graph_info:
+                    graph_info = inspector._graph_info
+                else:
+                    from .autodoc.analyzer import ONNXGraphLoader
+                    loader = ONNXGraphLoader(logger=logger)
+                    _, graph_info = loader.load(model_path)
+
+                layer_builder = LayerSummaryBuilder(logger=logger)
+                layer_summary = layer_builder.build(
+                    graph_info,
+                    report.param_counts,
+                    report.flop_counts,
+                    report.memory_estimates,
+                )
+
+                if args.include_layer_table:
+                    layer_table_html = generate_html_table(layer_summary)
+                    logger.debug("Generated layer summary table for HTML report")
+
+                if args.layer_csv:
+                    args.layer_csv.parent.mkdir(parents=True, exist_ok=True)
+                    layer_summary.save_csv(args.layer_csv)
+                    logger.info(f"Layer summary CSV written to: {args.layer_csv}")
+
+            except Exception as e:
+                logger.warning(f"Could not generate layer summary: {e}")
+
+        # Generate embedded graph HTML if requested
+        graph_html = None
+        if args.include_graph:
+            try:
+                # Re-load graph info if needed
+                if hasattr(inspector, "_graph_info") and inspector._graph_info:
+                    graph_info = inspector._graph_info
+                else:
+                    from .autodoc.analyzer import ONNXGraphLoader
+                    loader = ONNXGraphLoader(logger=logger)
+                    _, graph_info = loader.load(model_path)
+
+                pattern_analyzer = PatternAnalyzer(logger=logger)
+                blocks = pattern_analyzer.group_into_blocks(graph_info)
+
+                edge_analyzer = EdgeAnalyzer(logger=logger)
+                edge_result = edge_analyzer.analyze(graph_info)
+
+                builder = HierarchicalGraphBuilder(logger=logger)
+                hier_graph = builder.build(graph_info, blocks, model_path.stem)
+
+                # Generate graph HTML (just the interactive part, not full document)
+                # For embedding, we'll use an iframe approach
+                full_graph_html = generate_graph_html(hier_graph, edge_result, model_path.stem)
+                # Wrap in iframe data URI for embedding
+                import base64
+                graph_data = base64.b64encode(full_graph_html.encode()).decode()
+                graph_html = f'<iframe src="data:text/html;base64,{graph_data}" style="width:100%;height:100%;border:none;"></iframe>'
+                logger.debug("Generated interactive graph for HTML report")
+
+            except Exception as e:
+                logger.warning(f"Could not generate embedded graph: {e}")
+
+        # Generate HTML with embedded images, graph, and layer table
+        html_content = report.to_html(
+            image_paths=viz_paths,
+            graph_html=graph_html,
+            layer_table_html=layer_table_html,
+        )
 
         if args.out_html:
             try:
@@ -1809,6 +2003,21 @@ def run_inspect():
                 print(f"Theoretical Latency: {hw.theoretical_latency_ms:.2f} ms")
                 print(f"Bottleneck: {hw.bottleneck}")
 
+        # System Requirements (Console)
+        if hasattr(report, "system_requirements") and report.system_requirements:
+            reqs = report.system_requirements
+            print("\n--- System Requirements ---")
+            print(f"Minimum:     {reqs.minimum_gpu.name} ({reqs.minimum_vram_gb} GB VRAM)")
+            print(f"Recommended: {reqs.recommended_gpu.name} ({reqs.recommended_vram_gb} GB VRAM)")
+            print(f"Optimal:     {reqs.optimal_gpu.name}")
+
+        # Batch Scaling (Console)
+        if hasattr(report, "batch_size_sweep") and report.batch_size_sweep:
+            sweep = report.batch_size_sweep
+            print("\n--- Batch Size Scaling ---")
+            print(f"Optimal Batch Size: {sweep.optimal_batch_size}")
+            print(f"Max Throughput: {max(sweep.throughputs):.1f} inf/s")
+
         if report.risk_signals:
             print(f"\nRisk Signals: {len(report.risk_signals)}")
             for risk in report.risk_signals:
@@ -1844,6 +2053,8 @@ def run_inspect():
             print(f"  PDF report: {args.out_pdf}")
         if args.html_graph:
             print(f"  Graph visualization: {args.html_graph}")
+        if args.layer_csv:
+            print(f"  Layer CSV: {args.layer_csv}")
 
     # Finish progress indicator
     progress.finish("Analysis complete!")

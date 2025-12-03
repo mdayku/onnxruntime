@@ -71,6 +71,27 @@ from .visualizations import (
 from .visualizations import (
     is_available as is_visualization_available,
 )
+from .layer_summary import (
+    LayerMetrics,
+    LayerSummary,
+    LayerSummaryBuilder,
+    generate_html_table,
+    generate_markdown_table,
+)
+from .hierarchical_graph import (
+    HierarchicalGraph,
+    HierarchicalGraphBuilder,
+    HierarchicalNode,
+    generate_summary as generate_graph_summary,
+)
+from .html_export import (
+    HTMLExporter,
+    generate_html as generate_graph_html,
+)
+from .edge_analysis import (
+    EdgeAnalyzer,
+    EdgeAnalysisResult,
+)
 
 __all__ = [
     "HARDWARE_PROFILES",
@@ -115,4 +136,21 @@ __all__ = [
     "summarize_report",
     "validate_report",
     "validate_report_strict",
+    # Layer Summary (Story 5.8)
+    "LayerMetrics",
+    "LayerSummary",
+    "LayerSummaryBuilder",
+    "generate_html_table",
+    "generate_markdown_table",
+    # Hierarchical Graph (Story 5.7)
+    "HierarchicalGraph",
+    "HierarchicalGraphBuilder",
+    "HierarchicalNode",
+    "generate_graph_summary",
+    # HTML Export
+    "HTMLExporter",
+    "generate_graph_html",
+    # Edge Analysis
+    "EdgeAnalyzer",
+    "EdgeAnalysisResult",
 ]
