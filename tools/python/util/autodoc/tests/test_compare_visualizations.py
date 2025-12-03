@@ -291,4 +291,3 @@ class TestChartGeneration(TestCase):
         """Should return None for empty points list."""
         result = generate_tradeoff_chart([])
         self.assertIsNone(result)
-

@@ -22,11 +22,13 @@ Requires matplotlib for chart generation (optional graceful fallback).
 
 from __future__ import annotations
 
+import base64
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any
 
 LOGGER = logging.getLogger("autodoc.compare_viz")
 
@@ -75,7 +77,7 @@ class CalibrationRecommendation:
     recommendation: str
     reason: str
     severity: str  # "info", "warning", "critical"
-    affected_layers: List[str]
+    affected_layers: list[str]
 
 
 def is_available() -> bool:
@@ -86,7 +88,7 @@ def is_available() -> bool:
 def extract_layer_precision_breakdown(
     variant_report: Any,
     precision: str,
-) -> List[LayerPrecisionBreakdown]:
+) -> list[LayerPrecisionBreakdown]:
     """
     Extract per-layer precision breakdown from an inspection report.
 
@@ -94,7 +96,7 @@ def extract_layer_precision_breakdown(
 
     Returns a list of LayerPrecisionBreakdown for each layer/op in the model.
     """
-    breakdown: List[LayerPrecisionBreakdown] = []
+    breakdown: list[LayerPrecisionBreakdown] = []
 
     # Get layer summary if available
     layer_summary = getattr(variant_report, "layer_summary", None)
@@ -124,11 +126,11 @@ def extract_layer_precision_breakdown(
 
 
 def generate_layer_precision_chart(
-    breakdowns: Dict[str, List[LayerPrecisionBreakdown]],
-    output_path: Optional[Path] = None,
+    breakdowns: dict[str, list[LayerPrecisionBreakdown]],
+    output_path: Path | None = None,
     title: str = "Per-Layer Precision Comparison",
     top_n: int = 20,
-) -> Optional[bytes]:
+) -> bytes | None:
     """
     Generate a chart showing per-layer precision breakdown.
 
@@ -160,7 +162,9 @@ def generate_layer_precision_chart(
     first_breakdown = breakdowns[precisions[0]]
     # Sort by FLOPs descending and take top N
     sorted_layers = sorted(first_breakdown, key=lambda x: x.flops, reverse=True)[:top_n]
-    layer_names = [layer.layer_name[:30] for layer in sorted_layers]  # Truncate long names
+    layer_names = [
+        layer.layer_name[:30] for layer in sorted_layers
+    ]  # Truncate long names
 
     # Colors for different precisions
     precision_colors = {
@@ -181,7 +185,9 @@ def generate_layer_precision_chart(
         flops_values = []
         for layer in sorted_layers:
             if layer.layer_name in layer_map:
-                flops_values.append(layer_map[layer.layer_name].flops / 1e9)  # Convert to GFLOPs
+                flops_values.append(
+                    layer_map[layer.layer_name].flops / 1e9
+                )  # Convert to GFLOPs
             else:
                 flops_values.append(0)
 
@@ -227,8 +233,8 @@ def generate_layer_precision_chart(
 
 
 def compute_tradeoff_points(
-    compare_json: Dict[str, Any],
-) -> List[TradeoffPoint]:
+    compare_json: dict[str, Any],
+) -> list[TradeoffPoint]:
     """
     Compute tradeoff points from comparison JSON.
 
@@ -261,14 +267,12 @@ def compute_tradeoff_points(
         or 1.0
     )
     baseline_accuracy = (
-        baseline_metrics.get("f1_macro")
-        or baseline_metrics.get("accuracy")
-        or 1.0
+        baseline_metrics.get("f1_macro") or baseline_metrics.get("accuracy") or 1.0
     )
     baseline_size = baseline.get("size_bytes", 1)
     baseline_memory = baseline.get("memory_bytes") or baseline_size
 
-    points: List[TradeoffPoint] = []
+    points: list[TradeoffPoint] = []
     for v in variants:
         precision = v.get("precision", "unknown")
         metrics = v.get("metrics", {})
@@ -279,9 +283,7 @@ def compute_tradeoff_points(
             or baseline_latency
         )
         accuracy = (
-            metrics.get("f1_macro")
-            or metrics.get("accuracy")
-            or baseline_accuracy
+            metrics.get("f1_macro") or metrics.get("accuracy") or baseline_accuracy
         )
         size = v.get("size_bytes", baseline_size)
         memory = v.get("memory_bytes") or size
@@ -307,9 +309,9 @@ def compute_tradeoff_points(
 
 def generate_tradeoff_chart(
     points: Sequence[TradeoffPoint],
-    output_path: Optional[Path] = None,
+    output_path: Path | None = None,
     title: str = "Accuracy vs Speedup Tradeoff",
-) -> Optional[bytes]:
+) -> bytes | None:
     """
     Generate accuracy vs speedup tradeoff chart.
 
@@ -375,11 +377,15 @@ def generate_tradeoff_chart(
         )
 
     # Reference lines
-    ax.axhline(y=0, color="#636366", linestyle="--", alpha=0.5, label="Baseline accuracy")
-    ax.axvline(x=1.0, color="#636366", linestyle="--", alpha=0.5, label="Baseline speed")
+    ax.axhline(
+        y=0, color="#636366", linestyle="--", alpha=0.5, label="Baseline accuracy"
+    )
+    ax.axvline(
+        x=1.0, color="#636366", linestyle="--", alpha=0.5, label="Baseline speed"
+    )
 
     # Styling
-    ax.set_xlabel("Speedup (×)", fontsize=12, color="white")
+    ax.set_xlabel("Speedup (×)", fontsize=12, color="white")  # noqa: RUF001
     ax.set_ylabel("Accuracy Change (%)", fontsize=12, color="white")
     ax.set_title(title, fontsize=14, fontweight="bold", color="white", pad=15)
 
@@ -393,30 +399,54 @@ def generate_tradeoff_chart(
 
     # Add quadrant labels
     ax.text(
-        0.98, 0.98, "Slower + Better",
-        transform=ax.transAxes, ha="right", va="top",
-        fontsize=9, color="#636366", alpha=0.7
+        0.98,
+        0.98,
+        "Slower + Better",
+        transform=ax.transAxes,
+        ha="right",
+        va="top",
+        fontsize=9,
+        color="#636366",
+        alpha=0.7,
     )
     ax.text(
-        0.02, 0.98, "Faster + Better ✓",
-        transform=ax.transAxes, ha="left", va="top",
-        fontsize=9, color="#30D158", alpha=0.9
+        0.02,
+        0.98,
+        "Faster + Better ✓",
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        fontsize=9,
+        color="#30D158",
+        alpha=0.9,
     )
     ax.text(
-        0.98, 0.02, "Slower + Worse ✗",
-        transform=ax.transAxes, ha="right", va="bottom",
-        fontsize=9, color="#FF453A", alpha=0.9
+        0.98,
+        0.02,
+        "Slower + Worse ✗",
+        transform=ax.transAxes,
+        ha="right",
+        va="bottom",
+        fontsize=9,
+        color="#FF453A",
+        alpha=0.9,
     )
     ax.text(
-        0.02, 0.02, "Faster + Worse",
-        transform=ax.transAxes, ha="left", va="bottom",
-        fontsize=9, color="#FFD60A", alpha=0.7
+        0.02,
+        0.02,
+        "Faster + Worse",
+        transform=ax.transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=9,
+        color="#FFD60A",
+        alpha=0.7,
     )
 
     # Legend
     handles, labels = ax.get_legend_handles_labels()
     # Remove duplicate labels
-    by_label = dict(zip(labels, handles))
+    by_label = dict(zip(labels, handles, strict=False))
     ax.legend(
         by_label.values(),
         by_label.keys(),
@@ -443,10 +473,10 @@ def generate_tradeoff_chart(
 
 
 def generate_memory_savings_chart(
-    compare_json: Dict[str, Any],
-    output_path: Optional[Path] = None,
+    compare_json: dict[str, Any],
+    output_path: Path | None = None,
     title: str = "Memory & Size Reduction",
-) -> Optional[bytes]:
+) -> bytes | None:
     """
     Generate memory savings comparison chart.
 
@@ -568,8 +598,8 @@ def generate_memory_savings_chart(
 
 
 def analyze_tradeoffs(
-    compare_json: Dict[str, Any],
-) -> Dict[str, Any]:
+    compare_json: dict[str, Any],
+) -> dict[str, Any]:
     """
     Analyze tradeoffs between variants and generate recommendations.
 
@@ -585,7 +615,7 @@ def analyze_tradeoffs(
     if not points:
         return {"recommendations": ["No variants to analyze"]}
 
-    analysis: Dict[str, Any] = {}
+    analysis: dict[str, Any] = {}
 
     # Find best variants
     best_balanced_score = float("-inf")
@@ -609,14 +639,14 @@ def analyze_tradeoffs(
     analysis["smallest"] = smallest.precision
 
     # Generate recommendations
-    recommendations: List[str] = []
+    recommendations: list[str] = []
 
     # Check for sweet spot
     for p in points:
         if p.speedup > 1.3 and p.accuracy_delta > -0.01:
             recommendations.append(
-                f"**{p.precision.upper()}** offers {p.speedup:.1f}× speedup with "
-                f"minimal accuracy loss ({p.accuracy_delta * 100:.2f}%) — recommended."
+                f"**{p.precision.upper()}** offers {p.speedup:.1f}x speedup with "
+                f"minimal accuracy loss ({p.accuracy_delta * 100:.2f}%) - recommended."
             )
 
     # Warn about significant accuracy drops
@@ -658,8 +688,8 @@ def analyze_tradeoffs(
 
 
 def generate_calibration_recommendations(
-    compare_json: Dict[str, Any],
-) -> List[CalibrationRecommendation]:
+    compare_json: dict[str, Any],
+) -> list[CalibrationRecommendation]:
     """
     Generate quantization calibration recommendations.
 
@@ -668,7 +698,7 @@ def generate_calibration_recommendations(
     Provides guidance on improving quantization quality based on
     observed accuracy/performance gaps.
     """
-    recommendations: List[CalibrationRecommendation] = []
+    recommendations: list[CalibrationRecommendation] = []
     points = compute_tradeoff_points(compare_json)
 
     # Check for significant int8 accuracy drop
@@ -726,9 +756,9 @@ def generate_calibration_recommendations(
 
 
 def build_enhanced_markdown(
-    compare_json: Dict[str, Any],
+    compare_json: dict[str, Any],
     include_charts: bool = True,
-    assets_dir: Optional[Path] = None,
+    assets_dir: Path | None = None,
 ) -> str:
     """
     Build enhanced Markdown report with trade-off analysis.
@@ -739,7 +769,7 @@ def build_enhanced_markdown(
     If include_charts is True and matplotlib is available, generates
     charts and embeds them in the Markdown.
     """
-    lines: List[str] = []
+    lines: list[str] = []
 
     model_family_id = compare_json.get("model_family_id", "unknown_model")
     baseline_precision = compare_json.get("baseline_precision", "unknown")
@@ -801,12 +831,8 @@ def build_enhanced_markdown(
     # Variant comparison table
     lines.append("## Variant Comparison")
     lines.append("")
-    lines.append(
-        "| Precision | Size | Params | FLOPs | Speedup | Δ Accuracy |"
-    )
-    lines.append(
-        "|-----------|------|--------|-------|---------|------------|"
-    )
+    lines.append("| Precision | Size | Params | FLOPs | Speedup | Δ Accuracy |")
+    lines.append("|-----------|------|--------|-------|---------|------------|")
 
     tradeoff_map = {p["precision"]: p for p in analysis.get("tradeoff_points", [])}
 
@@ -821,9 +847,9 @@ def build_enhanced_markdown(
         acc_delta = tp.get("accuracy_delta", 0.0)
 
         size_str = _format_bytes(size_bytes)
-        params_str = _format_number(total_params) if total_params else "–"
-        flops_str = _format_number(total_flops) if total_flops else "–"
-        speedup_str = f"{speedup:.2f}×"
+        params_str = _format_number(total_params) if total_params else "-"
+        flops_str = _format_number(total_flops) if total_flops else "-"
+        speedup_str = f"{speedup:.2f}x"
         acc_str = f"{acc_delta * 100:+.2f}%" if acc_delta != 0 else "baseline"
 
         lines.append(
@@ -835,11 +861,15 @@ def build_enhanced_markdown(
 
     # Calibration recommendations
     calib_recs = generate_calibration_recommendations(compare_json)
-    if calib_recs and any(r.severity != "info" or "good" not in r.recommendation for r in calib_recs):
+    if calib_recs and any(
+        r.severity != "info" or "good" not in r.recommendation for r in calib_recs
+    ):
         lines.append("## Calibration Recommendations")
         lines.append("")
         for rec in calib_recs:
-            icon = {"info": "ℹ️", "warning": "⚠️", "critical": "🚨"}.get(rec.severity, "•")
+            icon = {"info": "i", "warning": "!", "critical": "!!!"}.get(
+                rec.severity, "*"
+            )
             lines.append(f"- {icon} **{rec.recommendation}**")
             lines.append(f"  - {rec.reason}")
         lines.append("")
@@ -851,10 +881,10 @@ def build_enhanced_markdown(
     return "\n".join(lines)
 
 
-def _format_number(n: Optional[float]) -> str:
+def _format_number(n: float | None) -> str:
     """Format large numbers with K/M/G suffixes."""
     if n is None:
-        return "–"
+        return "-"
     if abs(n) >= 1e9:
         return f"{n / 1e9:.2f}G"
     if abs(n) >= 1e6:
@@ -876,8 +906,8 @@ def _format_bytes(n: int) -> str:
 
 
 def generate_compare_html(
-    compare_json: Dict[str, Any],
-    output_path: Optional[Path] = None,
+    compare_json: dict[str, Any],
+    output_path: Path | None = None,
     include_charts: bool = True,
 ) -> str:
     """
@@ -891,8 +921,6 @@ def generate_compare_html(
     - Memory savings analysis
     - Calibration recommendations
     """
-    import base64
-
     model_family_id = compare_json.get("model_family_id", "unknown_model")
     baseline_precision = compare_json.get("baseline_precision", "fp32")
     variants = compare_json.get("variants", [])
@@ -917,14 +945,15 @@ def generate_compare_html(
             memory_chart_b64 = base64.b64encode(mem_bytes).decode("utf-8")
 
     # Build HTML
-    html_parts: List[str] = []
+    html_parts: list[str] = []
 
-    html_parts.append('''<!DOCTYPE html>
+    html_parts.append(
+        f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title} - Quantization Impact</title>
+    <title>{model_family_id} - Quantization Impact</title>
     <style>
         :root {{
             --bg-deep: #000000;
@@ -1084,21 +1113,23 @@ def generate_compare_html(
 </head>
 <body>
     <div class="container">
-        <h1>{title}</h1>
+        <h1>{model_family_id}</h1>
         <p class="subtitle">Quantization Impact Analysis</p>
-'''.format(title=model_family_id))
+"""
+    )
 
     # Warning banner if architecture incompatible
     if not arch_compatible:
         html_parts.append('<div class="warning-banner">')
-        html_parts.append('<h3>⚠️ Compatibility Warnings</h3>')
+        html_parts.append("<h3>⚠️ Compatibility Warnings</h3>")
         html_parts.append('<ul class="warning-list">')
         for warn in warnings:
-            html_parts.append(f'<li>{warn}</li>')
-        html_parts.append('</ul></div>')
+            html_parts.append(f"<li>{warn}</li>")
+        html_parts.append("</ul></div>")
 
     # Engine Summary Panel
-    html_parts.append('''
+    html_parts.append(
+        """
         <h2>Engine Summary</h2>
         <div class="engine-summary">
             <div class="summary-item">
@@ -1118,15 +1149,20 @@ def generate_compare_html(
                 <div class="summary-value success">{best_balanced}</div>
             </div>
         </div>
-    '''.format(
-        model_family=model_family_id,
-        baseline=baseline_precision.upper(),
-        num_variants=len(variants),
-        best_balanced=analysis.get("best_balanced", "N/A").upper() if analysis.get("best_balanced") else "N/A",
-    ))
+    """.format(
+            model_family=model_family_id,
+            baseline=baseline_precision.upper(),
+            num_variants=len(variants),
+            best_balanced=(
+                analysis.get("best_balanced", "N/A").upper()
+                if analysis.get("best_balanced")
+                else "N/A"
+            ),
+        )
+    )
 
     # Variant Cards
-    html_parts.append('<h2>Variant Comparison</h2>')
+    html_parts.append("<h2>Variant Comparison</h2>")
     html_parts.append('<div class="variants-grid">')
 
     for v in variants:
@@ -1150,9 +1186,12 @@ def generate_compare_html(
             d = deltas["size_bytes"]
             pct = (d / size_bytes) * 100 if size_bytes else 0
             delta_class = "positive" if d < 0 else "negative"
-            size_delta_str = f'<span class="stat-delta {delta_class}">{pct:+.0f}%</span>'
+            size_delta_str = (
+                f'<span class="stat-delta {delta_class}">{pct:+.0f}%</span>'
+            )
 
-        html_parts.append(f'''
+        html_parts.append(
+            f"""
             <div class="{card_class}">
                 <div class="variant-header">
                     <span class="variant-precision">{precision.upper()}</span>
@@ -1165,11 +1204,11 @@ def generate_compare_html(
                     </div>
                     <div class="stat">
                         <div class="stat-label">Parameters</div>
-                        <div class="stat-value">{_format_number(total_params) if total_params else "–"}</div>
+                        <div class="stat-value">{_format_number(total_params) if total_params else "-"}</div>
                     </div>
                     <div class="stat">
                         <div class="stat-label">Speedup</div>
-                        <div class="stat-value">{speedup:.2f}×</div>
+                        <div class="stat-value">{speedup:.2f}x</div>
                     </div>
                     <div class="stat">
                         <div class="stat-label">Accuracy Δ</div>
@@ -1177,55 +1216,65 @@ def generate_compare_html(
                     </div>
                 </div>
             </div>
-        ''')
+        """
+        )
 
-    html_parts.append('</div>')  # variants-grid
+    html_parts.append("</div>")  # variants-grid
 
     # Charts
     if tradeoff_chart_b64 or memory_chart_b64:
-        html_parts.append('<h2>Visualizations</h2>')
+        html_parts.append("<h2>Visualizations</h2>")
         html_parts.append('<div class="charts-grid">')
 
         if tradeoff_chart_b64:
-            html_parts.append(f'''
+            html_parts.append(
+                f"""
                 <div class="chart-container">
                     <h3>Accuracy vs Speedup Tradeoff</h3>
                     <img src="data:image/png;base64,{tradeoff_chart_b64}" alt="Tradeoff Chart">
                 </div>
-            ''')
+            """
+            )
 
         if memory_chart_b64:
-            html_parts.append(f'''
+            html_parts.append(
+                f"""
                 <div class="chart-container">
                     <h3>Memory & Size Savings</h3>
                     <img src="data:image/png;base64,{memory_chart_b64}" alt="Memory Savings Chart">
                 </div>
-            ''')
+            """
+            )
 
-        html_parts.append('</div>')  # charts-grid
+        html_parts.append("</div>")  # charts-grid
 
     # Recommendations
-    html_parts.append('<h2>Recommendations</h2>')
+    html_parts.append("<h2>Recommendations</h2>")
     html_parts.append('<div class="recommendations">')
 
     for rec in analysis.get("recommendations", []):
-        html_parts.append(f'''
+        html_parts.append(
+            f"""
             <div class="rec-item">
                 <span class="rec-icon">💡</span>
                 <div class="rec-text">{rec}</div>
             </div>
-        ''')
+        """
+        )
 
-    html_parts.append('</div>')
+    html_parts.append("</div>")
 
     # Calibration Recommendations
     if calib_recs and any(r.severity != "info" for r in calib_recs):
-        html_parts.append('<h2>Calibration Recommendations</h2>')
+        html_parts.append("<h2>Calibration Recommendations</h2>")
         html_parts.append('<div class="recommendations">')
 
         for rec in calib_recs:
-            icon = {"info": "ℹ️", "warning": "⚠️", "critical": "🚨"}.get(rec.severity, "•")
-            html_parts.append(f'''
+            icon = {"info": "i", "warning": "!", "critical": "!!!"}.get(
+                rec.severity, "*"
+            )
+            html_parts.append(
+                f"""
                 <div class="rec-item">
                     <span class="rec-icon">{icon}</span>
                     <div class="rec-text">
@@ -1233,19 +1282,22 @@ def generate_compare_html(
                         <div class="rec-reason">{rec.reason}</div>
                     </div>
                 </div>
-            ''')
+            """
+            )
 
-        html_parts.append('</div>')
+        html_parts.append("</div>")
 
     # Footer
-    html_parts.append('''
+    html_parts.append(
+        """
         <p style="margin-top: 3rem; color: var(--text-secondary); font-size: 0.85rem; text-align: center;">
             Generated by ONNX Autodoc Compare Mode
         </p>
     </div>
 </body>
 </html>
-    ''')
+    """
+    )
 
     html_content = "\n".join(html_parts)
 
@@ -1254,4 +1306,3 @@ def generate_compare_html(
         output_path.write_text(html_content, encoding="utf-8")
 
     return html_content
-
