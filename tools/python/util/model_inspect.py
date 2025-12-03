@@ -388,6 +388,12 @@ Examples:
     )
 
     hardware_group.add_argument(
+        "--benchmark",
+        action="store_true",
+        help="Use actual ONNX Runtime inference for batch size sweep (more accurate but slower).",
+    )
+
+    hardware_group.add_argument(
         "--input-resolution",
         type=str,
         default=None,
@@ -1704,15 +1710,34 @@ def run_inspect():
 
             # Batch Size Sweep (Story 6C.1)
             if args.sweep_batch_sizes:
-                progress.step("Running batch size sweep")
                 profiler = OperationalProfiler(logger=logger)
-                sweep_result = profiler.run_batch_sweep(
-                    model_params=report.param_counts.total,
-                    model_flops=report.flop_counts.total,
-                    peak_activation_bytes=report.memory_estimates.peak_activation_bytes,
-                    hardware=hardware_profile,
-                    precision=args.precision,
-                )
+
+                if args.benchmark:
+                    progress.step("Benchmarking batch sizes (actual inference)")
+                    sweep_result = profiler.run_batch_sweep_benchmark(
+                        model_path=str(model_path),
+                        batch_sizes=[1, 2, 4, 8, 16, 32, 64, 128],
+                    )
+                    if sweep_result is None:
+                        # Fall back to theoretical if benchmark fails
+                        logger.warning("Benchmark failed, using theoretical estimates")
+                        sweep_result = profiler.run_batch_sweep(
+                            model_params=report.param_counts.total,
+                            model_flops=report.flop_counts.total,
+                            peak_activation_bytes=report.memory_estimates.peak_activation_bytes,
+                            hardware=hardware_profile,
+                            precision=args.precision,
+                        )
+                else:
+                    progress.step("Running batch size sweep (theoretical)")
+                    sweep_result = profiler.run_batch_sweep(
+                        model_params=report.param_counts.total,
+                        model_flops=report.flop_counts.total,
+                        peak_activation_bytes=report.memory_estimates.peak_activation_bytes,
+                        hardware=hardware_profile,
+                        precision=args.precision,
+                    )
+
                 report.batch_size_sweep = sweep_result
                 logger.info(
                     f"Batch sweep complete. Optimal batch size: {sweep_result.optimal_batch_size}"

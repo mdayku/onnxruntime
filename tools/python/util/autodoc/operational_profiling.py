@@ -228,6 +228,132 @@ class OperationalProfiler:
             optimal_batch_size=optimal_bs,
         )
 
+    def run_batch_sweep_benchmark(
+        self,
+        model_path: str,
+        batch_sizes: list[int] | None = None,
+        num_warmup: int = 5,
+        num_runs: int = 20,
+    ) -> BatchSizeSweep:
+        """
+        Benchmark actual inference performance across batch sizes.
+
+        Uses ONNX Runtime to measure real latency and throughput.
+        Requires onnxruntime to be installed.
+
+        Args:
+            model_path: Path to ONNX model file
+            batch_sizes: List of batch sizes to test (default: powers of 2)
+            num_warmup: Number of warmup runs before timing
+            num_runs: Number of timed runs per batch size
+
+        Returns:
+            BatchSizeSweep with measured (not estimated) metrics
+        """
+        try:
+            import numpy as np  # noqa: PLC0415
+
+            import onnxruntime as ort  # noqa: PLC0415
+        except ImportError:
+            self.logger.warning("onnxruntime not available, falling back to estimates")
+            return None
+
+        if batch_sizes is None:
+            batch_sizes = [1, 2, 4, 8, 16, 32, 64, 128]
+
+        # Create session
+        providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+        try:
+            sess = ort.InferenceSession(model_path, providers=providers)
+        except Exception as e:
+            self.logger.error(f"Failed to load model for benchmarking: {e}")
+            return None
+
+        active_provider = sess.get_providers()[0]
+        self.logger.info(f"Benchmarking with {active_provider}")
+
+        # Get input info
+        input_info = sess.get_inputs()[0]
+        input_name = input_info.name
+        input_shape = list(input_info.shape)
+
+        # Replace dynamic dimensions with defaults
+        for i, dim in enumerate(input_shape):
+            if not isinstance(dim, int) or dim <= 0:
+                if i == 0:
+                    input_shape[i] = 1  # Batch dim, will be replaced
+                elif i == 1:
+                    input_shape[i] = 3  # Channels
+                else:
+                    input_shape[i] = 224  # Spatial dims
+
+        latencies = []
+        throughputs = []
+        vram_usage = []
+        optimal_bs = 1
+        max_throughput = 0.0
+
+        for bs in batch_sizes:
+            # Create input with current batch size
+            input_shape[0] = bs
+            try:
+                dummy_input = np.random.randn(*input_shape).astype(np.float32)
+            except Exception as e:
+                self.logger.warning(f"Failed to create input for batch {bs}: {e}")
+                latencies.append(float("inf"))
+                throughputs.append(0.0)
+                vram_usage.append(0.0)
+                continue
+
+            # Warmup
+            try:
+                for _ in range(num_warmup):
+                    sess.run(None, {input_name: dummy_input})
+            except Exception as e:
+                self.logger.warning(f"Batch {bs} failed (OOM?): {e}")
+                latencies.append(float("inf"))
+                throughputs.append(0.0)
+                vram_usage.append(0.0)
+                continue
+
+            # Benchmark
+            import time  # noqa: PLC0415
+
+            run_latencies = []
+            for _ in range(num_runs):
+                start = time.perf_counter()
+                sess.run(None, {input_name: dummy_input})
+                end = time.perf_counter()
+                run_latencies.append((end - start) * 1000)  # ms
+
+            # Use median latency (more stable than mean)
+            run_latencies.sort()
+            p50_latency = run_latencies[len(run_latencies) // 2]
+            throughput = (bs * 1000.0) / p50_latency
+
+            latencies.append(round(p50_latency, 2))
+            throughputs.append(round(throughput, 1))
+            # VRAM: estimate from input size (actual measurement requires pynvml)
+            vram_gb = (dummy_input.nbytes * 2) / (1024**3)  # Input + output approx
+            vram_usage.append(round(vram_gb, 3))
+
+            if throughput > max_throughput:
+                max_throughput = throughput
+                optimal_bs = bs
+
+            self.logger.info(
+                f"  Batch {bs}: latency={p50_latency:.2f}ms, "
+                f"throughput={throughput:.1f} inf/s"
+            )
+
+        return BatchSizeSweep(
+            batch_sizes=batch_sizes,
+            latencies=latencies,
+            throughputs=throughputs,
+            vram_usage_gb=vram_usage,
+            optimal_batch_size=optimal_bs,
+        )
+
     def run_resolution_sweep(
         self,
         base_flops: int,
