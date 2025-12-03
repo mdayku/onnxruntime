@@ -1278,9 +1278,21 @@ Client                    API                     Worker
 | Data isolation | Tenant isolation at DB level, S3 prefix per workspace |
 | CORS | Strict origin whitelist |
 
-### 14.8 CLI/PyPI Distribution (Secondary)
+### 14.8 Standalone Package Distribution (PRIMARY PATH)
 
-For users who prefer local execution:
+**Decision: Greenfield over ORT Fork**
+
+The original plan embedded ONNX Autodoc within the ONNX Runtime repository. After analysis, we're pivoting to a standalone package because:
+
+| Factor | ORT Fork | Standalone |
+|--------|----------|------------|
+| User installation | Clone fork, navigate to tools | `pip install onnx-autodoc` |
+| Dependencies | Confusing (ORT vs onnx) | Clean (just `onnx` + `numpy`) |
+| Iteration speed | Slow (huge repo) | Fast |
+| Distribution | Blocked | Immediate |
+| Functionality lost | N/A | **Zero** |
+
+**Key Insight:** We use `onnx.load()` not ORT sessions. All our dependencies are already on PyPI.
 
 **Installation:**
 
@@ -1288,11 +1300,21 @@ For users who prefer local execution:
 # From PyPI
 pip install onnx-autodoc
 
-# With all optional dependencies
+# With visualization support
+pip install onnx-autodoc[viz]
+
+# With LLM summaries
+pip install onnx-autodoc[llm]
+
+# With PDF generation
+pip install onnx-autodoc[pdf]
+
+# Everything
 pip install onnx-autodoc[full]
 
-# Using Docker
-docker run -v $(pwd):/models onnx-autodoc analyze /models/model.onnx
+# CLI usage
+onnx-autodoc analyze model.onnx --html report.html
+onnx-autodoc analyze model.onnx --hardware auto --llm-summary
 ```
 
 **Package Structure:**
@@ -1300,18 +1322,199 @@ docker run -v $(pwd):/models onnx-autodoc analyze /models/model.onnx
 ```
 onnx-autodoc/
 ├── pyproject.toml
+├── README.md
+├── LICENSE
 ├── src/
 │   └── onnx_autodoc/
 │       ├── __init__.py
-│       ├── cli.py
-│       ├── analyzer.py
-│       ├── patterns.py
-│       ├── risks.py
-│       ├── report.py
-│       ├── visualizations.py
-│       └── hardware.py
+│       ├── cli.py              # Click-based CLI
+│       ├── analyzer.py         # Core analysis engine
+│       ├── patterns.py         # Block/architecture detection
+│       ├── risks.py            # Risk heuristics
+│       ├── report.py           # JSON/MD/HTML generation
+│       ├── visualizations.py   # Matplotlib charts
+│       ├── hardware.py         # GPU profiles and estimates
+│       ├── llm_summarizer.py   # OpenAI integration
+│       ├── pdf_generator.py    # Playwright PDF
+│       └── converters/
+│           ├── pytorch.py      # PyTorch → ONNX
+│           └── tensorflow.py   # TensorFlow → ONNX (future)
+├── tests/
+├── streamlit_app.py            # Web UI
 └── Dockerfile
 ```
+
+### 14.9 Streamlit Web UI
+
+For maximum accessibility, provide a web interface that requires no installation.
+
+**Features:**
+
+| Feature | Description |
+|---------|-------------|
+| File Upload | Drag-and-drop ONNX, .pt, .pb files |
+| Hardware Selection | Dropdown of 50+ GPU profiles |
+| Report Viewer | Embedded HTML report with charts |
+| Download Options | JSON, Markdown, PDF export |
+| Model Comparison | Side-by-side analysis of 2 models |
+| LLM Summary | Optional (user provides API key) |
+
+**Deployment Options:**
+
+| Platform | Cost | GPU Support | URL |
+|----------|------|-------------|-----|
+| Hugging Face Spaces | Free | Yes (ZeroGPU) | `hf.co/spaces/username/onnx-autodoc` |
+| Streamlit Cloud | Free | No | `share.streamlit.io/...` |
+| Self-hosted | Varies | Yes | Your infrastructure |
+
+**Streamlit App Structure:**
+
+```python
+import streamlit as st
+from onnx_autodoc import analyze_model, generate_html_report
+
+st.title("ONNX Autodoc")
+
+uploaded_file = st.file_uploader("Upload ONNX model", type=["onnx"])
+hardware = st.selectbox("Target Hardware", list_hardware_profiles())
+
+if uploaded_file and st.button("Analyze"):
+    with st.spinner("Analyzing model..."):
+        report = analyze_model(uploaded_file, hardware=hardware)
+        st.components.v1.html(generate_html_report(report), height=800)
+        st.download_button("Download PDF", generate_pdf(report))
+```
+
+---
+
+## 15. Inference Platform (Wide Hole Architecture)
+
+### 15.1 Design Philosophy
+
+Build the **platform layer** that enables inference-based analysis, without going deep on task-specific metrics until there's demand.
+
+```
+"Dig a wide hole. When someone pays to go deeper, dig deeper there."
+```
+
+**Platform = Wide:** Infrastructure that works for any model type
+**Plugins = Deep:** Task-specific metrics added on demand (detection mAP, NLP BLEU, etc.)
+
+### 15.2 Core Components
+
+| Component | Purpose | Scope |
+|-----------|---------|-------|
+| `InferenceRunner` | Wrap ORT session, measure latency | Platform |
+| `DataLoader` interface | Load test data (images, arrays, files) | Platform |
+| `MetricsCalculator` interface | Extension point for task-specific metrics | Platform |
+| `PrecisionComparator` | Run fp32/fp16/int8, compare results | Platform |
+| Plugin system | Register custom metrics calculators | Platform |
+
+### 15.3 InferenceRunner API
+
+```python
+from onnx_autodoc.inference import InferenceRunner
+
+runner = InferenceRunner("model.onnx")
+
+# Basic inference with timing
+results = runner.run(test_data, warmup=10, iterations=100)
+
+print(results.latency_p50_ms)      # 12.3
+print(results.latency_p99_ms)      # 15.1
+print(results.throughput_per_sec)  # 83.2
+print(results.outputs)             # Raw model outputs
+```
+
+### 15.4 DataLoader Interface
+
+```python
+from abc import ABC, abstractmethod
+
+class DataLoader(ABC):
+    @abstractmethod
+    def __iter__(self):
+        """Yield (input_dict, optional_labels) tuples."""
+        pass
+    
+    @abstractmethod
+    def __len__(self):
+        """Return number of samples."""
+        pass
+
+# Built-in loaders (platform layer)
+class ImageFolderLoader(DataLoader): ...
+class NumpyArrayLoader(DataLoader): ...
+
+# User can implement custom loaders
+class MyCustomLoader(DataLoader): ...
+```
+
+### 15.5 MetricsCalculator Interface (Extension Point)
+
+```python
+from abc import ABC, abstractmethod
+
+class MetricsCalculator(ABC):
+    @abstractmethod
+    def calculate(self, outputs, labels) -> dict:
+        """Calculate task-specific metrics."""
+        pass
+
+# Built-in: just latency, no accuracy
+class RawOutputMetrics(MetricsCalculator):
+    def calculate(self, outputs, labels):
+        return {}  # No accuracy metrics, just timing
+
+# Example plugin (added when someone needs it)
+class DetectionMetrics(MetricsCalculator):
+    def calculate(self, outputs, labels):
+        return {"mAP_50": ..., "mAP_50_95": ...}
+
+# Registration
+runner.register_metrics(DetectionMetrics())
+```
+
+### 15.6 Multi-Precision Comparison
+
+```python
+from onnx_autodoc.inference import compare_precisions
+
+results = compare_precisions(
+    models={
+        "fp32": "model_fp32.onnx",
+        "fp16": "model_fp16.onnx",
+        "int8": "model_int8.onnx",
+    },
+    test_data=loader,
+    metrics_calculator=None,  # Optional
+)
+
+# Results include:
+# - Latency comparison (which is fastest)
+# - Output comparison (numerical diff, cosine similarity)
+# - Memory usage per precision
+```
+
+### 15.7 What's NOT Built Yet (Dig Deeper Later)
+
+| Feature | Status | Build When |
+|---------|--------|------------|
+| Detection mAP (COCO format) | Not built | Customer needs it |
+| Classification accuracy/F1 | Not built | Customer needs it |
+| NLP metrics (BLEU, ROUGE) | Not built | Customer needs it |
+| Segmentation IoU | Not built | Customer needs it |
+| Custom dataset formats | Not built | Customer needs it |
+
+These are **vertical extensions** that plug into the horizontal platform.
+
+### 15.8 Dependency
+
+```
+onnx-autodoc[inference]  # Adds onnxruntime-gpu
+```
+
+This is a pip package dependency, **not** the ORT fork.
 
 ---
 
@@ -1352,3 +1555,8 @@ onnx-autodoc/
 | Dec 2, 2025 | PDF | Added pdf_generator.py with Playwright-based PDF generation, PDFGenerator class, --out-pdf CLI flag, header/footer templates | Task 5.3.4 complete |
 | Dec 2, 2025 | ML Feedback | Added Section 6.7-6.8 (Graph Viz, Per-Layer Summary), Section 7.5 (HW Recommendations), Section 8.5-8.6 (Resolution/Batch, Layer Quantization), Section 14 (SaaS Architecture) | ML Engineer/MLOps feedback integration |
 | Dec 2, 2025 | Backlog | Added Epic 4C (TF Conversion), Epic 10 (SaaS), Epic 10B (PyPI), Stories 5.4-5.5, 6.4 enhancements, Stories 6.8-6.9 | Feature roadmap expansion |
+| Dec 3, 2025 | Distribution | **PIVOT**: Greenfield standalone package over ORT fork. Zero functionality lost, immediate PyPI distribution | Distribution was blocked by fork dependency |
+| Dec 3, 2025 | Priority | Reordered epics: P0 = Standalone Package + Streamlit UI. Ship usable software first | "Science fair project" → "Real software" pivot |
+| Dec 3, 2025 | Streamlit | Added Section 14.9 with Streamlit Web UI spec, HF Spaces deployment plan | Maximize accessibility without installation |
+| Dec 3, 2025 | Inference | Added Section 15: Inference Platform with "wide hole" architecture. InferenceRunner, DataLoader interface, MetricsCalculator extension point | Platform-first approach: build horizontal, go vertical when paid |
+| Dec 3, 2025 | Backlog | Added Epic 12: Inference Platform (24 tasks across 5 stories). Platform layer for inference, not task-specific metrics | Extensible architecture for future customer needs |

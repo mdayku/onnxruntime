@@ -11,21 +11,23 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 
 ## Progress Summary
 
-| Epic | Status | Stories | Tasks Complete |
-|------|--------|---------|----------------|
-| Epic 1: Environment Setup | In Progress | 3 | 9/12 |
-| Epic 2: Core Analysis Engine | **Complete** | 4 | 17/17 |
-| Epic 3: Pattern Analysis | **Complete** | 2 | 9/9 |
-| Epic 4: CLI and Output | **Complete** | 4 | 18/18 |
-| Epic 4B: PyTorch Integration | In Progress | 2 | 12/14 |
-| Epic 4C: TensorFlow Conversion | Not Started | 3 | 0/15 |
-| Epic 5: Visualization | In Progress | 5 | 13/22 |
-| Epic 6: Hardware/Compare | In Progress | 9 | 27/47 |
-| Epic 7: LLM Integration | In Progress | 2 | 5/9 |
-| Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 |
-| Epic 9: Demo/Deliverables | Not Started | 3 | 0/13 |
-| Epic 10: SaaS Web App | Not Started | 5 | 0/27 |
-| Epic 10B: CLI/PyPI Distribution | Not Started | 2 | 0/10 |
+| Epic | Status | Stories | Tasks Complete | Priority |
+|------|--------|---------|----------------|----------|
+| Epic 10B: Standalone Package | **NEXT** | 3 | 0/17 | **P0** |
+| Epic 11: Streamlit Web UI | **NEXT** | 3 | 0/14 | **P0** |
+| Epic 12: Inference Platform | Not Started | 5 | 0/24 | **P1** |
+| Epic 2: Core Analysis Engine | **Complete** | 4 | 17/17 | Done |
+| Epic 3: Pattern Analysis | **Complete** | 2 | 9/9 | Done |
+| Epic 4: CLI and Output | **Complete** | 4 | 18/18 | Done |
+| Epic 4B: PyTorch Integration | In Progress | 2 | 12/14 | P1 |
+| Epic 5: Visualization | In Progress | 5 | 13/22 | P2 |
+| Epic 6: Hardware/Compare | In Progress | 9 | 27/47 | P2 |
+| Epic 7: LLM Integration | In Progress | 2 | 5/9 | P2 |
+| Epic 1: Environment Setup | In Progress | 3 | 9/12 | P3 |
+| Epic 4C: TensorFlow Conversion | Not Started | 3 | 0/15 | P3 |
+| Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 | P3 |
+| Epic 9: Demo/Deliverables | Not Started | 3 | 0/13 | P3 |
+| Epic 10: SaaS Web App | Not Started | 5 | 0/27 | P4 |
 
 ---
 
@@ -399,18 +401,87 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 
 ---
 
-## Epic 10B: CLI/PyPI Distribution (Secondary)
+## Epic 10B: Standalone Package and Distribution (PRIORITY)
+
+### Story 10B.0: Greenfield Extraction - **HIGH PRIORITY**
+- [ ] **Task 10B.0.1**: Create new GitHub repo `onnx-autodoc` (standalone, not ORT fork)
+- [ ] **Task 10B.0.2**: Copy autodoc modules from `tools/python/util/autodoc/`
+- [ ] **Task 10B.0.3**: Copy `model_inspect.py` as CLI entrypoint
+- [ ] **Task 10B.0.4**: Update all imports to standalone package structure
+- [ ] **Task 10B.0.5**: Verify all tests pass in new repo
+- [ ] **Task 10B.0.6**: Update README for standalone usage
 
 ### Story 10B.1: Python Wheel Packaging
 - [ ] **Task 10B.1.1**: Create pyproject.toml with proper metadata
-- [ ] **Task 10B.1.2**: Configure build system (setuptools/hatch/poetry)
-- [ ] **Task 10B.1.3**: Define optional dependencies ([viz], [llm], [full])
-- [ ] **Task 10B.1.4**: Test wheel installation in clean environment
-- [ ] **Task 10B.1.5**: Publish to PyPI (onnx-autodoc package)
+- [ ] **Task 10B.1.2**: Configure build system (hatch or poetry)
+- [ ] **Task 10B.1.3**: Define optional dependencies ([viz], [llm], [pdf], [full])
+- [ ] **Task 10B.1.4**: Add CLI entrypoint (`onnx-autodoc` command)
+- [ ] **Task 10B.1.5**: Test wheel installation in clean virtual environment
+- [ ] **Task 10B.1.6**: Publish to TestPyPI first, then PyPI
 
 ### Story 10B.2: Pre-built Docker Image
-- [ ] **Task 10B.2.1**: Create Dockerfile with ORT and all dependencies
+- [ ] **Task 10B.2.1**: Create Dockerfile with all dependencies
 - [ ] **Task 10B.2.2**: Optimize image size (multi-stage build)
 - [ ] **Task 10B.2.3**: Add GPU support variant (CUDA base image)
 - [ ] **Task 10B.2.4**: Publish to Docker Hub / GitHub Container Registry
 - [ ] **Task 10B.2.5**: Create docker-compose.yml for easy local setup
+
+## Epic 12: Inference Platform (Wide Hole)
+
+### Story 12.1: Inference Runner Core
+- [ ] **Task 12.1.1**: Create `InferenceRunner` class wrapping ORT InferenceSession
+- [ ] **Task 12.1.2**: Add warmup runs and timing measurement
+- [ ] **Task 12.1.3**: Support batched inference with configurable batch sizes
+- [ ] **Task 12.1.4**: Add latency statistics (p50, p95, p99, mean, std)
+- [ ] **Task 12.1.5**: Add throughput calculation (items/sec, batches/sec)
+
+### Story 12.2: Data Loader Interface
+- [ ] **Task 12.2.1**: Define abstract `DataLoader` interface
+- [ ] **Task 12.2.2**: Implement `ImageFolderLoader` (directory of images)
+- [ ] **Task 12.2.3**: Implement `NumpyArrayLoader` (precomputed tensors)
+- [ ] **Task 12.2.4**: Add preprocessing hooks (resize, normalize, tokenize)
+- [ ] **Task 12.2.5**: Support streaming for large datasets
+
+### Story 12.3: Multi-Precision Comparison
+- [ ] **Task 12.3.1**: Load multiple precision variants (fp32, fp16, int8)
+- [ ] **Task 12.3.2**: Run same test data through all variants
+- [ ] **Task 12.3.3**: Compare latency across precisions
+- [ ] **Task 12.3.4**: Compare outputs (numerical diff, cosine similarity)
+- [ ] **Task 12.3.5**: Generate precision comparison report
+
+### Story 12.4: Metrics Extension Framework
+- [ ] **Task 12.4.1**: Define abstract `MetricsCalculator` interface
+- [ ] **Task 12.4.2**: Implement `RawOutputMetrics` (just latency, no accuracy)
+- [ ] **Task 12.4.3**: Add plugin/registration system for custom metrics
+- [ ] **Task 12.4.4**: Create example plugin for classification accuracy
+- [ ] **Task 12.4.5**: Document how to add new task-specific metrics
+
+### Story 12.5: Results Schema and Export
+- [ ] **Task 12.5.1**: Define standardized inference results schema
+- [ ] **Task 12.5.2**: Integrate inference results with existing report generator
+- [ ] **Task 12.5.3**: Add inference section to HTML/PDF reports
+- [ ] **Task 12.5.4**: Export raw results as CSV/JSON for custom analysis
+
+---
+
+## Epic 11: Streamlit Web UI (PRIORITY)
+
+### Story 11.1: Basic Streamlit App
+- [ ] **Task 11.1.1**: Create `streamlit_app.py` with file upload widget
+- [ ] **Task 11.1.2**: Wire upload to analysis engine
+- [ ] **Task 11.1.3**: Display HTML report in Streamlit iframe/component
+- [ ] **Task 11.1.4**: Add hardware profile dropdown selector
+- [ ] **Task 11.1.5**: Add download buttons (JSON, Markdown, PDF)
+
+### Story 11.2: Enhanced UI Features
+- [ ] **Task 11.2.1**: Add interactive charts (Plotly instead of matplotlib)
+- [ ] **Task 11.2.2**: Add model comparison tab (upload 2 models)
+- [ ] **Task 11.2.3**: Add LLM summary toggle with API key input
+- [ ] **Task 11.2.4**: Add session history (analyze multiple models)
+- [ ] **Task 11.2.5**: Responsive layout for mobile
+
+### Story 11.3: Deployment
+- [ ] **Task 11.3.1**: Deploy to Hugging Face Spaces (free, GPU available)
+- [ ] **Task 11.3.2**: Add Streamlit Cloud deployment option
+- [ ] **Task 11.3.3**: Create deployment documentation
+- [ ] **Task 11.3.4**: Set up CI/CD for auto-deploy on push
