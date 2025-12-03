@@ -157,17 +157,37 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         .legend-item {{
             display: flex;
             align-items: center;
-            padding: 6px 0;
+            padding: 6px 8px;
+            margin: 2px 0;
             font-size: 0.75rem;
             color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }}
+
+        .legend-item:hover {{
+            background: rgba(255,255,255,0.05);
+        }}
+
+        .legend-item.active {{
+            background: rgba(10, 132, 255, 0.2);
+            color: var(--text-primary);
         }}
 
         .legend-dot {{
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }}
+
+        .legend-symbol {{
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
             margin-right: 10px;
-            box-shadow: 0 0 8px currentColor;
         }}
 
         .main {{
@@ -181,7 +201,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             content: '';
             position: absolute;
             inset: 0;
-            background-image: 
+            background-image:
                 linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
             background-size: 40px 40px;
@@ -377,36 +397,78 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <button class="btn" id="heatmap-btn" onclick="toggleHeatMap()">Compute Heat Map</button>
             </div>
 
-            <h2>Architecture</h2>
-            <div class="legend">
-                <div class="legend-item">
-                    <div class="legend-dot" style="color: #4A90D9;"></div>
+            <h2>Op Types <span style="font-size:0.6rem;color:var(--text-tertiary)">(click to filter)</span></h2>
+            <div class="legend" id="op-legend">
+                <div class="legend-item" data-category="conv" onclick="filterByCategory('conv')">
+                    <div class="legend-symbol" style="color: #4A90D9;">▣</div>
                     <span>Convolution</span>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-dot" style="color: #BF5AF2;"></div>
-                    <span>Linear</span>
+                <div class="legend-item" data-category="linear" onclick="filterByCategory('linear')">
+                    <div class="legend-symbol" style="color: #BF5AF2;">◆</div>
+                    <span>Linear/MatMul</span>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-dot" style="color: #FF9F0A;"></div>
+                <div class="legend-item" data-category="attention" onclick="filterByCategory('attention')">
+                    <div class="legend-symbol" style="color: #FF9F0A;">◎</div>
                     <span>Attention</span>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-dot" style="color: #64D2FF;"></div>
+                <div class="legend-item" data-category="norm" onclick="filterByCategory('norm')">
+                    <div class="legend-symbol" style="color: #64D2FF;">≡</div>
                     <span>Normalization</span>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-dot" style="color: #FFD60A;"></div>
+                <div class="legend-item" data-category="activation" onclick="filterByCategory('activation')">
+                    <div class="legend-symbol" style="color: #FFD60A;">⚡</div>
                     <span>Activation</span>
                 </div>
+                <div class="legend-item" data-category="pool" onclick="filterByCategory('pool')">
+                    <div class="legend-symbol" style="color: #30D158;">▼</div>
+                    <span>Pooling</span>
+                </div>
+                <div class="legend-item" data-category="reshape" onclick="filterByCategory('reshape')">
+                    <div class="legend-symbol" style="color: #5E5CE6;">⤨</div>
+                    <span>Reshape</span>
+                </div>
+                <div class="legend-item" data-category="elementwise" onclick="filterByCategory('elementwise')">
+                    <div class="legend-symbol" style="color: #FF6482;">+</div>
+                    <span>Math ops</span>
+                </div>
+                <div class="legend-item" data-category="default" onclick="filterByCategory('default')">
+                    <div class="legend-symbol" style="color: #636366;">●</div>
+                    <span>Other</span>
+                </div>
+                <div class="legend-item" data-category="all" onclick="filterByCategory('all')" style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">
+                    <span style="color:var(--accent)">↺ Show all</span>
+                </div>
+            </div>
+
+            <h2>Heat Map Scale</h2>
+            <div class="legend" id="heatmap-legend" style="display: none;">
                 <div class="legend-item">
-                    <div class="legend-dot" style="color: #30D158;"></div>
-                    <span>Skip</span>
+                    <div class="legend-dot" style="background: #0A84FF; box-shadow: 0 0 8px #0A84FF;"></div>
+                    <span>Low compute</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-dot" style="color: #FF453A;"></div>
-                    <span>Bottleneck</span>
+                    <div class="legend-dot" style="background: #64D2FF; box-shadow: 0 0 8px #64D2FF;"></div>
+                    <span>Light</span>
                 </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #30D158; box-shadow: 0 0 8px #30D158;"></div>
+                    <span>Medium</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #FFD60A; box-shadow: 0 0 8px #FFD60A;"></div>
+                    <span>Heavy</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #FF9F0A; box-shadow: 0 0 8px #FF9F0A;"></div>
+                    <span>Very heavy</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #FF453A; box-shadow: 0 0 8px #FF453A;"></div>
+                    <span>Hotspot</span>
+                </div>
+            </div>
+            <div class="legend" id="optype-legend-note">
+                <span style="font-size: 0.7rem; color: var(--text-tertiary);">Toggle heat map to see compute intensity</span>
             </div>
         </aside>
 
@@ -436,43 +498,59 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             return node.name;
         }}
 
-        // Apple-inspired color palette
-        const colors = {{
-            conv: '#4A90D9',
-            linear: '#BF5AF2',
-            attention: '#FF9F0A',
-            norm: '#64D2FF',
-            activation: '#FFD60A',
-            pool: '#30D158',
-            embed: '#AF52DE',
-            reshape: '#5E5CE6',
-            elementwise: '#FF6482',
-            reduce: '#FF453A',
-            default: '#636366'
+        // Apple-inspired color palette with symbols
+        const opStyles = {{
+            conv:        {{ color: '#4A90D9', symbol: '▣', name: 'Convolution' }},
+            linear:      {{ color: '#BF5AF2', symbol: '◆', name: 'Linear' }},
+            attention:   {{ color: '#FF9F0A', symbol: '◎', name: 'Attention' }},
+            norm:        {{ color: '#64D2FF', symbol: '≡', name: 'Normalize' }},
+            activation:  {{ color: '#FFD60A', symbol: '⚡', name: 'Activation' }},
+            pool:        {{ color: '#30D158', symbol: '▼', name: 'Pooling' }},
+            embed:       {{ color: '#AF52DE', symbol: '⊞', name: 'Embed' }},
+            reshape:     {{ color: '#5E5CE6', symbol: '⤨', name: 'Reshape' }},
+            elementwise: {{ color: '#FF6482', symbol: '+', name: 'Math' }},
+            reduce:      {{ color: '#FF453A', symbol: 'Σ', name: 'Reduce' }},
+            default:     {{ color: '#636366', symbol: '●', name: 'Other' }}
         }};
 
-        // Get color for op type
-        function getNodeColor(node) {{
+        // For backwards compat
+        const colors = Object.fromEntries(
+            Object.entries(opStyles).map(([k, v]) => [k, v.color])
+        );
+
+        // Get op category key
+        function getOpCategory(node) {{
             if (node.node_type === 'block') {{
                 const blockType = (node.attributes?.block_type || '').toLowerCase();
-                if (blockType.includes('attention')) return colors.attention;
-                if (blockType.includes('mlp') || blockType.includes('ffn')) return colors.linear;
-                if (blockType.includes('conv')) return colors.conv;
-                if (blockType.includes('norm')) return colors.norm;
-                if (blockType.includes('embed')) return colors.embed;
-                return colors.default;
+                if (blockType.includes('attention')) return 'attention';
+                if (blockType.includes('mlp') || blockType.includes('ffn')) return 'linear';
+                if (blockType.includes('conv')) return 'conv';
+                if (blockType.includes('norm')) return 'norm';
+                if (blockType.includes('embed')) return 'embed';
+                return 'default';
             }}
 
             const op = (node.op_type || '').toLowerCase();
-            if (op.includes('conv')) return colors.conv;
-            if (op.includes('matmul') || op.includes('gemm')) return colors.linear;
-            if (op.includes('norm') || op.includes('layer')) return colors.norm;
-            if (op.includes('relu') || op.includes('gelu') || op.includes('softmax') || op.includes('sigmoid')) return colors.activation;
-            if (op.includes('pool')) return colors.pool;
-            if (op.includes('reshape') || op.includes('transpose') || op.includes('flatten')) return colors.reshape;
-            if (op.includes('add') || op.includes('mul') || op.includes('sub') || op.includes('div')) return colors.elementwise;
-            if (op.includes('reduce')) return colors.reduce;
-            return colors.default;
+            if (op.includes('conv')) return 'conv';
+            if (op.includes('matmul') || op.includes('gemm')) return 'linear';
+            if (op.includes('norm') || op.includes('layer')) return 'norm';
+            if (op.includes('relu') || op.includes('gelu') || op.includes('softmax') || op.includes('sigmoid') || op.includes('silu') || op.includes('tanh')) return 'activation';
+            if (op.includes('pool')) return 'pool';
+            if (op.includes('reshape') || op.includes('transpose') || op.includes('flatten') || op.includes('squeeze') || op.includes('unsqueeze')) return 'reshape';
+            if (op.includes('add') || op.includes('mul') || op.includes('sub') || op.includes('div') || op.includes('concat') || op.includes('split')) return 'elementwise';
+            if (op.includes('reduce')) return 'reduce';
+            if (op.includes('gather') || op.includes('embed')) return 'embed';
+            return 'default';
+        }}
+
+        // Get color for op type
+        function getNodeColor(node) {{
+            return opStyles[getOpCategory(node)].color;
+        }}
+
+        // Get symbol for op type
+        function getNodeSymbol(node) {{
+            return opStyles[getOpCategory(node)].symbol;
         }}
 
         // Get node size based on type and compute
@@ -554,10 +632,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         function showTooltip(event, node) {{
             const opType = node.op_type || node.node_type;
             const description = getOpDescription(node);
-            
+
             // Build detailed info
             let details = '';
-            
+
             // Input/output info
             if (node.inputs && node.inputs.length > 0) {{
                 details += `<div class="tooltip-row"><span class="tooltip-label">Inputs:</span><span class="tooltip-value">${{node.inputs.length}} tensor(s)</span></div>`;
@@ -565,18 +643,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             if (node.outputs && node.outputs.length > 0) {{
                 details += `<div class="tooltip-row"><span class="tooltip-label">Outputs:</span><span class="tooltip-value">${{node.outputs.length}} tensor(s)</span></div>`;
             }}
-            
+
             // Child count for blocks
             if (node.children && node.children.length > 0) {{
                 details += `<div class="tooltip-row"><span class="tooltip-label">Contains:</span><span class="tooltip-value">${{node.node_count || node.children.length}} ops</span></div>`;
             }}
-            
+
             // Compute info
             if (node.total_flops > 0) {{
                 const intensity = node.total_flops > 1e9 ? 'high' : node.total_flops > 1e6 ? 'medium' : 'low';
                 details += `<div class="tooltip-row"><span class="tooltip-label">Compute:</span><span class="tooltip-value">${{formatNumber(node.total_flops)}} FLOPs (${{intensity}})</span></div>`;
             }}
-            
+
             // Memory info
             if (node.total_memory_bytes > 0) {{
                 details += `<div class="tooltip-row"><span class="tooltip-label">Memory:</span><span class="tooltip-value">${{formatBytes(node.total_memory_bytes)}}</span></div>`;
@@ -598,31 +676,83 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             tooltip.classed('visible', false);
         }}
 
-        // Force-directed layout for natural graph appearance
+        // Improved grid layout with depth calculation attempt
+        // Falls back to clean grid if depth calc fails
         function layoutNodes(nodes) {{
             const width = window.innerWidth - 320;
             const height = window.innerHeight;
-            const centerX = width / 2;
-            const centerY = height / 2;
+            const padding = 50;
 
-            // Simple force-directed positioning
-            const cols = Math.ceil(Math.sqrt(nodes.length * 1.5));
-            const rows = Math.ceil(nodes.length / cols);
-            const spacingX = Math.min(100, (width - 100) / cols);
-            const spacingY = Math.min(80, (height - 100) / rows);
+            // Try to calculate depths based on inputs/outputs
+            const outputToNode = {{}};
+            const depths = {{}};
 
-            nodes.forEach((node, i) => {{
-                const col = i % cols;
-                const row = Math.floor(i / cols);
-                
-                // Center the grid
-                const startX = centerX - (cols * spacingX) / 2;
-                const startY = centerY - (rows * spacingY) / 2;
-                
-                node.x = startX + col * spacingX + spacingX / 2;
-                node.y = startY + row * spacingY + spacingY / 2;
-                node.r = getNodeSize(node);
+            nodes.forEach(node => {{
+                if (node.outputs) {{
+                    node.outputs.forEach(out => {{ outputToNode[out] = node; }});
+                }}
             }});
+
+            // Simple depth: count parent chain length
+            function getDepth(node, visited) {{
+                if (!node) return 0;
+                if (depths[node.id] !== undefined) return depths[node.id];
+                if (visited[node.id]) return 0;
+                visited[node.id] = true;
+
+                let maxParent = -1;
+                if (node.inputs && node.inputs.length > 0) {{
+                    for (const inp of node.inputs) {{
+                        const parent = outputToNode[inp];
+                        if (parent) {{
+                            maxParent = Math.max(maxParent, getDepth(parent, visited));
+                        }}
+                    }}
+                }}
+                depths[node.id] = maxParent + 1;
+                return depths[node.id];
+            }}
+
+            // Calculate all depths
+            nodes.forEach(n => getDepth(n, {{}}));
+
+            // Group by depth
+            const byDepth = {{}};
+            let maxDepth = 0;
+            nodes.forEach(node => {{
+                const d = depths[node.id] || 0;
+                maxDepth = Math.max(maxDepth, d);
+                if (!byDepth[d]) byDepth[d] = [];
+                byDepth[d].push(node);
+            }});
+
+            // If we got meaningful depths, use column layout
+            if (maxDepth > 0) {{
+                const colWidth = (width - padding * 2) / (maxDepth + 1);
+
+                for (let d = 0; d <= maxDepth; d++) {{
+                    const nodesAtDepth = byDepth[d] || [];
+                    const x = padding + d * colWidth + colWidth / 2;
+                    const rowH = (height - padding * 2) / Math.max(nodesAtDepth.length, 1);
+
+                    nodesAtDepth.forEach((node, i) => {{
+                        node.x = x;
+                        node.y = padding + i * rowH + rowH / 2;
+                        node.r = getNodeSize(node);
+                    }});
+                }}
+            }} else {{
+                // Fallback: simple grid
+                const cols = Math.ceil(Math.sqrt(nodes.length * 1.5));
+                const cellW = (width - padding * 2) / cols;
+                const cellH = (height - padding * 2) / Math.ceil(nodes.length / cols);
+
+                nodes.forEach((node, i) => {{
+                    node.x = padding + (i % cols) * cellW + cellW / 2;
+                    node.y = padding + Math.floor(i / cols) * cellH + cellH / 2;
+                    node.r = getNodeSize(node);
+                }});
+            }}
 
             return nodes;
         }}
@@ -673,20 +803,50 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 }}
             }});
 
-            // Draw curved edges
+            // Setup defs for markers and filters
+            const defs = container.append('defs');
+
+            // Arrow marker for edges
+            defs.append('marker')
+                .attr('id', 'arrowhead')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 8)
+                .attr('refY', 0)
+                .attr('markerWidth', 5)
+                .attr('markerHeight', 5)
+                .attr('orient', 'auto')
+                .append('path')
+                .attr('d', 'M0,-3L8,0L0,3')
+                .attr('fill', 'rgba(255,255,255,0.5)');
+
+            // Glow filter for nodes
+            const filter = defs.append('filter')
+                .attr('id', 'glow');
+            filter.append('feGaussianBlur')
+                .attr('stdDeviation', '2')
+                .attr('result', 'coloredBlur');
+
+            // Draw edges with arrows
             container.selectAll('.edge')
                 .data(edges)
                 .enter()
                 .append('path')
                 .attr('class', 'edge')
                 .attr('d', d => {{
-                    const dx = d.target.x - d.source.x;
-                    const dy = d.target.y - d.source.y;
-                    const dr = Math.sqrt(dx * dx + dy * dy) * 0.5;
-                    return `M${{d.source.x}},${{d.source.y}} Q${{(d.source.x + d.target.x)/2}},${{(d.source.y + d.target.y)/2 - 20}} ${{d.target.x}},${{d.target.y}}`;
+                    const sr = d.source.r || 20;
+                    const tr = d.target.r || 20;
+                    const sx = d.source.x + sr;
+                    const sy = d.source.y;
+                    const tx = d.target.x - tr;
+                    const ty = d.target.y;
+
+                    // Bezier curve
+                    const midX = (sx + tx) / 2;
+                    return `M${{sx}},${{sy}} C${{midX}},${{sy}} ${{midX}},${{ty}} ${{tx}},${{ty}}`;
                 }})
-                .attr('stroke', 'rgba(255,255,255,0.15)')
-                .attr('stroke-width', 1.5);
+                .attr('stroke', 'rgba(255,255,255,0.3)')
+                .attr('stroke-width', 1.5)
+                .attr('marker-end', 'url(#arrowhead)');
 
             // Draw nodes as circles
             const nodeGroups = container.selectAll('.node')
@@ -703,14 +863,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                         render();
                     }}
                 }});
-
-            // Glow effect for nodes
-            const defs = container.append('defs');
-            defs.append('filter')
-                .attr('id', 'glow')
-                .append('feGaussianBlur')
-                .attr('stdDeviation', '3')
-                .attr('result', 'coloredBlur');
 
             // Calculate max FLOPs for heat map
             const maxFlops = getMaxFlops(visibleNodes);
@@ -735,11 +887,29 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 .attr('stroke', 'rgba(255,255,255,0.2)')
                 .attr('stroke-width', 1);
 
-            // Labels
+            // Symbol in center
             nodeGroups.append('text')
+                .attr('class', 'node-symbol')
+                .attr('y', d => d.r > 28 ? -4 : 0)
+                .attr('font-size', d => d.r > 28 ? '14px' : '12px')
+                .attr('fill', 'white')
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .text(d => getNodeSymbol(d));
+
+            // Labels below symbol for larger nodes
+            nodeGroups.filter(d => d.r > 28)
+                .append('text')
                 .attr('class', 'node-label')
-                .attr('y', d => d.r > 30 ? 0 : 0)
-                .text(d => truncate(getNodeLabel(d), d.r > 30 ? 12 : 6));
+                .attr('y', 10)
+                .text(d => truncate(getNodeLabel(d), 8));
+
+            // Just label for small nodes
+            nodeGroups.filter(d => d.r <= 28)
+                .append('text')
+                .attr('class', 'node-label')
+                .attr('y', d => d.r + 14)
+                .text(d => truncate(getNodeLabel(d), 6));
 
             // Expand indicator for blocks
             nodeGroups.filter(d => d.children && d.children.length > 0)
@@ -777,12 +947,41 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             svg.transition().duration(300).call(zoom.scaleBy, 0.7);
         }}
 
+        let activeFilter = 'all';
+
         function toggleHeatMap() {{
             heatMapMode = !heatMapMode;
             const btn = document.getElementById('heatmap-btn');
             btn.style.background = heatMapMode ? 'var(--accent)' : '';
             btn.style.color = heatMapMode ? 'white' : '';
+
+            // Toggle legend visibility
+            document.getElementById('heatmap-legend').style.display = heatMapMode ? 'block' : 'none';
+            document.getElementById('optype-legend-note').style.display = heatMapMode ? 'none' : 'block';
+
             render();
+        }}
+
+        function filterByCategory(category) {{
+            activeFilter = category;
+
+            // Update legend active state
+            document.querySelectorAll('#op-legend .legend-item').forEach(item => {{
+                item.classList.remove('active');
+                if (item.dataset.category === category) {{
+                    item.classList.add('active');
+                }}
+            }});
+
+            // Update node visibility/opacity
+            container.selectAll('.node').each(function(d) {{
+                const nodeCategory = getOpCategory(d);
+                const visible = category === 'all' || nodeCategory === category;
+                d3.select(this)
+                    .transition()
+                    .duration(200)
+                    .style('opacity', visible ? 1 : 0.15);
+            }});
         }}
 
         // Calculate max FLOPs for heat map scaling

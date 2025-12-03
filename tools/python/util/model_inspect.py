@@ -45,6 +45,10 @@ from .autodoc.visualizations import (
 from .autodoc.visualizations import (
     is_available as is_viz_available,
 )
+from .autodoc.edge_analysis import EdgeAnalyzer
+from .autodoc.hierarchical_graph import HierarchicalGraphBuilder
+from .autodoc.html_export import HTMLExporter
+from .autodoc.patterns import PatternAnalyzer
 
 
 class ProgressIndicator:
@@ -154,6 +158,13 @@ Examples:
         type=pathlib.Path,
         default=None,
         help="Output path for PDF report. Requires playwright: pip install playwright && playwright install chromium",
+    )
+
+    parser.add_argument(
+        "--html-graph",
+        type=pathlib.Path,
+        default=None,
+        help="Output path for interactive graph visualization (standalone HTML with D3.js).",
     )
 
     # PyTorch conversion options
@@ -1611,7 +1622,7 @@ def run_inspect():
         report._llm_summary = llm_summary  # type: ignore
 
     # Output results
-    has_output = args.out_json or args.out_md or args.out_html or args.out_pdf
+    has_output = args.out_json or args.out_md or args.out_html or args.out_pdf or args.html_graph
     if has_output:
         progress.step("Writing output files")
 
@@ -1715,6 +1726,44 @@ def run_inspect():
                 logger.error(f"Failed to write PDF report: {e}")
                 sys.exit(1)
 
+    # Interactive graph visualization
+    if args.html_graph:
+        try:
+            args.html_graph.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Use graph_info from the inspector if available
+            if hasattr(inspector, "_graph_info") and inspector._graph_info:
+                graph_info = inspector._graph_info
+            else:
+                # Re-load the model to get graph_info
+                from .autodoc.analyzer import ONNXGraphLoader
+                loader = ONNXGraphLoader(logger=logger)
+                _, graph_info = loader.load(model_path)
+            
+            # Detect patterns
+            pattern_analyzer = PatternAnalyzer(logger=logger)
+            blocks = pattern_analyzer.group_into_blocks(graph_info)
+            
+            # Analyze edges
+            edge_analyzer = EdgeAnalyzer(logger=logger)
+            edge_result = edge_analyzer.analyze(graph_info)
+            
+            # Build hierarchy
+            builder = HierarchicalGraphBuilder(logger=logger)
+            hier_graph = builder.build(graph_info, blocks, model_path.stem)
+            
+            # Export HTML
+            exporter = HTMLExporter(logger=logger)
+            exporter.export(hier_graph, edge_result, args.html_graph, model_path.stem)
+            
+            logger.info(f"Interactive graph visualization written to: {args.html_graph}")
+        except Exception as e:
+            logger.error(f"Failed to generate graph visualization: {e}")
+            if not args.quiet:
+                import traceback
+                traceback.print_exc()
+            sys.exit(1)
+
     # Console output
     if (
         not args.quiet
@@ -1722,6 +1771,7 @@ def run_inspect():
         and not args.out_md
         and not args.out_html
         and not args.out_pdf
+        and not args.html_graph
     ):
         # No output files specified - print summary to console
         print("\n" + "=" * 60)
@@ -1792,6 +1842,8 @@ def run_inspect():
             print(f"  HTML report: {args.out_html}")
         if args.out_pdf:
             print(f"  PDF report: {args.out_pdf}")
+        if args.html_graph:
+            print(f"  Graph visualization: {args.html_graph}")
 
     # Finish progress indicator
     progress.finish("Analysis complete!")
