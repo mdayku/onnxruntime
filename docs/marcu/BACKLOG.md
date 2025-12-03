@@ -28,6 +28,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 | Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 | P3 |
 | Epic 9: Demo/Deliverables | Not Started | 3 | 0/13 | P3 |
 | Epic 10: SaaS Web App | Not Started | 5 | 0/27 | P4 |
+| Epic 13-17: MLOps Platform | Future | 5 | 0/? | P5 |
 
 ---
 
@@ -485,3 +486,34 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [ ] **Task 11.3.2**: Add Streamlit Cloud deployment option
 - [ ] **Task 11.3.3**: Create deployment documentation
 - [ ] **Task 11.3.4**: Set up CI/CD for auto-deploy on push
+
+---
+
+## Future: MLOps Platform Vision (P5 - When There's Demand)
+
+*High-level placeholder. Do not implement until product-market fit is validated.*
+
+### Epic 13: Cloud Provider Integration
+- AWS/GCP/Azure SDK integration
+- Instance type catalog and pricing
+- Credential management
+
+### Epic 14: GPU Orchestration  
+- On-demand instance spin-up/down
+- Job queue and scheduling
+- Cost tracking and limits
+
+### Epic 15: Training Estimation
+- Dataset size → training time models
+- Training cost projection
+- Epoch/iteration estimation
+
+### Epic 16: Model Inventory Management
+- Track all models, versions, deployments
+- Model lineage and metadata
+- Deployment status dashboard
+
+### Epic 17: Billing and Usage
+- Metered usage tracking
+- Pass-through cloud costs + margin
+- Invoicing and spend alerts

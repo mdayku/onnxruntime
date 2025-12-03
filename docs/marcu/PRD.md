@@ -1436,7 +1436,7 @@ class DataLoader(ABC):
     def __iter__(self):
         """Yield (input_dict, optional_labels) tuples."""
         pass
-    
+
     @abstractmethod
     def __len__(self):
         """Return number of samples."""
@@ -1518,6 +1518,44 @@ This is a pip package dependency, **not** the ORT fork.
 
 ---
 
+## 16. Future Vision: MLOps Platform (P5)
+
+*High-level documentation only. Do not build until Path A is validated.*
+
+### 16.1 The Bigger Picture
+
+If ONNX Autodoc gains traction, the natural evolution is a full MLOps platform:
+
+| Capability | Current (Path A) | Future (Path B) |
+|------------|------------------|-----------------|
+| Benchmarks | Theoretical estimates | Real hardware measurements |
+| Hardware | User's local machine | Cloud GPU on-demand |
+| Training | Not covered | Time/cost estimation |
+| Model mgmt | Single model analysis | Full inventory tracking |
+| Billing | Free | Usage-based |
+
+### 16.2 Required Components (Future)
+
+- **Cloud Integration**: AWS/GCP/Azure SDKs for instance management
+- **GPU Orchestration**: Spin up H100/A100/etc on demand
+- **Job Scheduler**: Queue and execute benchmark/training jobs  
+- **Cost Engine**: Track cloud spend, project costs
+- **Model Registry**: Version, lineage, deployment tracking
+
+### 16.3 Business Model (Future)
+
+- Pass-through cloud costs + margin
+- Or: subscription tiers with included compute
+- Target: ML teams who need hardware-accurate benchmarks
+
+### 16.4 When to Build
+
+- After Path A ships and validates demand
+- When users ask: "Can you run this on a real H100?"
+- When there's budget/funding for cloud compute costs
+
+---
+
 ## Appendix: Delta Log
 
 *Use this section to track changes to the PRD over time.*
@@ -1560,3 +1598,4 @@ This is a pip package dependency, **not** the ORT fork.
 | Dec 3, 2025 | Streamlit | Added Section 14.9 with Streamlit Web UI spec, HF Spaces deployment plan | Maximize accessibility without installation |
 | Dec 3, 2025 | Inference | Added Section 15: Inference Platform with "wide hole" architecture. InferenceRunner, DataLoader interface, MetricsCalculator extension point | Platform-first approach: build horizontal, go vertical when paid |
 | Dec 3, 2025 | Backlog | Added Epic 12: Inference Platform (24 tasks across 5 stories). Platform layer for inference, not task-specific metrics | Extensible architecture for future customer needs |
+| Dec 3, 2025 | Future | Added Section 16: MLOps Platform Vision (P5). Cloud GPU orchestration, training estimation, model inventory. High-level only | Document vision, execute MVP. Don't confuse the two |
