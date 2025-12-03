@@ -930,7 +930,6 @@ def generate_compare_pdf(
         generator.generate_from_html(
             html_content=html_content,
             output_path=output_path,
-            title="Model Comparison Report",
         )
         LOGGER.info(f"Comparison PDF saved to {output_path}")
         return output_path
