@@ -1,0 +1,14 @@
+{
+  "metrics": {
+    "latency_ms_p50": 3.234,
+    "latency_ms_p95": 6.679,
+    "latency_ms_p99": 7.997,
+    "latency_ms_mean": 3.981,
+    "throughput_qps": 251.2,
+    "accuracy": 0.7612,
+    "top5_accuracy": 0.9285,
+    "f1_macro": 0.7612,
+    "dataset": "ImageNet-1K",
+    "source": "ONNX Model Zoo / PyTorch Hub"
+  }
+}

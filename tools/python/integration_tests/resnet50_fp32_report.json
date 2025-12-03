@@ -1,0 +1,1611 @@
+{
+  "metadata": {
+    "path": "C:\\Users\\marcu\\onnxruntime\\tools\\python\\integration_tests\\resnet50_fp32.onnx",
+    "ir_version": 4,
+    "producer_name": "unknown",
+    "producer_version": "",
+    "domain": "",
+    "model_version": 0,
+    "doc_string": "",
+    "opsets": {
+      "ai.onnx": 12
+    }
+  },
+  "generated_at": "2025-12-03T20:48:44.908296Z",
+  "autodoc_version": "0.1.0",
+  "graph_summary": {
+    "num_nodes": 175,
+    "num_inputs": 1,
+    "num_outputs": 1,
+    "num_initializers": 299,
+    "input_shapes": {
+      "data": [
+        "N",
+        3,
+        224,
+        224
+      ]
+    },
+    "output_shapes": {
+      "resnetv17_dense0_fwd": [
+        "N",
+        1000
+      ]
+    },
+    "op_type_counts": {
+      "Conv": 53,
+      "BatchNormalization": 53,
+      "Relu": 49,
+      "MaxPool": 1,
+      "Add": 16,
+      "GlobalAveragePool": 1,
+      "Flatten": 1,
+      "Gemm": 1
+    }
+  },
+  "param_counts": {
+    "total": 25629032,
+    "trainable": 25629032,
+    "non_trainable": 0,
+    "by_node": {
+      "resnetv17_conv0_weight": 9408.0,
+      "resnetv17_batchnorm0_gamma": 64.0,
+      "resnetv17_batchnorm0_beta": 64.0,
+      "resnetv17_batchnorm0_running_mean": 64.0,
+      "resnetv17_batchnorm0_running_var": 64.0,
+      "resnetv17_stage1_conv0_weight": 4096.0,
+      "resnetv17_stage1_conv0_bias": 64.0,
+      "resnetv17_stage1_batchnorm0_gamma": 64.0,
+      "resnetv17_stage1_batchnorm0_beta": 64.0,
+      "resnetv17_stage1_batchnorm0_running_mean": 64.0,
+      "resnetv17_stage1_batchnorm0_running_var": 64.0,
+      "resnetv17_stage1_conv1_weight": 36864.0,
+      "resnetv17_stage1_batchnorm1_gamma": 64.0,
+      "resnetv17_stage1_batchnorm1_beta": 64.0,
+      "resnetv17_stage1_batchnorm1_running_mean": 64.0,
+      "resnetv17_stage1_batchnorm1_running_var": 64.0,
+      "resnetv17_stage1_conv2_weight": 16384.0,
+      "resnetv17_stage1_conv2_bias": 256.0,
+      "resnetv17_stage1_batchnorm2_gamma": 256.0,
+      "resnetv17_stage1_batchnorm2_beta": 256.0,
+      "resnetv17_stage1_batchnorm2_running_mean": 256.0,
+      "resnetv17_stage1_batchnorm2_running_var": 256.0,
+      "resnetv17_stage1_conv3_weight": 16384.0,
+      "resnetv17_stage1_batchnorm3_gamma": 256.0,
+      "resnetv17_stage1_batchnorm3_beta": 256.0,
+      "resnetv17_stage1_batchnorm3_running_mean": 256.0,
+      "resnetv17_stage1_batchnorm3_running_var": 256.0,
+      "resnetv17_stage1_conv4_weight": 16384.0,
+      "resnetv17_stage1_conv4_bias": 64.0,
+      "resnetv17_stage1_batchnorm4_gamma": 64.0,
+      "resnetv17_stage1_batchnorm4_beta": 64.0,
+      "resnetv17_stage1_batchnorm4_running_mean": 64.0,
+      "resnetv17_stage1_batchnorm4_running_var": 64.0,
+      "resnetv17_stage1_conv5_weight": 36864.0,
+      "resnetv17_stage1_batchnorm5_gamma": 64.0,
+      "resnetv17_stage1_batchnorm5_beta": 64.0,
+      "resnetv17_stage1_batchnorm5_running_mean": 64.0,
+      "resnetv17_stage1_batchnorm5_running_var": 64.0,
+      "resnetv17_stage1_conv6_weight": 16384.0,
+      "resnetv17_stage1_conv6_bias": 256.0,
+      "resnetv17_stage1_batchnorm6_gamma": 256.0,
+      "resnetv17_stage1_batchnorm6_beta": 256.0,
+      "resnetv17_stage1_batchnorm6_running_mean": 256.0,
+      "resnetv17_stage1_batchnorm6_running_var": 256.0,
+      "resnetv17_stage1_conv7_weight": 16384.0,
+      "resnetv17_stage1_conv7_bias": 64.0,
+      "resnetv17_stage1_batchnorm7_gamma": 64.0,
+      "resnetv17_stage1_batchnorm7_beta": 64.0,
+      "resnetv17_stage1_batchnorm7_running_mean": 64.0,
+      "resnetv17_stage1_batchnorm7_running_var": 64.0,
+      "resnetv17_stage1_conv8_weight": 36864.0,
+      "resnetv17_stage1_batchnorm8_gamma": 64.0,
+      "resnetv17_stage1_batchnorm8_beta": 64.0,
+      "resnetv17_stage1_batchnorm8_running_mean": 64.0,
+      "resnetv17_stage1_batchnorm8_running_var": 64.0,
+      "resnetv17_stage1_conv9_weight": 16384.0,
+      "resnetv17_stage1_conv9_bias": 256.0,
+      "resnetv17_stage1_batchnorm9_gamma": 256.0,
+      "resnetv17_stage1_batchnorm9_beta": 256.0,
+      "resnetv17_stage1_batchnorm9_running_mean": 256.0,
+      "resnetv17_stage1_batchnorm9_running_var": 256.0,
+      "resnetv17_stage2_conv0_weight": 32768.0,
+      "resnetv17_stage2_conv0_bias": 128.0,
+      "resnetv17_stage2_batchnorm0_gamma": 128.0,
+      "resnetv17_stage2_batchnorm0_beta": 128.0,
+      "resnetv17_stage2_batchnorm0_running_mean": 128.0,
+      "resnetv17_stage2_batchnorm0_running_var": 128.0,
+      "resnetv17_stage2_conv1_weight": 147456.0,
+      "resnetv17_stage2_batchnorm1_gamma": 128.0,
+      "resnetv17_stage2_batchnorm1_beta": 128.0,
+      "resnetv17_stage2_batchnorm1_running_mean": 128.0,
+      "resnetv17_stage2_batchnorm1_running_var": 128.0,
+      "resnetv17_stage2_conv2_weight": 65536.0,
+      "resnetv17_stage2_conv2_bias": 512.0,
+      "resnetv17_stage2_batchnorm2_gamma": 512.0,
+      "resnetv17_stage2_batchnorm2_beta": 512.0,
+      "resnetv17_stage2_batchnorm2_running_mean": 512.0,
+      "resnetv17_stage2_batchnorm2_running_var": 512.0,
+      "resnetv17_stage2_conv3_weight": 131072.0,
+      "resnetv17_stage2_batchnorm3_gamma": 512.0,
+      "resnetv17_stage2_batchnorm3_beta": 512.0,
+      "resnetv17_stage2_batchnorm3_running_mean": 512.0,
+      "resnetv17_stage2_batchnorm3_running_var": 512.0,
+      "resnetv17_stage2_conv4_weight": 65536.0,
+      "resnetv17_stage2_conv4_bias": 128.0,
+      "resnetv17_stage2_batchnorm4_gamma": 128.0,
+      "resnetv17_stage2_batchnorm4_beta": 128.0,
+      "resnetv17_stage2_batchnorm4_running_mean": 128.0,
+      "resnetv17_stage2_batchnorm4_running_var": 128.0,
+      "resnetv17_stage2_conv5_weight": 147456.0,
+      "resnetv17_stage2_batchnorm5_gamma": 128.0,
+      "resnetv17_stage2_batchnorm5_beta": 128.0,
+      "resnetv17_stage2_batchnorm5_running_mean": 128.0,
+      "resnetv17_stage2_batchnorm5_running_var": 128.0,
+      "resnetv17_stage2_conv6_weight": 65536.0,
+      "resnetv17_stage2_conv6_bias": 512.0,
+      "resnetv17_stage2_batchnorm6_gamma": 512.0,
+      "resnetv17_stage2_batchnorm6_beta": 512.0,
+      "resnetv17_stage2_batchnorm6_running_mean": 512.0,
+      "resnetv17_stage2_batchnorm6_running_var": 512.0,
+      "resnetv17_stage2_conv7_weight": 65536.0,
+      "resnetv17_stage2_conv7_bias": 128.0,
+      "resnetv17_stage2_batchnorm7_gamma": 128.0,
+      "resnetv17_stage2_batchnorm7_beta": 128.0,
+      "resnetv17_stage2_batchnorm7_running_mean": 128.0,
+      "resnetv17_stage2_batchnorm7_running_var": 128.0,
+      "resnetv17_stage2_conv8_weight": 147456.0,
+      "resnetv17_stage2_batchnorm8_gamma": 128.0,
+      "resnetv17_stage2_batchnorm8_beta": 128.0,
+      "resnetv17_stage2_batchnorm8_running_mean": 128.0,
+      "resnetv17_stage2_batchnorm8_running_var": 128.0,
+      "resnetv17_stage2_conv9_weight": 65536.0,
+      "resnetv17_stage2_conv9_bias": 512.0,
+      "resnetv17_stage2_batchnorm9_gamma": 512.0,
+      "resnetv17_stage2_batchnorm9_beta": 512.0,
+      "resnetv17_stage2_batchnorm9_running_mean": 512.0,
+      "resnetv17_stage2_batchnorm9_running_var": 512.0,
+      "resnetv17_stage2_conv10_weight": 65536.0,
+      "resnetv17_stage2_conv10_bias": 128.0,
+      "resnetv17_stage2_batchnorm10_gamma": 128.0,
+      "resnetv17_stage2_batchnorm10_beta": 128.0,
+      "resnetv17_stage2_batchnorm10_running_mean": 128.0,
+      "resnetv17_stage2_batchnorm10_running_var": 128.0,
+      "resnetv17_stage2_conv11_weight": 147456.0,
+      "resnetv17_stage2_batchnorm11_gamma": 128.0,
+      "resnetv17_stage2_batchnorm11_beta": 128.0,
+      "resnetv17_stage2_batchnorm11_running_mean": 128.0,
+      "resnetv17_stage2_batchnorm11_running_var": 128.0,
+      "resnetv17_stage2_conv12_weight": 65536.0,
+      "resnetv17_stage2_conv12_bias": 512.0,
+      "resnetv17_stage2_batchnorm12_gamma": 512.0,
+      "resnetv17_stage2_batchnorm12_beta": 512.0,
+      "resnetv17_stage2_batchnorm12_running_mean": 512.0,
+      "resnetv17_stage2_batchnorm12_running_var": 512.0,
+      "resnetv17_stage3_conv0_weight": 131072.0,
+      "resnetv17_stage3_conv0_bias": 256.0,
+      "resnetv17_stage3_batchnorm0_gamma": 256.0,
+      "resnetv17_stage3_batchnorm0_beta": 256.0,
+      "resnetv17_stage3_batchnorm0_running_mean": 256.0,
+      "resnetv17_stage3_batchnorm0_running_var": 256.0,
+      "resnetv17_stage3_conv1_weight": 589824.0,
+      "resnetv17_stage3_batchnorm1_gamma": 256.0,
+      "resnetv17_stage3_batchnorm1_beta": 256.0,
+      "resnetv17_stage3_batchnorm1_running_mean": 256.0,
+      "resnetv17_stage3_batchnorm1_running_var": 256.0,
+      "resnetv17_stage3_conv2_weight": 262144.0,
+      "resnetv17_stage3_conv2_bias": 1024.0,
+      "resnetv17_stage3_batchnorm2_gamma": 1024.0,
+      "resnetv17_stage3_batchnorm2_beta": 1024.0,
+      "resnetv17_stage3_batchnorm2_running_mean": 1024.0,
+      "resnetv17_stage3_batchnorm2_running_var": 1024.0,
+      "resnetv17_stage3_conv3_weight": 524288.0,
+      "resnetv17_stage3_batchnorm3_gamma": 1024.0,
+      "resnetv17_stage3_batchnorm3_beta": 1024.0,
+      "resnetv17_stage3_batchnorm3_running_mean": 1024.0,
+      "resnetv17_stage3_batchnorm3_running_var": 1024.0,
+      "resnetv17_stage3_conv4_weight": 262144.0,
+      "resnetv17_stage3_conv4_bias": 256.0,
+      "resnetv17_stage3_batchnorm4_gamma": 256.0,
+      "resnetv17_stage3_batchnorm4_beta": 256.0,
+      "resnetv17_stage3_batchnorm4_running_mean": 256.0,
+      "resnetv17_stage3_batchnorm4_running_var": 256.0,
+      "resnetv17_stage3_conv5_weight": 589824.0,
+      "resnetv17_stage3_batchnorm5_gamma": 256.0,
+      "resnetv17_stage3_batchnorm5_beta": 256.0,
+      "resnetv17_stage3_batchnorm5_running_mean": 256.0,
+      "resnetv17_stage3_batchnorm5_running_var": 256.0,
+      "resnetv17_stage3_conv6_weight": 262144.0,
+      "resnetv17_stage3_conv6_bias": 1024.0,
+      "resnetv17_stage3_batchnorm6_gamma": 1024.0,
+      "resnetv17_stage3_batchnorm6_beta": 1024.0,
+      "resnetv17_stage3_batchnorm6_running_mean": 1024.0,
+      "resnetv17_stage3_batchnorm6_running_var": 1024.0,
+      "resnetv17_stage3_conv7_weight": 262144.0,
+      "resnetv17_stage3_conv7_bias": 256.0,
+      "resnetv17_stage3_batchnorm7_gamma": 256.0,
+      "resnetv17_stage3_batchnorm7_beta": 256.0,
+      "resnetv17_stage3_batchnorm7_running_mean": 256.0,
+      "resnetv17_stage3_batchnorm7_running_var": 256.0,
+      "resnetv17_stage3_conv8_weight": 589824.0,
+      "resnetv17_stage3_batchnorm8_gamma": 256.0,
+      "resnetv17_stage3_batchnorm8_beta": 256.0,
+      "resnetv17_stage3_batchnorm8_running_mean": 256.0,
+      "resnetv17_stage3_batchnorm8_running_var": 256.0,
+      "resnetv17_stage3_conv9_weight": 262144.0,
+      "resnetv17_stage3_conv9_bias": 1024.0,
+      "resnetv17_stage3_batchnorm9_gamma": 1024.0,
+      "resnetv17_stage3_batchnorm9_beta": 1024.0,
+      "resnetv17_stage3_batchnorm9_running_mean": 1024.0,
+      "resnetv17_stage3_batchnorm9_running_var": 1024.0,
+      "resnetv17_stage3_conv10_weight": 262144.0,
+      "resnetv17_stage3_conv10_bias": 256.0,
+      "resnetv17_stage3_batchnorm10_gamma": 256.0,
+      "resnetv17_stage3_batchnorm10_beta": 256.0,
+      "resnetv17_stage3_batchnorm10_running_mean": 256.0,
+      "resnetv17_stage3_batchnorm10_running_var": 256.0,
+      "resnetv17_stage3_conv11_weight": 589824.0,
+      "resnetv17_stage3_batchnorm11_gamma": 256.0,
+      "resnetv17_stage3_batchnorm11_beta": 256.0,
+      "resnetv17_stage3_batchnorm11_running_mean": 256.0,
+      "resnetv17_stage3_batchnorm11_running_var": 256.0,
+      "resnetv17_stage3_conv12_weight": 262144.0,
+      "resnetv17_stage3_conv12_bias": 1024.0,
+      "resnetv17_stage3_batchnorm12_gamma": 1024.0,
+      "resnetv17_stage3_batchnorm12_beta": 1024.0,
+      "resnetv17_stage3_batchnorm12_running_mean": 1024.0,
+      "resnetv17_stage3_batchnorm12_running_var": 1024.0,
+      "resnetv17_stage3_conv13_weight": 262144.0,
+      "resnetv17_stage3_conv13_bias": 256.0,
+      "resnetv17_stage3_batchnorm13_gamma": 256.0,
+      "resnetv17_stage3_batchnorm13_beta": 256.0,
+      "resnetv17_stage3_batchnorm13_running_mean": 256.0,
+      "resnetv17_stage3_batchnorm13_running_var": 256.0,
+      "resnetv17_stage3_conv14_weight": 589824.0,
+      "resnetv17_stage3_batchnorm14_gamma": 256.0,
+      "resnetv17_stage3_batchnorm14_beta": 256.0,
+      "resnetv17_stage3_batchnorm14_running_mean": 256.0,
+      "resnetv17_stage3_batchnorm14_running_var": 256.0,
+      "resnetv17_stage3_conv15_weight": 262144.0,
+      "resnetv17_stage3_conv15_bias": 1024.0,
+      "resnetv17_stage3_batchnorm15_gamma": 1024.0,
+      "resnetv17_stage3_batchnorm15_beta": 1024.0,
+      "resnetv17_stage3_batchnorm15_running_mean": 1024.0,
+      "resnetv17_stage3_batchnorm15_running_var": 1024.0,
+      "resnetv17_stage3_conv16_weight": 262144.0,
+      "resnetv17_stage3_conv16_bias": 256.0,
+      "resnetv17_stage3_batchnorm16_gamma": 256.0,
+      "resnetv17_stage3_batchnorm16_beta": 256.0,
+      "resnetv17_stage3_batchnorm16_running_mean": 256.0,
+      "resnetv17_stage3_batchnorm16_running_var": 256.0,
+      "resnetv17_stage3_conv17_weight": 589824.0,
+      "resnetv17_stage3_batchnorm17_gamma": 256.0,
+      "resnetv17_stage3_batchnorm17_beta": 256.0,
+      "resnetv17_stage3_batchnorm17_running_mean": 256.0,
+      "resnetv17_stage3_batchnorm17_running_var": 256.0,
+      "resnetv17_stage3_conv18_weight": 262144.0,
+      "resnetv17_stage3_conv18_bias": 1024.0,
+      "resnetv17_stage3_batchnorm18_gamma": 1024.0,
+      "resnetv17_stage3_batchnorm18_beta": 1024.0,
+      "resnetv17_stage3_batchnorm18_running_mean": 1024.0,
+      "resnetv17_stage3_batchnorm18_running_var": 1024.0,
+      "resnetv17_stage4_conv0_weight": 524288.0,
+      "resnetv17_stage4_conv0_bias": 512.0,
+      "resnetv17_stage4_batchnorm0_gamma": 512.0,
+      "resnetv17_stage4_batchnorm0_beta": 512.0,
+      "resnetv17_stage4_batchnorm0_running_mean": 512.0,
+      "resnetv17_stage4_batchnorm0_running_var": 512.0,
+      "resnetv17_stage4_conv1_weight": 2359296.0,
+      "resnetv17_stage4_batchnorm1_gamma": 512.0,
+      "resnetv17_stage4_batchnorm1_beta": 512.0,
+      "resnetv17_stage4_batchnorm1_running_mean": 512.0,
+      "resnetv17_stage4_batchnorm1_running_var": 512.0,
+      "resnetv17_stage4_conv2_weight": 1048576.0,
+      "resnetv17_stage4_conv2_bias": 2048.0,
+      "resnetv17_stage4_batchnorm2_gamma": 2048.0,
+      "resnetv17_stage4_batchnorm2_beta": 2048.0,
+      "resnetv17_stage4_batchnorm2_running_mean": 2048.0,
+      "resnetv17_stage4_batchnorm2_running_var": 2048.0,
+      "resnetv17_stage4_conv3_weight": 2097152.0,
+      "resnetv17_stage4_batchnorm3_gamma": 2048.0,
+      "resnetv17_stage4_batchnorm3_beta": 2048.0,
+      "resnetv17_stage4_batchnorm3_running_mean": 2048.0,
+      "resnetv17_stage4_batchnorm3_running_var": 2048.0,
+      "resnetv17_stage4_conv4_weight": 1048576.0,
+      "resnetv17_stage4_conv4_bias": 512.0,
+      "resnetv17_stage4_batchnorm4_gamma": 512.0,
+      "resnetv17_stage4_batchnorm4_beta": 512.0,
+      "resnetv17_stage4_batchnorm4_running_mean": 512.0,
+      "resnetv17_stage4_batchnorm4_running_var": 512.0,
+      "resnetv17_stage4_conv5_weight": 2359296.0,
+      "resnetv17_stage4_batchnorm5_gamma": 512.0,
+      "resnetv17_stage4_batchnorm5_beta": 512.0,
+      "resnetv17_stage4_batchnorm5_running_mean": 512.0,
+      "resnetv17_stage4_batchnorm5_running_var": 512.0,
+      "resnetv17_stage4_conv6_weight": 1048576.0,
+      "resnetv17_stage4_conv6_bias": 2048.0,
+      "resnetv17_stage4_batchnorm6_gamma": 2048.0,
+      "resnetv17_stage4_batchnorm6_beta": 2048.0,
+      "resnetv17_stage4_batchnorm6_running_mean": 2048.0,
+      "resnetv17_stage4_batchnorm6_running_var": 2048.0,
+      "resnetv17_stage4_conv7_weight": 1048576.0,
+      "resnetv17_stage4_conv7_bias": 512.0,
+      "resnetv17_stage4_batchnorm7_gamma": 512.0,
+      "resnetv17_stage4_batchnorm7_beta": 512.0,
+      "resnetv17_stage4_batchnorm7_running_mean": 512.0,
+      "resnetv17_stage4_batchnorm7_running_var": 512.0,
+      "resnetv17_stage4_conv8_weight": 2359296.0,
+      "resnetv17_stage4_batchnorm8_gamma": 512.0,
+      "resnetv17_stage4_batchnorm8_beta": 512.0,
+      "resnetv17_stage4_batchnorm8_running_mean": 512.0,
+      "resnetv17_stage4_batchnorm8_running_var": 512.0,
+      "resnetv17_stage4_conv9_weight": 1048576.0,
+      "resnetv17_stage4_conv9_bias": 2048.0,
+      "resnetv17_stage4_batchnorm9_gamma": 2048.0,
+      "resnetv17_stage4_batchnorm9_beta": 2048.0,
+      "resnetv17_stage4_batchnorm9_running_mean": 2048.0,
+      "resnetv17_stage4_batchnorm9_running_var": 2048.0,
+      "resnetv17_dense0_weight": 2048000.0,
+      "resnetv17_dense0_bias": 1000.0
+    },
+    "by_op_type": {
+      "Conv": 23473792.0,
+      "BatchNormalization": 106240.0,
+      "Gemm": 2049000.0
+    },
+    "shared_weights": {},
+    "num_shared_weights": 0,
+    "precision_breakdown": {
+      "fp32": 25629032
+    },
+    "is_quantized": false,
+    "quantized_ops": []
+  },
+  "flop_counts": {
+    "total": 7718749696,
+    "by_node": {
+      "resnetv17_conv0_fwd": 236027904,
+      "resnetv17_batchnorm0_fwd": 0,
+      "resnetv17_relu0_fwd": 0,
+      "resnetv17_pool0_fwd": 0,
+      "resnetv17_stage1_conv0_fwd": 25890816,
+      "resnetv17_stage1_batchnorm0_fwd": 0,
+      "resnetv17_stage1_relu0_fwd": 0,
+      "resnetv17_stage1_conv1_fwd": 231211008,
+      "resnetv17_stage1_batchnorm1_fwd": 0,
+      "resnetv17_stage1_relu1_fwd": 0,
+      "resnetv17_stage1_conv2_fwd": 103563264,
+      "resnetv17_stage1_batchnorm2_fwd": 0,
+      "resnetv17_stage1_conv3_fwd": 102760448,
+      "resnetv17_stage1_batchnorm3_fwd": 0,
+      "resnetv17_stage1__plus0": 0,
+      "resnetv17_stage1_activation0": 0,
+      "resnetv17_stage1_conv4_fwd": 102961152,
+      "resnetv17_stage1_batchnorm4_fwd": 0,
+      "resnetv17_stage1_relu2_fwd": 0,
+      "resnetv17_stage1_conv5_fwd": 231211008,
+      "resnetv17_stage1_batchnorm5_fwd": 0,
+      "resnetv17_stage1_relu3_fwd": 0,
+      "resnetv17_stage1_conv6_fwd": 103563264,
+      "resnetv17_stage1_batchnorm6_fwd": 0,
+      "resnetv17_stage1__plus1": 0,
+      "resnetv17_stage1_activation1": 0,
+      "resnetv17_stage1_conv7_fwd": 102961152,
+      "resnetv17_stage1_batchnorm7_fwd": 0,
+      "resnetv17_stage1_relu4_fwd": 0,
+      "resnetv17_stage1_conv8_fwd": 231211008,
+      "resnetv17_stage1_batchnorm8_fwd": 0,
+      "resnetv17_stage1_relu5_fwd": 0,
+      "resnetv17_stage1_conv9_fwd": 103563264,
+      "resnetv17_stage1_batchnorm9_fwd": 0,
+      "resnetv17_stage1__plus2": 0,
+      "resnetv17_stage1_activation2": 0,
+      "resnetv17_stage2_conv0_fwd": 51480576,
+      "resnetv17_stage2_batchnorm0_fwd": 0,
+      "resnetv17_stage2_relu0_fwd": 0,
+      "resnetv17_stage2_conv1_fwd": 231211008,
+      "resnetv17_stage2_batchnorm1_fwd": 0,
+      "resnetv17_stage2_relu1_fwd": 0,
+      "resnetv17_stage2_conv2_fwd": 103161856,
+      "resnetv17_stage2_batchnorm2_fwd": 0,
+      "resnetv17_stage2_conv3_fwd": 205520896,
+      "resnetv17_stage2_batchnorm3_fwd": 0,
+      "resnetv17_stage2__plus0": 0,
+      "resnetv17_stage2_activation0": 0,
+      "resnetv17_stage2_conv4_fwd": 102860800,
+      "resnetv17_stage2_batchnorm4_fwd": 0,
+      "resnetv17_stage2_relu2_fwd": 0,
+      "resnetv17_stage2_conv5_fwd": 231211008,
+      "resnetv17_stage2_batchnorm5_fwd": 0,
+      "resnetv17_stage2_relu3_fwd": 0,
+      "resnetv17_stage2_conv6_fwd": 103161856,
+      "resnetv17_stage2_batchnorm6_fwd": 0,
+      "resnetv17_stage2__plus1": 0,
+      "resnetv17_stage2_activation1": 0,
+      "resnetv17_stage2_conv7_fwd": 102860800,
+      "resnetv17_stage2_batchnorm7_fwd": 0,
+      "resnetv17_stage2_relu4_fwd": 0,
+      "resnetv17_stage2_conv8_fwd": 231211008,
+      "resnetv17_stage2_batchnorm8_fwd": 0,
+      "resnetv17_stage2_relu5_fwd": 0,
+      "resnetv17_stage2_conv9_fwd": 103161856,
+      "resnetv17_stage2_batchnorm9_fwd": 0,
+      "resnetv17_stage2__plus2": 0,
+      "resnetv17_stage2_activation2": 0,
+      "resnetv17_stage2_conv10_fwd": 102860800,
+      "resnetv17_stage2_batchnorm10_fwd": 0,
+      "resnetv17_stage2_relu6_fwd": 0,
+      "resnetv17_stage2_conv11_fwd": 231211008,
+      "resnetv17_stage2_batchnorm11_fwd": 0,
+      "resnetv17_stage2_relu7_fwd": 0,
+      "resnetv17_stage2_conv12_fwd": 103161856,
+      "resnetv17_stage2_batchnorm12_fwd": 0,
+      "resnetv17_stage2__plus3": 0,
+      "resnetv17_stage2_activation3": 0,
+      "resnetv17_stage3_conv0_fwd": 51430400,
+      "resnetv17_stage3_batchnorm0_fwd": 0,
+      "resnetv17_stage3_relu0_fwd": 0,
+      "resnetv17_stage3_conv1_fwd": 231211008,
+      "resnetv17_stage3_batchnorm1_fwd": 0,
+      "resnetv17_stage3_relu1_fwd": 0,
+      "resnetv17_stage3_conv2_fwd": 102961152,
+      "resnetv17_stage3_batchnorm2_fwd": 0,
+      "resnetv17_stage3_conv3_fwd": 205520896,
+      "resnetv17_stage3_batchnorm3_fwd": 0,
+      "resnetv17_stage3__plus0": 0,
+      "resnetv17_stage3_activation0": 0,
+      "resnetv17_stage3_conv4_fwd": 102810624,
+      "resnetv17_stage3_batchnorm4_fwd": 0,
+      "resnetv17_stage3_relu2_fwd": 0,
+      "resnetv17_stage3_conv5_fwd": 231211008,
+      "resnetv17_stage3_batchnorm5_fwd": 0,
+      "resnetv17_stage3_relu3_fwd": 0,
+      "resnetv17_stage3_conv6_fwd": 102961152,
+      "resnetv17_stage3_batchnorm6_fwd": 0,
+      "resnetv17_stage3__plus1": 0,
+      "resnetv17_stage3_activation1": 0,
+      "resnetv17_stage3_conv7_fwd": 102810624,
+      "resnetv17_stage3_batchnorm7_fwd": 0,
+      "resnetv17_stage3_relu4_fwd": 0,
+      "resnetv17_stage3_conv8_fwd": 231211008,
+      "resnetv17_stage3_batchnorm8_fwd": 0,
+      "resnetv17_stage3_relu5_fwd": 0,
+      "resnetv17_stage3_conv9_fwd": 102961152,
+      "resnetv17_stage3_batchnorm9_fwd": 0,
+      "resnetv17_stage3__plus2": 0,
+      "resnetv17_stage3_activation2": 0,
+      "resnetv17_stage3_conv10_fwd": 102810624,
+      "resnetv17_stage3_batchnorm10_fwd": 0,
+      "resnetv17_stage3_relu6_fwd": 0,
+      "resnetv17_stage3_conv11_fwd": 231211008,
+      "resnetv17_stage3_batchnorm11_fwd": 0,
+      "resnetv17_stage3_relu7_fwd": 0,
+      "resnetv17_stage3_conv12_fwd": 102961152,
+      "resnetv17_stage3_batchnorm12_fwd": 0,
+      "resnetv17_stage3__plus3": 0,
+      "resnetv17_stage3_activation3": 0,
+      "resnetv17_stage3_conv13_fwd": 102810624,
+      "resnetv17_stage3_batchnorm13_fwd": 0,
+      "resnetv17_stage3_relu8_fwd": 0,
+      "resnetv17_stage3_conv14_fwd": 231211008,
+      "resnetv17_stage3_batchnorm14_fwd": 0,
+      "resnetv17_stage3_relu9_fwd": 0,
+      "resnetv17_stage3_conv15_fwd": 102961152,
+      "resnetv17_stage3_batchnorm15_fwd": 0,
+      "resnetv17_stage3__plus4": 0,
+      "resnetv17_stage3_activation4": 0,
+      "resnetv17_stage3_conv16_fwd": 102810624,
+      "resnetv17_stage3_batchnorm16_fwd": 0,
+      "resnetv17_stage3_relu10_fwd": 0,
+      "resnetv17_stage3_conv17_fwd": 231211008,
+      "resnetv17_stage3_batchnorm17_fwd": 0,
+      "resnetv17_stage3_relu11_fwd": 0,
+      "resnetv17_stage3_conv18_fwd": 102961152,
+      "resnetv17_stage3_batchnorm18_fwd": 0,
+      "resnetv17_stage3__plus5": 0,
+      "resnetv17_stage3_activation5": 0,
+      "resnetv17_stage4_conv0_fwd": 51405312,
+      "resnetv17_stage4_batchnorm0_fwd": 0,
+      "resnetv17_stage4_relu0_fwd": 0,
+      "resnetv17_stage4_conv1_fwd": 231211008,
+      "resnetv17_stage4_batchnorm1_fwd": 0,
+      "resnetv17_stage4_relu1_fwd": 0,
+      "resnetv17_stage4_conv2_fwd": 102860800,
+      "resnetv17_stage4_batchnorm2_fwd": 0,
+      "resnetv17_stage4_conv3_fwd": 205520896,
+      "resnetv17_stage4_batchnorm3_fwd": 0,
+      "resnetv17_stage4__plus0": 0,
+      "resnetv17_stage4_activation0": 0,
+      "resnetv17_stage4_conv4_fwd": 102785536,
+      "resnetv17_stage4_batchnorm4_fwd": 0,
+      "resnetv17_stage4_relu2_fwd": 0,
+      "resnetv17_stage4_conv5_fwd": 231211008,
+      "resnetv17_stage4_batchnorm5_fwd": 0,
+      "resnetv17_stage4_relu3_fwd": 0,
+      "resnetv17_stage4_conv6_fwd": 102860800,
+      "resnetv17_stage4_batchnorm6_fwd": 0,
+      "resnetv17_stage4__plus1": 0,
+      "resnetv17_stage4_activation1": 0,
+      "resnetv17_stage4_conv7_fwd": 102785536,
+      "resnetv17_stage4_batchnorm7_fwd": 0,
+      "resnetv17_stage4_relu4_fwd": 0,
+      "resnetv17_stage4_conv8_fwd": 231211008,
+      "resnetv17_stage4_batchnorm8_fwd": 0,
+      "resnetv17_stage4_relu5_fwd": 0,
+      "resnetv17_stage4_conv9_fwd": 102860800,
+      "resnetv17_stage4_batchnorm9_fwd": 0,
+      "resnetv17_stage4__plus2": 0,
+      "resnetv17_stage4_activation2": 0,
+      "resnetv17_pool1_fwd": 0,
+      "flatten_473": 0,
+      "resnetv17_dense0_fwd": 0
+    },
+    "by_op_type": {
+      "Conv": 7718749696,
+      "BatchNormalization": 0,
+      "Relu": 0,
+      "MaxPool": 0,
+      "Add": 0,
+      "GlobalAveragePool": 0,
+      "Flatten": 0,
+      "Gemm": 0
+    }
+  },
+  "memory_estimates": {
+    "model_size_bytes": 102516128,
+    "peak_activation_bytes": 0,
+    "per_layer_activation_bytes": {},
+    "kv_cache_bytes_per_token": 0,
+    "kv_cache_bytes_full_context": 0,
+    "kv_cache_config": {},
+    "breakdown": {
+      "weights_by_op_type": {
+        "Conv": 93895168,
+        "BatchNormalization": 424960,
+        "Gemm": 8196000
+      },
+      "largest_weights": [
+        "('resnetv17_stage4_conv1_weight', 9437184)",
+        "('resnetv17_stage4_conv5_weight', 9437184)",
+        "('resnetv17_stage4_conv8_weight', 9437184)",
+        "('resnetv17_stage4_conv3_weight', 8388608)",
+        "('resnetv17_dense0_weight', 8192000)",
+        "('resnetv17_stage4_conv2_weight', 4194304)",
+        "('resnetv17_stage4_conv4_weight', 4194304)",
+        "('resnetv17_stage4_conv6_weight', 4194304)",
+        "('resnetv17_stage4_conv7_weight', 4194304)",
+        "('resnetv17_stage4_conv9_weight', 4194304)"
+      ],
+      "activations_by_op_type": {},
+      "largest_activations": []
+    }
+  },
+  "detected_blocks": [
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_0",
+      "nodes": [
+        "resnetv17_conv0_fwd",
+        "resnetv17_batchnorm0_fwd",
+        "resnetv17_relu0_fwd"
+      ],
+      "start_node": "resnetv17_conv0_fwd",
+      "end_node": "resnetv17_relu0_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_1",
+      "nodes": [
+        "resnetv17_stage1_conv0_fwd",
+        "resnetv17_stage1_batchnorm0_fwd",
+        "resnetv17_stage1_relu0_fwd"
+      ],
+      "start_node": "resnetv17_stage1_conv0_fwd",
+      "end_node": "resnetv17_stage1_relu0_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_2",
+      "nodes": [
+        "resnetv17_stage1_conv1_fwd",
+        "resnetv17_stage1_batchnorm1_fwd",
+        "resnetv17_stage1_relu1_fwd"
+      ],
+      "start_node": "resnetv17_stage1_conv1_fwd",
+      "end_node": "resnetv17_stage1_relu1_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_3",
+      "nodes": [
+        "resnetv17_stage1_conv2_fwd",
+        "resnetv17_stage1_batchnorm2_fwd"
+      ],
+      "start_node": "resnetv17_stage1_conv2_fwd",
+      "end_node": "resnetv17_stage1_batchnorm2_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_4",
+      "nodes": [
+        "resnetv17_stage1_conv3_fwd",
+        "resnetv17_stage1_batchnorm3_fwd"
+      ],
+      "start_node": "resnetv17_stage1_conv3_fwd",
+      "end_node": "resnetv17_stage1_batchnorm3_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_5",
+      "nodes": [
+        "resnetv17_stage1_conv4_fwd",
+        "resnetv17_stage1_batchnorm4_fwd",
+        "resnetv17_stage1_relu2_fwd"
+      ],
+      "start_node": "resnetv17_stage1_conv4_fwd",
+      "end_node": "resnetv17_stage1_relu2_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_6",
+      "nodes": [
+        "resnetv17_stage1_conv5_fwd",
+        "resnetv17_stage1_batchnorm5_fwd",
+        "resnetv17_stage1_relu3_fwd"
+      ],
+      "start_node": "resnetv17_stage1_conv5_fwd",
+      "end_node": "resnetv17_stage1_relu3_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_7",
+      "nodes": [
+        "resnetv17_stage1_conv6_fwd",
+        "resnetv17_stage1_batchnorm6_fwd"
+      ],
+      "start_node": "resnetv17_stage1_conv6_fwd",
+      "end_node": "resnetv17_stage1_batchnorm6_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_8",
+      "nodes": [
+        "resnetv17_stage1_conv7_fwd",
+        "resnetv17_stage1_batchnorm7_fwd",
+        "resnetv17_stage1_relu4_fwd"
+      ],
+      "start_node": "resnetv17_stage1_conv7_fwd",
+      "end_node": "resnetv17_stage1_relu4_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_9",
+      "nodes": [
+        "resnetv17_stage1_conv8_fwd",
+        "resnetv17_stage1_batchnorm8_fwd",
+        "resnetv17_stage1_relu5_fwd"
+      ],
+      "start_node": "resnetv17_stage1_conv8_fwd",
+      "end_node": "resnetv17_stage1_relu5_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_10",
+      "nodes": [
+        "resnetv17_stage1_conv9_fwd",
+        "resnetv17_stage1_batchnorm9_fwd"
+      ],
+      "start_node": "resnetv17_stage1_conv9_fwd",
+      "end_node": "resnetv17_stage1_batchnorm9_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_11",
+      "nodes": [
+        "resnetv17_stage2_conv0_fwd",
+        "resnetv17_stage2_batchnorm0_fwd",
+        "resnetv17_stage2_relu0_fwd"
+      ],
+      "start_node": "resnetv17_stage2_conv0_fwd",
+      "end_node": "resnetv17_stage2_relu0_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_12",
+      "nodes": [
+        "resnetv17_stage2_conv1_fwd",
+        "resnetv17_stage2_batchnorm1_fwd",
+        "resnetv17_stage2_relu1_fwd"
+      ],
+      "start_node": "resnetv17_stage2_conv1_fwd",
+      "end_node": "resnetv17_stage2_relu1_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_13",
+      "nodes": [
+        "resnetv17_stage2_conv2_fwd",
+        "resnetv17_stage2_batchnorm2_fwd"
+      ],
+      "start_node": "resnetv17_stage2_conv2_fwd",
+      "end_node": "resnetv17_stage2_batchnorm2_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_14",
+      "nodes": [
+        "resnetv17_stage2_conv3_fwd",
+        "resnetv17_stage2_batchnorm3_fwd"
+      ],
+      "start_node": "resnetv17_stage2_conv3_fwd",
+      "end_node": "resnetv17_stage2_batchnorm3_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_15",
+      "nodes": [
+        "resnetv17_stage2_conv4_fwd",
+        "resnetv17_stage2_batchnorm4_fwd",
+        "resnetv17_stage2_relu2_fwd"
+      ],
+      "start_node": "resnetv17_stage2_conv4_fwd",
+      "end_node": "resnetv17_stage2_relu2_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_16",
+      "nodes": [
+        "resnetv17_stage2_conv5_fwd",
+        "resnetv17_stage2_batchnorm5_fwd",
+        "resnetv17_stage2_relu3_fwd"
+      ],
+      "start_node": "resnetv17_stage2_conv5_fwd",
+      "end_node": "resnetv17_stage2_relu3_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_17",
+      "nodes": [
+        "resnetv17_stage2_conv6_fwd",
+        "resnetv17_stage2_batchnorm6_fwd"
+      ],
+      "start_node": "resnetv17_stage2_conv6_fwd",
+      "end_node": "resnetv17_stage2_batchnorm6_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_18",
+      "nodes": [
+        "resnetv17_stage2_conv7_fwd",
+        "resnetv17_stage2_batchnorm7_fwd",
+        "resnetv17_stage2_relu4_fwd"
+      ],
+      "start_node": "resnetv17_stage2_conv7_fwd",
+      "end_node": "resnetv17_stage2_relu4_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_19",
+      "nodes": [
+        "resnetv17_stage2_conv8_fwd",
+        "resnetv17_stage2_batchnorm8_fwd",
+        "resnetv17_stage2_relu5_fwd"
+      ],
+      "start_node": "resnetv17_stage2_conv8_fwd",
+      "end_node": "resnetv17_stage2_relu5_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_20",
+      "nodes": [
+        "resnetv17_stage2_conv9_fwd",
+        "resnetv17_stage2_batchnorm9_fwd"
+      ],
+      "start_node": "resnetv17_stage2_conv9_fwd",
+      "end_node": "resnetv17_stage2_batchnorm9_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_21",
+      "nodes": [
+        "resnetv17_stage2_conv10_fwd",
+        "resnetv17_stage2_batchnorm10_fwd",
+        "resnetv17_stage2_relu6_fwd"
+      ],
+      "start_node": "resnetv17_stage2_conv10_fwd",
+      "end_node": "resnetv17_stage2_relu6_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_22",
+      "nodes": [
+        "resnetv17_stage2_conv11_fwd",
+        "resnetv17_stage2_batchnorm11_fwd",
+        "resnetv17_stage2_relu7_fwd"
+      ],
+      "start_node": "resnetv17_stage2_conv11_fwd",
+      "end_node": "resnetv17_stage2_relu7_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_23",
+      "nodes": [
+        "resnetv17_stage2_conv12_fwd",
+        "resnetv17_stage2_batchnorm12_fwd"
+      ],
+      "start_node": "resnetv17_stage2_conv12_fwd",
+      "end_node": "resnetv17_stage2_batchnorm12_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_24",
+      "nodes": [
+        "resnetv17_stage3_conv0_fwd",
+        "resnetv17_stage3_batchnorm0_fwd",
+        "resnetv17_stage3_relu0_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv0_fwd",
+      "end_node": "resnetv17_stage3_relu0_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_25",
+      "nodes": [
+        "resnetv17_stage3_conv1_fwd",
+        "resnetv17_stage3_batchnorm1_fwd",
+        "resnetv17_stage3_relu1_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv1_fwd",
+      "end_node": "resnetv17_stage3_relu1_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_26",
+      "nodes": [
+        "resnetv17_stage3_conv2_fwd",
+        "resnetv17_stage3_batchnorm2_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv2_fwd",
+      "end_node": "resnetv17_stage3_batchnorm2_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_27",
+      "nodes": [
+        "resnetv17_stage3_conv3_fwd",
+        "resnetv17_stage3_batchnorm3_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv3_fwd",
+      "end_node": "resnetv17_stage3_batchnorm3_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_28",
+      "nodes": [
+        "resnetv17_stage3_conv4_fwd",
+        "resnetv17_stage3_batchnorm4_fwd",
+        "resnetv17_stage3_relu2_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv4_fwd",
+      "end_node": "resnetv17_stage3_relu2_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_29",
+      "nodes": [
+        "resnetv17_stage3_conv5_fwd",
+        "resnetv17_stage3_batchnorm5_fwd",
+        "resnetv17_stage3_relu3_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv5_fwd",
+      "end_node": "resnetv17_stage3_relu3_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_30",
+      "nodes": [
+        "resnetv17_stage3_conv6_fwd",
+        "resnetv17_stage3_batchnorm6_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv6_fwd",
+      "end_node": "resnetv17_stage3_batchnorm6_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_31",
+      "nodes": [
+        "resnetv17_stage3_conv7_fwd",
+        "resnetv17_stage3_batchnorm7_fwd",
+        "resnetv17_stage3_relu4_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv7_fwd",
+      "end_node": "resnetv17_stage3_relu4_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_32",
+      "nodes": [
+        "resnetv17_stage3_conv8_fwd",
+        "resnetv17_stage3_batchnorm8_fwd",
+        "resnetv17_stage3_relu5_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv8_fwd",
+      "end_node": "resnetv17_stage3_relu5_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_33",
+      "nodes": [
+        "resnetv17_stage3_conv9_fwd",
+        "resnetv17_stage3_batchnorm9_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv9_fwd",
+      "end_node": "resnetv17_stage3_batchnorm9_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_34",
+      "nodes": [
+        "resnetv17_stage3_conv10_fwd",
+        "resnetv17_stage3_batchnorm10_fwd",
+        "resnetv17_stage3_relu6_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv10_fwd",
+      "end_node": "resnetv17_stage3_relu6_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_35",
+      "nodes": [
+        "resnetv17_stage3_conv11_fwd",
+        "resnetv17_stage3_batchnorm11_fwd",
+        "resnetv17_stage3_relu7_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv11_fwd",
+      "end_node": "resnetv17_stage3_relu7_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_36",
+      "nodes": [
+        "resnetv17_stage3_conv12_fwd",
+        "resnetv17_stage3_batchnorm12_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv12_fwd",
+      "end_node": "resnetv17_stage3_batchnorm12_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_37",
+      "nodes": [
+        "resnetv17_stage3_conv13_fwd",
+        "resnetv17_stage3_batchnorm13_fwd",
+        "resnetv17_stage3_relu8_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv13_fwd",
+      "end_node": "resnetv17_stage3_relu8_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_38",
+      "nodes": [
+        "resnetv17_stage3_conv14_fwd",
+        "resnetv17_stage3_batchnorm14_fwd",
+        "resnetv17_stage3_relu9_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv14_fwd",
+      "end_node": "resnetv17_stage3_relu9_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_39",
+      "nodes": [
+        "resnetv17_stage3_conv15_fwd",
+        "resnetv17_stage3_batchnorm15_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv15_fwd",
+      "end_node": "resnetv17_stage3_batchnorm15_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_40",
+      "nodes": [
+        "resnetv17_stage3_conv16_fwd",
+        "resnetv17_stage3_batchnorm16_fwd",
+        "resnetv17_stage3_relu10_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv16_fwd",
+      "end_node": "resnetv17_stage3_relu10_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_41",
+      "nodes": [
+        "resnetv17_stage3_conv17_fwd",
+        "resnetv17_stage3_batchnorm17_fwd",
+        "resnetv17_stage3_relu11_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv17_fwd",
+      "end_node": "resnetv17_stage3_relu11_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_42",
+      "nodes": [
+        "resnetv17_stage3_conv18_fwd",
+        "resnetv17_stage3_batchnorm18_fwd"
+      ],
+      "start_node": "resnetv17_stage3_conv18_fwd",
+      "end_node": "resnetv17_stage3_batchnorm18_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_43",
+      "nodes": [
+        "resnetv17_stage4_conv0_fwd",
+        "resnetv17_stage4_batchnorm0_fwd",
+        "resnetv17_stage4_relu0_fwd"
+      ],
+      "start_node": "resnetv17_stage4_conv0_fwd",
+      "end_node": "resnetv17_stage4_relu0_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_44",
+      "nodes": [
+        "resnetv17_stage4_conv1_fwd",
+        "resnetv17_stage4_batchnorm1_fwd",
+        "resnetv17_stage4_relu1_fwd"
+      ],
+      "start_node": "resnetv17_stage4_conv1_fwd",
+      "end_node": "resnetv17_stage4_relu1_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_45",
+      "nodes": [
+        "resnetv17_stage4_conv2_fwd",
+        "resnetv17_stage4_batchnorm2_fwd"
+      ],
+      "start_node": "resnetv17_stage4_conv2_fwd",
+      "end_node": "resnetv17_stage4_batchnorm2_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_46",
+      "nodes": [
+        "resnetv17_stage4_conv3_fwd",
+        "resnetv17_stage4_batchnorm3_fwd"
+      ],
+      "start_node": "resnetv17_stage4_conv3_fwd",
+      "end_node": "resnetv17_stage4_batchnorm3_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_47",
+      "nodes": [
+        "resnetv17_stage4_conv4_fwd",
+        "resnetv17_stage4_batchnorm4_fwd",
+        "resnetv17_stage4_relu2_fwd"
+      ],
+      "start_node": "resnetv17_stage4_conv4_fwd",
+      "end_node": "resnetv17_stage4_relu2_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_48",
+      "nodes": [
+        "resnetv17_stage4_conv5_fwd",
+        "resnetv17_stage4_batchnorm5_fwd",
+        "resnetv17_stage4_relu3_fwd"
+      ],
+      "start_node": "resnetv17_stage4_conv5_fwd",
+      "end_node": "resnetv17_stage4_relu3_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_49",
+      "nodes": [
+        "resnetv17_stage4_conv6_fwd",
+        "resnetv17_stage4_batchnorm6_fwd"
+      ],
+      "start_node": "resnetv17_stage4_conv6_fwd",
+      "end_node": "resnetv17_stage4_batchnorm6_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_50",
+      "nodes": [
+        "resnetv17_stage4_conv7_fwd",
+        "resnetv17_stage4_batchnorm7_fwd",
+        "resnetv17_stage4_relu4_fwd"
+      ],
+      "start_node": "resnetv17_stage4_conv7_fwd",
+      "end_node": "resnetv17_stage4_relu4_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBNRelu",
+      "name": "conv_block_51",
+      "nodes": [
+        "resnetv17_stage4_conv8_fwd",
+        "resnetv17_stage4_batchnorm8_fwd",
+        "resnetv17_stage4_relu5_fwd"
+      ],
+      "start_node": "resnetv17_stage4_conv8_fwd",
+      "end_node": "resnetv17_stage4_relu5_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ConvBN",
+      "name": "conv_block_52",
+      "nodes": [
+        "resnetv17_stage4_conv9_fwd",
+        "resnetv17_stage4_batchnorm9_fwd"
+      ],
+      "start_node": "resnetv17_stage4_conv9_fwd",
+      "end_node": "resnetv17_stage4_batchnorm9_fwd",
+      "attributes": {}
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_0",
+      "nodes": [
+        "resnetv17_stage1__plus0"
+      ],
+      "start_node": "resnetv17_stage1__plus0",
+      "end_node": "resnetv17_stage1__plus0",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage1_batchnorm2_fwd",
+          "resnetv17_stage1_batchnorm3_fwd"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_1",
+      "nodes": [
+        "resnetv17_stage1__plus1"
+      ],
+      "start_node": "resnetv17_stage1__plus1",
+      "end_node": "resnetv17_stage1__plus1",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage1_batchnorm6_fwd",
+          "resnetv17_stage1_activation0"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_2",
+      "nodes": [
+        "resnetv17_stage1__plus2"
+      ],
+      "start_node": "resnetv17_stage1__plus2",
+      "end_node": "resnetv17_stage1__plus2",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage1_batchnorm9_fwd",
+          "resnetv17_stage1_activation1"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_3",
+      "nodes": [
+        "resnetv17_stage2__plus0"
+      ],
+      "start_node": "resnetv17_stage2__plus0",
+      "end_node": "resnetv17_stage2__plus0",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage2_batchnorm2_fwd",
+          "resnetv17_stage2_batchnorm3_fwd"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_4",
+      "nodes": [
+        "resnetv17_stage2__plus1"
+      ],
+      "start_node": "resnetv17_stage2__plus1",
+      "end_node": "resnetv17_stage2__plus1",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage2_batchnorm6_fwd",
+          "resnetv17_stage2_activation0"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_5",
+      "nodes": [
+        "resnetv17_stage2__plus2"
+      ],
+      "start_node": "resnetv17_stage2__plus2",
+      "end_node": "resnetv17_stage2__plus2",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage2_batchnorm9_fwd",
+          "resnetv17_stage2_activation1"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_6",
+      "nodes": [
+        "resnetv17_stage2__plus3"
+      ],
+      "start_node": "resnetv17_stage2__plus3",
+      "end_node": "resnetv17_stage2__plus3",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage2_batchnorm12_fwd",
+          "resnetv17_stage2_activation2"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_7",
+      "nodes": [
+        "resnetv17_stage3__plus0"
+      ],
+      "start_node": "resnetv17_stage3__plus0",
+      "end_node": "resnetv17_stage3__plus0",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage3_batchnorm2_fwd",
+          "resnetv17_stage3_batchnorm3_fwd"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_8",
+      "nodes": [
+        "resnetv17_stage3__plus1"
+      ],
+      "start_node": "resnetv17_stage3__plus1",
+      "end_node": "resnetv17_stage3__plus1",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage3_batchnorm6_fwd",
+          "resnetv17_stage3_activation0"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_9",
+      "nodes": [
+        "resnetv17_stage3__plus2"
+      ],
+      "start_node": "resnetv17_stage3__plus2",
+      "end_node": "resnetv17_stage3__plus2",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage3_batchnorm9_fwd",
+          "resnetv17_stage3_activation1"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_10",
+      "nodes": [
+        "resnetv17_stage3__plus3"
+      ],
+      "start_node": "resnetv17_stage3__plus3",
+      "end_node": "resnetv17_stage3__plus3",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage3_batchnorm12_fwd",
+          "resnetv17_stage3_activation2"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_11",
+      "nodes": [
+        "resnetv17_stage3__plus4"
+      ],
+      "start_node": "resnetv17_stage3__plus4",
+      "end_node": "resnetv17_stage3__plus4",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage3_batchnorm15_fwd",
+          "resnetv17_stage3_activation3"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_12",
+      "nodes": [
+        "resnetv17_stage3__plus5"
+      ],
+      "start_node": "resnetv17_stage3__plus5",
+      "end_node": "resnetv17_stage3__plus5",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage3_batchnorm18_fwd",
+          "resnetv17_stage3_activation4"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_13",
+      "nodes": [
+        "resnetv17_stage4__plus0"
+      ],
+      "start_node": "resnetv17_stage4__plus0",
+      "end_node": "resnetv17_stage4__plus0",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage4_batchnorm2_fwd",
+          "resnetv17_stage4_batchnorm3_fwd"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_14",
+      "nodes": [
+        "resnetv17_stage4__plus1"
+      ],
+      "start_node": "resnetv17_stage4__plus1",
+      "end_node": "resnetv17_stage4__plus1",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage4_batchnorm6_fwd",
+          "resnetv17_stage4_activation0"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "ResidualAdd",
+      "name": "residual_15",
+      "nodes": [
+        "resnetv17_stage4__plus2"
+      ],
+      "start_node": "resnetv17_stage4__plus2",
+      "end_node": "resnetv17_stage4__plus2",
+      "attributes": {
+        "inputs": [
+          "resnetv17_stage4_batchnorm9_fwd",
+          "resnetv17_stage4_activation1"
+        ],
+        "variant": "standard"
+      }
+    },
+    {
+      "block_type": "RepeatedBlock",
+      "name": "repeated_ConvBNRelu",
+      "nodes": [],
+      "start_node": "resnetv17_conv0_fwd",
+      "end_node": "resnetv17_stage4_relu5_fwd",
+      "attributes": {
+        "repeated_type": "ConvBNRelu",
+        "num_repetitions": 33,
+        "block_names": [
+          "conv_block_0",
+          "conv_block_1",
+          "conv_block_2",
+          "conv_block_5",
+          "conv_block_6",
+          "conv_block_8",
+          "conv_block_9",
+          "conv_block_11",
+          "conv_block_12",
+          "conv_block_15",
+          "conv_block_16",
+          "conv_block_18",
+          "conv_block_19",
+          "conv_block_21",
+          "conv_block_22",
+          "conv_block_24",
+          "conv_block_25",
+          "conv_block_28",
+          "conv_block_29",
+          "conv_block_31",
+          "conv_block_32",
+          "conv_block_34",
+          "conv_block_35",
+          "conv_block_37",
+          "conv_block_38",
+          "conv_block_40",
+          "conv_block_41",
+          "conv_block_43",
+          "conv_block_44",
+          "conv_block_47",
+          "conv_block_48",
+          "conv_block_50",
+          "conv_block_51"
+        ]
+      }
+    },
+    {
+      "block_type": "RepeatedBlock",
+      "name": "repeated_ConvBN",
+      "nodes": [],
+      "start_node": "resnetv17_stage1_conv2_fwd",
+      "end_node": "resnetv17_stage4_batchnorm9_fwd",
+      "attributes": {
+        "repeated_type": "ConvBN",
+        "num_repetitions": 20,
+        "block_names": [
+          "conv_block_3",
+          "conv_block_4",
+          "conv_block_7",
+          "conv_block_10",
+          "conv_block_13",
+          "conv_block_14",
+          "conv_block_17",
+          "conv_block_20",
+          "conv_block_23",
+          "conv_block_26",
+          "conv_block_27",
+          "conv_block_30",
+          "conv_block_33",
+          "conv_block_36",
+          "conv_block_39",
+          "conv_block_42",
+          "conv_block_45",
+          "conv_block_46",
+          "conv_block_49",
+          "conv_block_52"
+        ]
+      }
+    },
+    {
+      "block_type": "RepeatedBlock",
+      "name": "repeated_ResidualAdd",
+      "nodes": [],
+      "start_node": "resnetv17_stage1__plus0",
+      "end_node": "resnetv17_stage4__plus2",
+      "attributes": {
+        "repeated_type": "ResidualAdd",
+        "num_repetitions": 16,
+        "block_names": [
+          "residual_0",
+          "residual_1",
+          "residual_2",
+          "residual_3",
+          "residual_4",
+          "residual_5",
+          "residual_6",
+          "residual_7",
+          "residual_8",
+          "residual_9",
+          "residual_10",
+          "residual_11",
+          "residual_12",
+          "residual_13",
+          "residual_14",
+          "residual_15"
+        ]
+      }
+    }
+  ],
+  "architecture_type": "cnn",
+  "risk_signals": [
+    {
+      "id": "dynamic_input_shapes",
+      "severity": "info",
+      "description": "Model has 1 input(s) with dynamic/symbolic dimensions: data. This is normal for variable-length sequences but may affect optimization.",
+      "nodes": [],
+      "recommendation": "For best performance with hardware accelerators, consider providing fixed shapes or using onnxruntime.tools.make_dynamic_shape_fixed."
+    }
+  ],
+  "hardware_profile": {
+    "name": "NVIDIA GeForce RTX 4050 Laptop GPU (detected)",
+    "vendor": "nvidia",
+    "device_type": "gpu",
+    "vram_bytes": 6439305216,
+    "memory_bandwidth_bytes_per_s": 536870912000,
+    "peak_fp32_tflops": 10.0,
+    "peak_fp16_tflops": 20.0,
+    "peak_int8_tops": 40.0,
+    "compute_capability": "8.9",
+    "tdp_watts": 0,
+    "is_detected": true
+  },
+  "hardware_estimates": {
+    "device": "NVIDIA GeForce RTX 4050 Laptop GPU (detected)",
+    "precision": "fp32",
+    "batch_size": 1,
+    "vram_required_bytes": 123019353,
+    "fits_in_vram": true,
+    "theoretical_latency_ms": 0.7718749696,
+    "compute_utilization_estimate": 0.7,
+    "gpu_saturation": 0.0007718749696,
+    "bottleneck": "compute",
+    "model_flops": 7718749696,
+    "hardware_peak_tflops": 10.0
+  },
+  "system_requirements": null,
+  "batch_size_sweep": null,
+  "resolution_sweep": null,
+  "llm_summary": null,
+  "dataset_info": {
+    "task": "classify",
+    "num_classes": 1000,
+    "class_names": [],
+    "source": "output_shape"
+  }
+}

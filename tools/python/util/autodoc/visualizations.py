@@ -50,8 +50,10 @@ class ChartTheme:
 
     # Colors - dark theme with vibrant accents
     background: str = "#1a1a2e"
+    plot_background: str = "#16213e"  # Slightly lighter for plot areas
     text: str = "#eaeaea"
     grid: str = "#2d2d44"
+    accent: str = "#00d9ff"  # Primary accent (alias for accent_primary)
     accent_primary: str = "#00d9ff"  # Cyan
     accent_secondary: str = "#ff6b6b"  # Coral
     accent_tertiary: str = "#4ecdc4"  # Teal
@@ -70,6 +72,11 @@ class ChartTheme:
         "#74b9ff",  # Light blue
         "#ff7675",  # Salmon
     )
+
+    # Alias for palette (some code uses 'colors')
+    @property
+    def colors(self) -> tuple[str, ...]:
+        return self.palette
 
     # Typography
     font_family: str = "sans-serif"

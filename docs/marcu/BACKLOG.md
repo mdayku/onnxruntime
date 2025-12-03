@@ -292,7 +292,9 @@
 - [x] **Task 7.1.4**: Generate detailed summary
 - [x] **Task 7.1.5**: Handle API failures gracefully
 
-### Story 7.2: Secure Config File
+### Story 7.2: Secure Config File - **DEFERRED to post-10B.0**
+*Config file location depends on package structure - defer until greenfield extraction*
+*For now, use OPENAI_API_KEY environment variable*
 - [ ] **Task 7.2.1**: Read API key from config file
 - [ ] **Task 7.2.2**: Add `--api-key` CLI flag
 - [ ] **Task 7.2.3**: Priority order: CLI flag > env var > config file
@@ -300,15 +302,15 @@
 
 ---
 
-## Epic 8: Testing, CI/CD, and Quality (P3 - 12/18 done)
+## Epic 8: Testing, CI/CD, and Quality (P3 - 15/18 done)
 
 ### Story 8.1: Unit Tests - **COMPLETE**
 - [x] **Task 8.1.1-8.1.4**: All unit tests complete
 
-### Story 8.2: Integration Tests
-- [ ] **Task 8.2.1**: Test CLI end-to-end with ResNet
-- [ ] **Task 8.2.2**: Test CLI end-to-end with BERT
-- [ ] **Task 8.2.3**: Test compare mode with quantized variants
+### Story 8.2: Integration Tests - **COMPLETE**
+- [x] **Task 8.2.1**: Test CLI end-to-end with ResNet (PDF, graph, LLM summary)
+- [x] **Task 8.2.2**: Test CLI end-to-end with BERT (PDF, graph, LLM summary)
+- [x] **Task 8.2.3**: Test compare mode with quantized variants (real benchmarks)
 - [x] **Task 8.2.4**: Test visualization generation (17 tests)
 
 ### Story 8.3: Documentation
