@@ -582,9 +582,7 @@ class VisualizationGenerator:
             autotext.set_fontweight("bold")
 
         # Create legend with op names and param counts
-        legend_labels = [
-            f"{op} ({_format_count(int(count))})" for op, count in top_ops
-        ]
+        legend_labels = [f"{op} ({_format_count(int(count))})" for op, count in top_ops]
         ax.legend(
             wedges,
             legend_labels,
