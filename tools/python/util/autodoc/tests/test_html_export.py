@@ -78,7 +78,7 @@ class TestHTMLGeneration:
 
         # Should contain key elements
         assert "<!DOCTYPE html>" in html
-        assert "<title>Test Model - ONNX Autodoc</title>" in html
+        assert "<title>Test Model - Neural Architecture</title>" in html
         assert "d3.v7.min.js" in html
         assert "graphData" in html
 
@@ -114,14 +114,15 @@ class TestHTMLGeneration:
         assert "fitToScreen()" in html
 
     def test_html_contains_legend(self):
-        """Test that HTML contains legend."""
+        """Test that HTML contains op type legend."""
         graph = create_test_graph()
         html = generate_html(graph)
 
-        assert "Legend" in html
+        # New design uses "Op Types" instead of "Legend"
+        assert "Op Types" in html
         assert "Convolution" in html
         assert "Attention" in html
-        assert "Memory Bottleneck" in html
+        assert "legend-item" in html  # CSS class for legend items
 
     def test_html_contains_stats_panel(self):
         """Test that HTML contains stats panel."""
