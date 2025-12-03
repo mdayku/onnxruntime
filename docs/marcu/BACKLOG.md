@@ -13,20 +13,33 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 
 | Epic | Status | Stories | Tasks Complete | Priority |
 |------|--------|---------|----------------|----------|
-| Epic 10B: Standalone Package | **NEXT** | 3 | 0/17 | **P0** |
-| Epic 11: Streamlit Web UI | **NEXT** | 3 | 0/14 | **P0** |
-| Epic 12: Inference Platform | Not Started | 5 | 0/24 | **P1** |
+| **DONE** |||||
+| Epic 1: Environment Setup | **Complete** | 3 | 11/11 | Done |
 | Epic 2: Core Analysis Engine | **Complete** | 4 | 17/17 | Done |
 | Epic 3: Pattern Analysis | **Complete** | 2 | 9/9 | Done |
 | Epic 4: CLI and Output | **Complete** | 4 | 18/18 | Done |
 | Epic 4B: PyTorch Integration | **Complete** | 2 | 14/14 | Done |
+| **P0 - SHIP NOW** |||||
+| Epic 10B: Standalone Package | **NEXT** | 3 | 0/17 | **P0** |
+| Epic 11: Streamlit Web UI | **NEXT** | 3 | 0/14 | **P0** |
+| **P1 - HIGH VALUE** |||||
+| Epic 18: Universal IR | Not Started | 3 | 0/12 | P1 |
+| Epic 12: Inference Platform | Not Started | 5 | 0/24 | P1 |
+| Epic 4C: TensorFlow/Keras | Not Started | 3 | 0/15 | P1 |
+| **P2 - MEDIUM** |||||
 | Epic 5: Visualization | In Progress | 5 | 13/22 | P2 |
 | Epic 6: Hardware/Compare | In Progress | 9 | 27/47 | P2 |
 | Epic 7: LLM Integration | In Progress | 2 | 5/9 | P2 |
-| Epic 1: Environment Setup | **Complete** | 3 | 11/11 | Done |
-| Epic 4C: TensorFlow Conversion | Not Started | 3 | 0/15 | P3 |
+| Epic 19: SafeTensors Format | Not Started | 2 | 0/8 | P2 |
+| Epic 20: CoreML Format | Not Started | 2 | 0/10 | P2 |
+| Epic 21: TFLite Format | Not Started | 2 | 0/10 | P2 |
+| **P3 - LOWER** |||||
 | Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 | P3 |
 | Epic 9: Demo/Deliverables | Not Started | 3 | 0/13 | P3 |
+| Epic 22: TensorRT Format | Not Started | 2 | 0/8 | P3 |
+| Epic 23: OpenVINO Format | Not Started | 2 | 0/8 | P3 |
+| Epic 24: GGUF Format | Not Started | 2 | 0/6 | P3 |
+| **P4+ - FUTURE** |||||
 | Epic 10: SaaS Web App | Not Started | 5 | 0/27 | P4 |
 | Epic 13-17: MLOps Platform | Future | 5 | 0/? | P5 |
 
@@ -518,3 +531,147 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - Metered usage tracking
 - Pass-through cloud costs + margin
 - Invoicing and spend alerts
+
+---
+
+## Format Interoperability Epics
+
+*Universal model format support - read any format, convert between formats.*
+
+---
+
+## Epic 18: Universal Internal Representation (P1 - Foundation)
+
+*Must be built before other format adapters to enable true interoperability.*
+
+### Story 18.1: Universal Graph IR
+- [ ] **Task 18.1.1**: Design `UniversalGraph` dataclass (nodes, edges, weights, metadata)
+- [ ] **Task 18.1.2**: Design `UniversalNode` with op-type abstraction (not tied to ONNX ops)
+- [ ] **Task 18.1.3**: Design `UniversalTensor` for weights/activations
+- [ ] **Task 18.1.4**: Add source_format tracking and round-trip metadata
+- [ ] **Task 18.1.5**: Document IR design decisions in Architecture.md
+
+### Story 18.2: Format Adapter Interface
+- [ ] **Task 18.2.1**: Define `FormatAdapter` protocol (can_read, read, can_write, write)
+- [ ] **Task 18.2.2**: Implement adapter registry and auto-detection by file extension
+- [ ] **Task 18.2.3**: Refactor ONNX loader to use FormatAdapter interface
+- [ ] **Task 18.2.4**: Refactor PyTorch loader to use FormatAdapter interface
+
+### Story 18.3: Conversion Matrix
+- [ ] **Task 18.3.1**: Define conversion capability enum (FULL, LOSSY, PARTIAL, NONE)
+- [ ] **Task 18.3.2**: Implement conversion matrix lookup
+- [ ] **Task 18.3.3**: Add CLI flag `--convert-to <format>` for format conversion
+
+---
+
+## Epic 19: SafeTensors Format (P2 - Easy Win)
+
+*HuggingFace ecosystem, widely used for LLM weights. Simple binary format.*
+
+### Story 19.1: SafeTensors Reader
+- [ ] **Task 19.1.1**: Add safetensors dependency (optional)
+- [ ] **Task 19.1.2**: Implement SafeTensorsAdapter.read() - load tensor dict
+- [ ] **Task 19.1.3**: Extract metadata (tensor names, shapes, dtypes)
+- [ ] **Task 19.1.4**: Integrate with analysis pipeline (param counts, memory)
+
+### Story 19.2: SafeTensors Writer
+- [ ] **Task 19.2.1**: Implement SafeTensorsAdapter.write() - export weights
+- [ ] **Task 19.2.2**: Support conversion from ONNX initializers to SafeTensors
+- [ ] **Task 19.2.3**: Support conversion from PyTorch state_dict to SafeTensors
+- [ ] **Task 19.2.4**: Add `--export-weights safetensors` CLI flag
+
+---
+
+## Epic 20: CoreML Format (P2 - Apple Deployment)
+
+*Apple's ML framework for iOS/macOS deployment.*
+
+### Story 20.1: CoreML Reader
+- [ ] **Task 20.1.1**: Add coremltools dependency (optional)
+- [ ] **Task 20.1.2**: Implement CoreMLAdapter.read() - load .mlmodel/.mlpackage
+- [ ] **Task 20.1.3**: Map CoreML ops to UniversalNode ops
+- [ ] **Task 20.1.4**: Extract CoreML-specific metadata (compute units, iOS version)
+- [ ] **Task 20.1.5**: Integrate with analysis pipeline
+
+### Story 20.2: CoreML Writer
+- [ ] **Task 20.2.1**: Implement CoreMLAdapter.write() via coremltools conversion
+- [ ] **Task 20.2.2**: Support ONNX → CoreML conversion path
+- [ ] **Task 20.2.3**: Support PyTorch → CoreML conversion path
+- [ ] **Task 20.2.4**: Add iOS/macOS deployment target options
+- [ ] **Task 20.2.5**: Add `--convert-to coreml` CLI flag
+
+---
+
+## Epic 21: TFLite Format (P2 - Mobile/Edge)
+
+*TensorFlow Lite for mobile and edge deployment.*
+
+### Story 21.1: TFLite Reader
+- [ ] **Task 21.1.1**: Add tflite-runtime dependency (optional)
+- [ ] **Task 21.1.2**: Implement TFLiteAdapter.read() - load .tflite
+- [ ] **Task 21.1.3**: Parse FlatBuffer schema for ops and tensors
+- [ ] **Task 21.1.4**: Map TFLite ops to UniversalNode ops
+- [ ] **Task 21.1.5**: Extract quantization info (int8, float16)
+
+### Story 21.2: TFLite Writer
+- [ ] **Task 21.2.1**: Implement TFLiteAdapter.write() via tf.lite.TFLiteConverter
+- [ ] **Task 21.2.2**: Support ONNX → TFLite conversion (via TF intermediary)
+- [ ] **Task 21.2.3**: Add quantization options (dynamic, full int8)
+- [ ] **Task 21.2.4**: Add representative dataset hook for calibration
+- [ ] **Task 21.2.5**: Add `--convert-to tflite` CLI flag
+
+---
+
+## Epic 22: TensorRT Format (P3 - Read-Only Analysis)
+
+*NVIDIA's optimized inference engine. Read-only (engines are compiled/encrypted).*
+
+### Story 22.1: TensorRT Engine Reader
+- [ ] **Task 22.1.1**: Add tensorrt dependency (optional, NVIDIA GPU required)
+- [ ] **Task 22.1.2**: Implement TensorRTAdapter.read() - deserialize .engine/.plan
+- [ ] **Task 22.1.3**: Extract layer info (names, types, shapes, precision)
+- [ ] **Task 22.1.4**: Extract timing/profiling data if available
+- [ ] **Task 22.1.5**: Identify precision per layer (FP32, FP16, INT8)
+
+### Story 22.2: TensorRT Analysis Features
+- [ ] **Task 22.2.1**: Add engine comparison (original vs optimized)
+- [ ] **Task 22.2.2**: Show layer fusion visualization
+- [ ] **Task 22.2.3**: Estimate memory footprint from engine metadata
+
+*Note: No write support - TRT engines are compiled binaries, not exportable.*
+
+---
+
+## Epic 23: OpenVINO Format (P3 - Intel Deployment)
+
+*Intel's inference toolkit for CPU/GPU/VPU deployment.*
+
+### Story 23.1: OpenVINO Reader
+- [ ] **Task 23.1.1**: Add openvino dependency (optional)
+- [ ] **Task 23.1.2**: Implement OpenVINOAdapter.read() - load .xml/.bin pair
+- [ ] **Task 23.1.3**: Map OpenVINO ops to UniversalNode ops
+- [ ] **Task 23.1.4**: Extract Intel-specific optimizations info
+
+### Story 23.2: OpenVINO Writer
+- [ ] **Task 23.2.1**: Implement OpenVINOAdapter.write() via Model Optimizer
+- [ ] **Task 23.2.2**: Support ONNX → OpenVINO conversion
+- [ ] **Task 23.2.3**: Add precision options (FP32, FP16, INT8)
+- [ ] **Task 23.2.4**: Add `--convert-to openvino` CLI flag
+
+---
+
+## Epic 24: GGUF Format (P3 - LLM Local Inference)
+
+*llama.cpp format for running LLMs locally. Read-only analysis.*
+
+### Story 24.1: GGUF Reader
+- [ ] **Task 24.1.1**: Implement GGUF header parser (pure Python, no deps)
+- [ ] **Task 24.1.2**: Extract model metadata (architecture, context length, vocab)
+- [ ] **Task 24.1.3**: Extract quantization type per tensor (Q4_0, Q5_K_M, etc.)
+- [ ] **Task 24.1.4**: Estimate memory footprint for different quant levels
+
+### Story 24.2: GGUF Analysis Features
+- [ ] **Task 24.2.1**: Show quantization breakdown (% of weights at each quant level)
+- [ ] **Task 24.2.2**: Estimate VRAM for different context lengths
+
+*Note: No write support in v1 - GGUF creation requires llama.cpp tooling.*
