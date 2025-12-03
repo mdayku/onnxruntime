@@ -23,7 +23,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 | Epic 5: Visualization | In Progress | 5 | 13/22 | P2 |
 | Epic 6: Hardware/Compare | In Progress | 9 | 27/47 | P2 |
 | Epic 7: LLM Integration | In Progress | 2 | 5/9 | P2 |
-| Epic 1: Environment Setup | In Progress | 3 | 11/12 | P3 |
+| Epic 1: Environment Setup | **Complete** | 3 | 11/11 | Done |
 | Epic 4C: TensorFlow Conversion | Not Started | 3 | 0/15 | P3 |
 | Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 | P3 |
 | Epic 9: Demo/Deliverables | Not Started | 3 | 0/13 | P3 |
@@ -51,7 +51,8 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 1.3.1**: Create `tools/python/util/autodoc/` directory structure
 - [x] **Task 1.3.2**: Set up `__init__.py` and module structure
 - [x] **Task 1.3.3**: Create stub files for all planned modules (analyzer, patterns, risks, report)
-- [ ] **Task 1.3.4**: Add project to ONNX Runtime build system
+
+*Note: Originally had "Add project to ONNX Runtime build system" but removed - this is our IP, shipping as standalone package (Epic 10B), not donating to Microsoft.*
 
 ---
 
