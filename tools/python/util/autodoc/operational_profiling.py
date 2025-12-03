@@ -251,9 +251,8 @@ class OperationalProfiler:
             BatchSizeSweep with measured (not estimated) metrics
         """
         try:
-            import numpy as np  # noqa: PLC0415
-
-            import onnxruntime as ort  # noqa: PLC0415
+            import numpy as np
+            import onnxruntime as ort
         except ImportError:
             self.logger.warning("onnxruntime not available, falling back to estimates")
             return None
@@ -317,7 +316,7 @@ class OperationalProfiler:
                 continue
 
             # Benchmark
-            import time  # noqa: PLC0415
+            import time
 
             run_latencies = []
             for _ in range(num_runs):
