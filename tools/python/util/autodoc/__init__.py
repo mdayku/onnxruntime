@@ -48,7 +48,12 @@ from .pdf_generator import (
 from .pdf_generator import (
     is_available as is_pdf_available,
 )
-from .report import DatasetInfo, InspectionReport, ModelInspector, infer_num_classes_from_output
+from .report import (
+    DatasetInfo,
+    InspectionReport,
+    ModelInspector,
+    infer_num_classes_from_output,
+)
 from .risks import RiskAnalyzer, RiskSignal, RiskThresholds
 from .schema import (
     INSPECTION_REPORT_SCHEMA,

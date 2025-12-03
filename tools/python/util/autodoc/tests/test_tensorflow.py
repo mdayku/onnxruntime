@@ -262,10 +262,12 @@ class TestTensorFlowConversion:
     def test_savedmodel_conversion(self, tmp_path, logger):
         """SavedModel should convert successfully."""
         # Create a simple TF SavedModel
-        model = tf.keras.Sequential([
-            tf.keras.layers.Dense(10, input_shape=(5,), activation="relu"),
-            tf.keras.layers.Dense(2),
-        ])
+        model = tf.keras.Sequential(
+            [
+                tf.keras.layers.Dense(10, input_shape=(5,), activation="relu"),
+                tf.keras.layers.Dense(2),
+            ]
+        )
 
         saved_model_path = tmp_path / "saved_model"
         model.save(str(saved_model_path), save_format="tf")
@@ -284,9 +286,11 @@ class TestTensorFlowConversion:
 
     def test_savedmodel_temp_file(self, tmp_path, logger):
         """SavedModel conversion to temp file should work."""
-        model = tf.keras.Sequential([
-            tf.keras.layers.Dense(10, input_shape=(5,)),
-        ])
+        model = tf.keras.Sequential(
+            [
+                tf.keras.layers.Dense(10, input_shape=(5,)),
+            ]
+        )
 
         saved_model_path = tmp_path / "saved_model"
         model.save(str(saved_model_path), save_format="tf")
@@ -310,10 +314,12 @@ class TestKerasConversion:
 
     def test_h5_conversion(self, tmp_path, logger):
         """Keras .h5 model should convert successfully."""
-        model = tf.keras.Sequential([
-            tf.keras.layers.Dense(10, input_shape=(5,), activation="relu"),
-            tf.keras.layers.Dense(2),
-        ])
+        model = tf.keras.Sequential(
+            [
+                tf.keras.layers.Dense(10, input_shape=(5,), activation="relu"),
+                tf.keras.layers.Dense(2),
+            ]
+        )
 
         h5_path = tmp_path / "model.h5"
         model.save(str(h5_path), save_format="h5")
@@ -331,9 +337,11 @@ class TestKerasConversion:
 
     def test_keras_format_conversion(self, tmp_path, logger):
         """Keras .keras format should convert successfully."""
-        model = tf.keras.Sequential([
-            tf.keras.layers.Dense(10, input_shape=(5,)),
-        ])
+        model = tf.keras.Sequential(
+            [
+                tf.keras.layers.Dense(10, input_shape=(5,)),
+            ]
+        )
 
         keras_path = tmp_path / "model.keras"
         model.save(str(keras_path))
@@ -349,7 +357,9 @@ class TestKerasConversion:
         assert onnx_path.exists()
 
 
-@pytest.mark.skipif(not _JAX_AVAILABLE or not _TF_AVAILABLE, reason="JAX or TF not installed")
+@pytest.mark.skipif(
+    not _JAX_AVAILABLE or not _TF_AVAILABLE, reason="JAX or TF not installed"
+)
 class TestJAXConversion:
     """Tests for JAX to ONNX conversion (requires JAX and TensorFlow)."""
 
@@ -386,4 +396,3 @@ class TestCLIValidation:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
-
