@@ -856,7 +856,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
             // Performance: limit visible nodes in performance mode
             if (performanceMode && visibleNodes.length > 1000) {{
-                console.log(`Limiting display to 1000 nodes (had ${visibleNodes.length})`);
+                console.log(`Limiting display to 1000 nodes (had ${{visibleNodes.length}})`);
                 // Prioritize by FLOPs/importance
                 visibleNodes = visibleNodes
                     .sort((a, b) => (b.total_flops || 0) - (a.total_flops || 0))
@@ -1248,13 +1248,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             if (totalNodes > VERY_LARGE_THRESHOLD) {{
                 performanceMode = true;
                 cullingEnabled = true;
-                console.log(`Performance mode: ON (${totalNodes} nodes). Culling enabled.`);
+                console.log(`Performance mode: ON (${{totalNodes}} nodes). Culling enabled.`);
 
                 // Add indicator
                 const sidebar = document.querySelector('.sidebar');
                 const perfDiv = document.createElement('div');
                 perfDiv.className = 'perf-mode';
-                perfDiv.innerHTML = `Large model (${formatNumber(totalNodes)} nodes) - simplified view`;
+                perfDiv.innerHTML = `Large model (${{formatNumber(totalNodes)}} nodes) - simplified view`;
                 sidebar.insertBefore(perfDiv, sidebar.firstChild.nextSibling);
 
                 // Auto-collapse to depth 1
@@ -1269,7 +1269,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 }}
             }} else if (totalNodes > LARGE_GRAPH_THRESHOLD) {{
                 performanceMode = true;
-                console.log(`Performance mode: ON (${totalNodes} nodes). Simplified rendering.`);
+                console.log(`Performance mode: ON (${{totalNodes}} nodes). Simplified rendering.`);
             }}
         }}
 

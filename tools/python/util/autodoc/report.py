@@ -145,7 +145,7 @@ def infer_num_classes_from_output(
     if len(shape) == 2:
         # [batch, num_classes]
         _batch, num_classes = shape
-        if num_classes is not None and 2 <= num_classes <= 10000:
+        if isinstance(num_classes, int) and 2 <= num_classes <= 10000:
             return DatasetInfo(
                 task="classify",
                 num_classes=num_classes,
@@ -155,16 +155,16 @@ def infer_num_classes_from_output(
     if len(shape) == 3:
         _batch, dim1, dim2 = shape
         # Could be [batch, 1, num_classes] for classification
-        if dim1 == 1 and dim2 is not None and 2 <= dim2 <= 10000:
-            return DatasetInfo(
-                task="classify",
-                num_classes=dim2,
-                source="output_shape",
-            )
-        # Could be [batch, num_boxes, 4+nc] or [batch, num_boxes, 5+nc] for detection
-        # YOLO format: boxes * (x, y, w, h, obj_conf, class_probs...)
-        # Common box counts: 8400, 25200, etc. (depends on input size)
-        if dim1 is not None and dim2 is not None:
+        if isinstance(dim1, int) and isinstance(dim2, int):
+            if dim1 == 1 and 2 <= dim2 <= 10000:
+                return DatasetInfo(
+                    task="classify",
+                    num_classes=dim2,
+                    source="output_shape",
+                )
+            # Could be [batch, num_boxes, 4+nc] or [batch, num_boxes, 5+nc] for detection
+            # YOLO format: boxes * (x, y, w, h, obj_conf, class_probs...)
+            # Common box counts: 8400, 25200, etc. (depends on input size)
             # Detection heuristic: many boxes, last dim is 4+nc or 5+nc
             # Minimum: 4 box coords + 1 class = 5
             if dim1 >= 100 and dim2 >= 5:
@@ -185,9 +185,9 @@ def infer_num_classes_from_output(
         # Segmentation pattern: [batch, num_classes, height, width]
         # Height/width are typically >= 32 and often equal
         if (
-            dim1 is not None
-            and dim2 is not None
-            and dim3 is not None
+            isinstance(dim1, int)
+            and isinstance(dim2, int)
+            and isinstance(dim3, int)
             and 2 <= dim1 <= 1000  # num_classes
             and dim2 >= 32  # height
             and dim3 >= 32  # width

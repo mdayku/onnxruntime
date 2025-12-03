@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 if TYPE_CHECKING:
     from .analyzer import GraphInfo, NodeInfo
@@ -492,9 +492,9 @@ class PatternAnalyzer:
 
     def _trace_attention_pattern(
         self, softmax: NodeInfo, graph_info: GraphInfo
-    ) -> dict | None:
+    ) -> dict[str, Any] | None:
         """Trace back from Softmax to find Q/K/V projections."""
-        result = {
+        result: dict[str, Any] = {
             "nodes": [softmax.name],
             "has_scaling": False,
             "has_mask": False,
@@ -669,9 +669,9 @@ class PatternAnalyzer:
 
     def _trace_mlp_pattern(
         self, activation: NodeInfo, graph_info: GraphInfo
-    ) -> dict | None:
+    ) -> dict[str, Any] | None:
         """Trace MLP pattern from activation function."""
-        result = {
+        result: dict[str, Any] = {
             "nodes": [activation.name],
             "mlp_type": "standard",
             "is_gated": False,
@@ -1060,7 +1060,7 @@ class PatternAnalyzer:
         norm_pattern = self.detect_normalization_pattern(graph_info)
 
         # Count block types
-        block_counts = {}
+        block_counts: dict[str, int] = {}
         for block in blocks:
             bt = block.block_type
             block_counts[bt] = block_counts.get(bt, 0) + 1

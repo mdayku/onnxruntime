@@ -314,7 +314,7 @@ class VisualizationGenerator:
         else:
             top_ops = sorted_ops
 
-        labels = [f"{op}\n({_format_count(count)})" for op, count in top_ops]
+        labels = [f"{op}\n({_format_count(int(count))})" for op, count in top_ops]
         sizes = [count for _, count in top_ops]
         colors = THEME.palette[: len(sizes)]
 

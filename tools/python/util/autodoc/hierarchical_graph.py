@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .analyzer import GraphInfo
@@ -105,13 +105,13 @@ class HierarchicalNode:
             self.node_count *= self.repeat_count
             # Params are shared, don't multiply
 
-    def to_dict(self, include_children: bool = True) -> dict:
+    def to_dict(self, include_children: bool = True) -> dict[str, Any]:
         """
         Convert to dictionary for JSON export.
 
         Task 5.7.6: JSON export for visualization.
         """
-        result = {
+        result: dict[str, Any] = {
             "id": self.id,
             "name": self.name,
             "display_name": self.get_display_name(),
@@ -170,7 +170,7 @@ class HierarchicalGraph:
 
     def get_visible_nodes(self) -> list[HierarchicalNode]:
         """Get nodes visible given current collapse state."""
-        visible = []
+        visible: list[HierarchicalNode] = []
         self._collect_visible(self.root, visible)
         return visible
 
@@ -191,7 +191,7 @@ class HierarchicalGraph:
             "depth": self.depth,
         }
 
-    def to_json(self, indent: int = 2) -> str:
+    def to_json(self, indent: int | None = 2) -> str:
         """Export to JSON string."""
         return json.dumps(self.to_dict(), indent=indent)
 
