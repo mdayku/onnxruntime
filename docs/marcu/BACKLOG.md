@@ -19,11 +19,11 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 | Epic 2: Core Analysis Engine | **Complete** | 4 | 17/17 | Done |
 | Epic 3: Pattern Analysis | **Complete** | 2 | 9/9 | Done |
 | Epic 4: CLI and Output | **Complete** | 4 | 18/18 | Done |
-| Epic 4B: PyTorch Integration | In Progress | 2 | 12/14 | P1 |
+| Epic 4B: PyTorch Integration | **Complete** | 2 | 14/14 | Done |
 | Epic 5: Visualization | In Progress | 5 | 13/22 | P2 |
 | Epic 6: Hardware/Compare | In Progress | 9 | 27/47 | P2 |
 | Epic 7: LLM Integration | In Progress | 2 | 5/9 | P2 |
-| Epic 1: Environment Setup | In Progress | 3 | 9/12 | P3 |
+| Epic 1: Environment Setup | In Progress | 3 | 11/12 | P3 |
 | Epic 4C: TensorFlow Conversion | Not Started | 3 | 0/15 | P3 |
 | Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 | P3 |
 | Epic 9: Demo/Deliverables | Not Started | 3 | 0/13 | P3 |
@@ -38,8 +38,8 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 1.1.1**: Fork microsoft/onnxruntime repository
 - [x] **Task 1.1.2**: Set up local development environment (Python 3.10+, CMake, etc.)
 - [x] **Task 1.1.3**: Successfully build ONNX Runtime from source (C++ complete, CUDA provider built)
-- [ ] **Task 1.1.4**: Build Python wheel (requires cuDNN install, deferred - Autodoc works without it)
-- [ ] **Task 1.1.5**: Run existing test suite to verify build
+- [x] **Task 1.1.4**: Build Python wheel (`onnxruntime_gpu-1.24.0-cp311-cp311-win_amd64.whl` in `build/Release/dist/`)
+- [x] **Task 1.1.5**: Run existing test suite to verify build (68/69 passed, 1 PyTorch cuDNN DLL issue)
 
 ### Story 1.2: Codebase Familiarization - **COMPLETE**
 - [x] **Task 1.2.1**: Map key directories and their purposes
@@ -145,7 +145,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 
 ### Story 4B.2: Dataset/Class Metadata Extraction
 - [x] **Task 4B.2.1**: Detect Ultralytics models and extract class names
-- [ ] **Task 4B.2.2**: Parse output shapes to infer number of classes (future)
+- [x] **Task 4B.2.2**: Parse output shapes to infer number of classes (`infer_num_classes_from_output()`)
 - [x] **Task 4B.2.3**: Add DatasetInfo dataclass (task, num_classes, class_names)
 - [x] **Task 4B.2.4**: Add Dataset Info section to Markdown/HTML reports
 - [x] **Task 4B.2.5**: Add --pytorch-weights flag to provide original .pt for metadata
@@ -498,7 +498,7 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - Instance type catalog and pricing
 - Credential management
 
-### Epic 14: GPU Orchestration  
+### Epic 14: GPU Orchestration
 - On-demand instance spin-up/down
 - Job queue and scheduling
 - Cost tracking and limits

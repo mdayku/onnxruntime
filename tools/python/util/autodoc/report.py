@@ -67,6 +67,136 @@ class DatasetInfo:
     source: str | None = None  # "ultralytics", "output_shape", etc.
 
 
+def infer_num_classes_from_output(
+    output_shapes: dict[str, list[int | str]],
+    architecture_type: str = "unknown",
+) -> DatasetInfo | None:
+    """
+    Infer number of classes from model output shapes.
+
+    Analyzes output tensor shapes to detect common patterns:
+    - Classification: [batch, num_classes] or [batch, 1, num_classes]
+    - Detection (YOLO-style): [batch, num_boxes, 4+num_classes] or [batch, num_boxes, 5+num_classes]
+    - Segmentation: [batch, num_classes, height, width]
+
+    Args:
+        output_shapes: Dictionary mapping output names to their shapes.
+        architecture_type: Detected architecture type (helps disambiguate patterns).
+
+    Returns:
+        DatasetInfo with inferred num_classes and task, or None if inference failed.
+    """
+    if not output_shapes:
+        return None
+
+    # Get the primary output (usually the first one, or look for common names)
+    primary_output = None
+    primary_shape = None
+
+    # Priority: look for outputs named 'output', 'logits', 'predictions', etc.
+    # Use exact match or prefix match to avoid matching "some_random_output" with "output"
+    priority_names = ["logits", "predictions", "probs", "classes", "output0", "output"]
+    for name in priority_names:
+        for out_name, shape in output_shapes.items():
+            out_lower = out_name.lower()
+            # Exact match or starts with the priority name
+            if out_lower == name or out_lower.startswith(name + "_"):
+                primary_output = out_name
+                primary_shape = shape
+                break
+        if primary_output:
+            break
+
+    # Fallback to first output
+    if not primary_output:
+        primary_output = list(output_shapes.keys())[0]
+        primary_shape = output_shapes[primary_output]
+
+    if not primary_shape:
+        return None
+
+    # Convert shape to list of ints where possible (handle symbolic dims)
+    def to_int(dim):
+        if isinstance(dim, int):
+            return dim
+        if isinstance(dim, str):
+            # Try to parse as int, otherwise return None
+            try:
+                return int(dim)
+            except ValueError:
+                return None
+        return None
+
+    shape = [to_int(d) for d in primary_shape]
+
+    # Need at least 2 dimensions
+    if len(shape) < 2:
+        return None
+
+    # Classification pattern: [batch, num_classes] or [batch, 1, num_classes]
+    # Typical num_classes: 2-10000 (ImageNet=1000, CIFAR=10/100, etc.)
+    if len(shape) == 2:
+        # [batch, num_classes]
+        batch, num_classes = shape
+        if num_classes is not None and 2 <= num_classes <= 10000:
+            return DatasetInfo(
+                task="classify",
+                num_classes=num_classes,
+                source="output_shape",
+            )
+
+    if len(shape) == 3:
+        batch, dim1, dim2 = shape
+        # Could be [batch, 1, num_classes] for classification
+        if dim1 == 1 and dim2 is not None and 2 <= dim2 <= 10000:
+            return DatasetInfo(
+                task="classify",
+                num_classes=dim2,
+                source="output_shape",
+            )
+        # Could be [batch, num_boxes, 4+nc] or [batch, num_boxes, 5+nc] for detection
+        # YOLO format: boxes * (x, y, w, h, obj_conf, class_probs...)
+        # Common box counts: 8400, 25200, etc. (depends on input size)
+        if dim1 is not None and dim2 is not None:
+            # Detection heuristic: many boxes, last dim is 4+nc or 5+nc
+            # Minimum: 4 box coords + 1 class = 5
+            if dim1 >= 100 and dim2 >= 5:
+                # Try to infer num_classes from detection output
+                # Format could be: [x, y, w, h, class1, class2, ...] (4 + nc) - YOLOv8 format
+                # Or: [x, y, w, h, obj_conf, class1, class2, ...] (5 + nc) - YOLOv5 format
+                # Assume YOLOv8 format (no obj_conf) which is more common now
+                nc = dim2 - 4
+                if nc >= 1:  # At least 1 class
+                    return DatasetInfo(
+                        task="detect",
+                        num_classes=nc,
+                        source="output_shape",
+                    )
+
+    if len(shape) == 4:
+        batch, dim1, dim2, dim3 = shape
+        # Segmentation pattern: [batch, num_classes, height, width]
+        # Height/width are typically >= 32 and often equal
+        if (
+            dim1 is not None
+            and dim2 is not None
+            and dim3 is not None
+            and 2 <= dim1 <= 1000  # num_classes
+            and dim2 >= 32  # height
+            and dim3 >= 32  # width
+        ):
+            # Additional check: h/w should be similar (typical segmentation output)
+            ratio = max(dim2, dim3) / min(dim2, dim3) if min(dim2, dim3) > 0 else 999
+            if ratio <= 4:  # Reasonable aspect ratio
+                return DatasetInfo(
+                    task="segment",
+                    num_classes=dim1,
+                    source="output_shape",
+                )
+
+    return None
+
+
 @dataclass
 class InspectionReport:
     """
@@ -1556,6 +1686,15 @@ class ModelInspector:
         self.logger.debug("Analyzing risks...")
         risk_signals = self.risks.analyze(graph_info, detected_blocks)
 
+        # Try to infer num_classes from output shapes
+        dataset_info = infer_num_classes_from_output(
+            graph_info.output_shapes, architecture_type
+        )
+        if dataset_info:
+            self.logger.debug(
+                f"Inferred {dataset_info.task} task with {dataset_info.num_classes} classes from output shape"
+            )
+
         report = InspectionReport(
             metadata=metadata,
             graph_summary=graph_summary,
@@ -1565,6 +1704,7 @@ class ModelInspector:
             detected_blocks=detected_blocks,
             architecture_type=architecture_type,
             risk_signals=risk_signals,
+            dataset_info=dataset_info,
         )
 
         self.logger.info(

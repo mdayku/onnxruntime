@@ -21,7 +21,7 @@ from util.model_inspect import (
     _extract_ultralytics_metadata,
 )
 
-from ..report import DatasetInfo
+from ..report import DatasetInfo, infer_num_classes_from_output
 
 # Check if torch is available
 try:
@@ -233,6 +233,94 @@ class TestDatasetInfo:
         assert info.num_classes is None
         assert info.class_names == []
         assert info.source is None
+
+
+class TestInferNumClassesFromOutput:
+    """Tests for infer_num_classes_from_output function (Task 4B.2.2)."""
+
+    def test_classification_2d_output(self):
+        """Should detect classification from [batch, num_classes] shape."""
+        output_shapes = {"output": [1, 1000]}  # ImageNet-style
+        result = infer_num_classes_from_output(output_shapes)
+
+        assert result is not None
+        assert result.task == "classify"
+        assert result.num_classes == 1000
+        assert result.source == "output_shape"
+
+    def test_classification_3d_output(self):
+        """Should detect classification from [batch, 1, num_classes] shape."""
+        output_shapes = {"logits": [1, 1, 100]}  # CIFAR-100 style
+        result = infer_num_classes_from_output(output_shapes)
+
+        assert result is not None
+        assert result.task == "classify"
+        assert result.num_classes == 100
+        assert result.source == "output_shape"
+
+    def test_detection_yolo_output(self):
+        """Should detect detection from YOLO-style [batch, boxes, 4+nc] shape."""
+        # YOLOv8 output: [1, 8400, 84] for 80 COCO classes + 4 box coords
+        output_shapes = {"output0": [1, 8400, 84]}
+        result = infer_num_classes_from_output(output_shapes)
+
+        assert result is not None
+        assert result.task == "detect"
+        assert result.num_classes == 80  # 84 - 4 = 80
+        assert result.source == "output_shape"
+
+    def test_segmentation_output(self):
+        """Should detect segmentation from [batch, num_classes, h, w] shape."""
+        output_shapes = {"output": [1, 21, 512, 512]}  # Pascal VOC style
+        result = infer_num_classes_from_output(output_shapes)
+
+        assert result is not None
+        assert result.task == "segment"
+        assert result.num_classes == 21
+        assert result.source == "output_shape"
+
+    def test_empty_output_shapes(self):
+        """Should return None for empty output shapes."""
+        result = infer_num_classes_from_output({})
+        assert result is None
+
+    def test_single_output_dimension(self):
+        """Should return None for single-dimension outputs."""
+        output_shapes = {"output": [10]}
+        result = infer_num_classes_from_output(output_shapes)
+        assert result is None
+
+    def test_symbolic_dimensions(self):
+        """Should handle symbolic dimensions gracefully."""
+        output_shapes = {"output": ["batch", 1000]}
+        result = infer_num_classes_from_output(output_shapes)
+
+        assert result is not None
+        assert result.task == "classify"
+        assert result.num_classes == 1000
+
+    def test_priority_output_names(self):
+        """Should prioritize outputs with known names like 'logits'."""
+        output_shapes = {
+            "some_random_output": [1, 5],  # Would infer 5 classes
+            "logits": [1, 100],  # Should prefer this
+        }
+        result = infer_num_classes_from_output(output_shapes)
+
+        assert result is not None
+        assert result.num_classes == 100
+
+    def test_num_classes_too_small(self):
+        """Should not infer if num_classes is too small (< 2)."""
+        output_shapes = {"output": [1, 1]}  # Only 1 class - not valid
+        result = infer_num_classes_from_output(output_shapes)
+        assert result is None
+
+    def test_num_classes_too_large(self):
+        """Should not infer if num_classes is too large (> 10000)."""
+        output_shapes = {"output": [1, 50000]}  # Unlikely to be classes
+        result = infer_num_classes_from_output(output_shapes)
+        assert result is None
 
 
 if __name__ == "__main__":

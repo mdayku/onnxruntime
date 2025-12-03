@@ -48,7 +48,7 @@ from .pdf_generator import (
 from .pdf_generator import (
     is_available as is_pdf_available,
 )
-from .report import InspectionReport, ModelInspector
+from .report import DatasetInfo, InspectionReport, ModelInspector, infer_num_classes_from_output
 from .risks import RiskAnalyzer, RiskSignal, RiskThresholds
 from .schema import (
     INSPECTION_REPORT_SCHEMA,
@@ -72,6 +72,8 @@ __all__ = [
     "INSPECTION_REPORT_SCHEMA",
     "THEME",
     "ChartTheme",
+    # Dataset Info
+    "DatasetInfo",
     "HardwareDetector",
     "HardwareEstimates",
     "HardwareEstimator",
@@ -100,6 +102,7 @@ __all__ = [
     "get_profile",
     "get_schema",
     "has_llm_api_key",
+    "infer_num_classes_from_output",
     "is_llm_available",
     "is_pdf_available",
     "is_visualization_available",
