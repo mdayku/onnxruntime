@@ -486,6 +486,74 @@ def generate_all_plots(stats: ModelStats, assets_dir: Path) -> Dict[str, str]:
 | **VP Engineering / CTO** | Assess maintainability, estimate deployment complexity, inform optimization decisions |
 | **C-suite / Board** | Understand cost drivers (inference, infra), see high-level architecture without jargon, support roadmap tradeoffs |
 
+### 6.7 Interactive Graph Visualization (Netron-style)
+
+Inspired by Netron and TensorRT EngineXplorer, provide a cleaner, horizontally-oriented graph visualization.
+
+**Key Features:**
+
+| Feature | Description |
+|---------|-------------|
+| **Horizontal Layout** | Left-to-right flow (inputs -> processing -> outputs) instead of vertical stacking |
+| **Collapsible Blocks** | Group Conv-BN-ReLU, attention, and residual blocks into expandable nodes |
+| **Node Inspection** | Click any node to see: op type, input/output shapes, params, FLOPs, attributes |
+| **Pan/Zoom** | Navigate large graphs with smooth pan and zoom controls |
+| **Search** | Find nodes by name, op type, or attribute values |
+| **Heatmap Overlay** | Color nodes by latency estimate, memory usage, or parameter count |
+
+**Implementation Options:**
+
+| Library | Pros | Cons |
+|---------|------|------|
+| **D3.js** | Maximum flexibility, great for custom layouts | Steeper learning curve |
+| **Cytoscape.js** | Built for graph viz, good perf with large graphs | Less custom styling |
+| **React Flow** | React-native, drag-and-drop, good DX | May need custom layout algo |
+| **vis.js** | Simple API, hierarchical layouts built-in | Less modern look |
+
+**Export Formats:**
+
+- Embedded in HTML report (self-contained, interactive)
+- Standalone HTML file (shareable)
+- SVG export (for documentation/presentations)
+- PNG export (static image)
+
+### 6.8 Per-Layer Summary Table
+
+Provide detailed per-layer metrics in a sortable, filterable table.
+
+**Table Columns:**
+
+| Column | Description |
+|--------|-------------|
+| Layer Name | Node name from ONNX graph |
+| Op Type | Conv, MatMul, Attention, etc. |
+| Input Shape | Tensor dimensions entering the layer |
+| Output Shape | Tensor dimensions exiting the layer |
+| Parameters | Weight count for this layer |
+| FLOPs | Compute operations for this layer |
+| Latency Est. | Estimated execution time (ms) |
+| Memory | Activation memory footprint |
+| % of Total | Percentage of model's total compute/params |
+
+**Interactive Features:**
+
+- Sort by any column (ascending/descending)
+- Filter by op type, parameter threshold, or FLOPs threshold
+- Search by layer name
+- Click row to highlight in graph visualization
+- Export to CSV/JSON
+
+**Example Output:**
+
+```
+| Layer           | Op Type  | Input Shape      | Output Shape     | Params   | FLOPs      | Latency | Memory   |
+|-----------------|----------|------------------|------------------|----------|------------|---------|----------|
+| conv1           | Conv     | [1,3,224,224]    | [1,64,112,112]   | 9.4K     | 118M       | 0.12ms  | 3.1MB    |
+| layer1.0.conv1  | Conv     | [1,64,56,56]     | [1,64,56,56]     | 36.9K    | 231M       | 0.24ms  | 0.8MB    |
+| layer4.2.conv2  | Conv     | [1,512,7,7]      | [1,512,7,7]      | 2.4M     | 462M       | 0.48ms  | 0.1MB    |
+| fc              | Gemm     | [1,2048]         | [1,1000]         | 2.0M     | 4.1M       | 0.01ms  | 8KB      |
+```
+
 ---
 
 ## 7. Hardware Profiles and GPU Estimates
@@ -551,6 +619,94 @@ This provides a static, explainable approximation of `nvidia-smi`-style metrics 
 | AMD GPUs | Additional JSON profiles |
 | Apple M-series | Additional JSON profiles |
 | NPUs | Additional JSON profiles |
+
+### 7.5 Hardware Requirements Recommendations (Steam-style)
+
+Generate minimum and recommended hardware specifications based on model analysis, similar to how Steam displays game system requirements.
+
+**Deployment Target Categories:**
+
+| Target | Description | Typical Hardware |
+|--------|-------------|------------------|
+| **Edge/Jetson** | Embedded devices, real-time inference | Jetson Orin Nano, Jetson Xavier NX |
+| **Local Server** | On-premise GPU server, batch processing | RTX 3080/4090, A10, T4 |
+| **Cloud Server** | Elastic scaling, high throughput | A100, H100, L4, Inferentia |
+
+**CLI Usage:**
+
+```bash
+python -m onnxruntime.tools.model_inspect model.onnx \
+  --deployment-target edge \
+  --target-latency 50ms \
+  --target-throughput 30fps
+```
+
+**Output Format (Steam-style):**
+
+```markdown
+## System Requirements
+
+### Minimum (Basic Inference)
+- **GPU**: NVIDIA Jetson Orin Nano 4GB
+- **VRAM**: 2.1 GB
+- **Precision**: FP16
+- **Expected Latency**: 85ms @ batch=1
+- **Power**: 15W TDP
+
+### Recommended (Production Throughput)
+- **GPU**: NVIDIA Jetson AGX Orin 32GB
+- **VRAM**: 4.2 GB
+- **Precision**: FP16
+- **Expected Latency**: 12ms @ batch=1
+- **Throughput**: 80+ fps
+- **Power**: 40W TDP
+
+### Optimal (Maximum Performance)
+- **GPU**: NVIDIA A10 (24GB)
+- **VRAM**: 6.8 GB
+- **Precision**: FP16 with TensorRT
+- **Expected Latency**: 3ms @ batch=8
+- **Throughput**: 300+ fps
+```
+
+**Factors Considered:**
+
+| Factor | Impact |
+|--------|--------|
+| Model VRAM footprint | Determines minimum GPU memory |
+| FLOPs / Compute density | Determines GPU compute tier |
+| Memory bandwidth needs | Important for memory-bound models |
+| Target latency | Filters out GPUs that can't meet SLA |
+| Target throughput | Suggests batch size and GPU count |
+| Power constraints | Important for edge deployment |
+
+**JSON Schema Extension:**
+
+```json
+"hardware_recommendations": {
+  "deployment_target": "edge",
+  "user_constraints": {
+    "max_latency_ms": 50,
+    "min_throughput_fps": 30,
+    "max_power_watts": 30
+  },
+  "minimum": {
+    "device": "Jetson_Orin_Nano_4GB",
+    "vram_required_gb": 2.1,
+    "precision": "fp16",
+    "estimated_latency_ms": 85,
+    "meets_latency_target": false
+  },
+  "recommended": {
+    "device": "Jetson_AGX_Orin_32GB",
+    "vram_required_gb": 4.2,
+    "precision": "fp16",
+    "estimated_latency_ms": 12,
+    "estimated_throughput_fps": 83,
+    "meets_all_targets": true
+  }
+}
+```
 
 ---
 
@@ -639,6 +795,103 @@ The tool:
     }
   ]
 }
+```
+
+### 8.5 Resolution and Batch Size Impact Analysis
+
+For computer vision models, analyze how different input resolutions and batch sizes affect performance.
+
+**CLI Usage:**
+
+```bash
+python -m onnxruntime.tools.model_inspect model.onnx \
+  --input-resolution 224x224,384x384,512x512,640x640 \
+  --batch-sizes 1,2,4,8,16,32 \
+  --hardware rtx_4090
+```
+
+**Resolution Scaling Analysis:**
+
+| Resolution | FLOPs | Memory | Latency Est. | Throughput Est. |
+|------------|-------|--------|--------------|-----------------|
+| 224x224    | 4.1G  | 1.2GB  | 2.1ms        | 476 fps         |
+| 384x384    | 12.1G | 2.8GB  | 5.8ms        | 172 fps         |
+| 512x512    | 21.5G | 4.9GB  | 10.2ms       | 98 fps          |
+| 640x640    | 33.6G | 7.6GB  | 15.9ms       | 63 fps          |
+
+**Batch Size Scaling Analysis:**
+
+| Batch Size | VRAM Used | Latency | Throughput | GPU Util |
+|------------|-----------|---------|------------|----------|
+| 1          | 1.2GB     | 2.1ms   | 476 fps    | 23%      |
+| 2          | 1.8GB     | 2.4ms   | 833 fps    | 41%      |
+| 4          | 3.1GB     | 3.1ms   | 1290 fps   | 62%      |
+| 8          | 5.6GB     | 4.8ms   | 1667 fps   | 78%      |
+| 16         | 10.7GB    | 8.2ms   | 1951 fps   | 89%      |
+| 32         | 20.9GB    | 15.1ms  | 2119 fps   | 94%      |
+
+**Visualization:**
+
+Generate trade-off charts showing:
+- Resolution vs Latency curve
+- Resolution vs Memory curve
+- Batch size vs Throughput curve
+- Optimal batch size recommendation for given VRAM constraint
+
+### 8.6 Layer-wise Quantization Analysis (TRT EngineXplorer-inspired)
+
+Inspired by TensorRT EngineXplorer, provide detailed layer-by-layer precision breakdown.
+
+**Layer Precision Breakdown:**
+
+| Layer | Original Precision | Quantized | Speedup | Memory Saved | Accuracy Impact |
+|-------|-------------------|-----------|---------|--------------|-----------------|
+| conv1 | FP32 | INT8 | 2.8x | 75% | -0.001 |
+| layer1.0.conv1 | FP32 | INT8 | 3.1x | 75% | -0.002 |
+| layer4.2.conv2 | FP32 | FP16 | 1.9x | 50% | -0.000 |
+| fc | FP32 | FP32 | 1.0x | 0% | N/A |
+
+**Sensitive Layer Detection:**
+
+Identify layers where quantization causes significant accuracy degradation:
+
+```json
+"sensitive_layers": [
+  {
+    "layer": "layer3.1.conv2",
+    "quantization": "int8",
+    "accuracy_drop": 0.015,
+    "recommendation": "Keep at FP16 for better accuracy/speed tradeoff"
+  }
+]
+```
+
+**Engine Summary Panel (TRT-style):**
+
+```
++------------------------------------------+
+|           Engine Summary                 |
++------------------------------------------+
+| Total Layers: 53                         |
+| FP32 Layers: 4 (7.5%)                    |
+| FP16 Layers: 12 (22.6%)                  |
+| INT8 Layers: 37 (69.9%)                  |
++------------------------------------------+
+| Model Size: 25.4 MB (vs 97.8 MB FP32)    |
+| Speedup: 3.2x                            |
+| Accuracy: 92.7% (vs 93.1% FP32)          |
++------------------------------------------+
+```
+
+**Calibration Recommendations:**
+
+```markdown
+## Quantization Recommendations
+
+1. **Overall Strategy**: Mixed-precision INT8/FP16 recommended
+2. **Sensitive Layers**: Keep layers 47-53 (classifier head) at FP16
+3. **Calibration Dataset**: Use 1000+ representative samples
+4. **Expected Trade-off**: 3.2x speedup for 0.4% accuracy loss
 ```
 
 ---
@@ -906,6 +1159,162 @@ The tool should always produce *some* output, even if partial:
 
 ---
 
+## 14. SaaS Architecture and Distribution
+
+### 14.1 Overview
+
+Transform ONNX Autodoc from a CLI tool into a full SaaS web application, similar to Weights & Biases, enabling team collaboration, model history, and easy access without local installation.
+
+### 14.2 System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Frontend (Vercel)                           │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌────────────┐ │
+│  │   Upload    │  │  Dashboard  │  │   Report    │  │  Compare   │ │
+│  │   Component │  │   View      │  │   Viewer    │  │   View     │ │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+                              │ REST API / WebSocket
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    Backend API (Railway/Render)                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌────────────┐ │
+│  │   FastAPI   │  │   Auth      │  │   Job       │  │   Storage  │ │
+│  │   Router    │  │   Middleware│  │   Queue     │  │   Service  │ │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └────────────┘ │
+│                              │                                      │
+│                    ┌─────────┴─────────┐                           │
+│                    │  Analysis Engine  │  (existing Python code)   │
+│                    └───────────────────┘                           │
+└─────────────────────────────────────────────────────────────────────┘
+         │                    │                      │
+         ▼                    ▼                      ▼
+┌─────────────┐      ┌─────────────┐        ┌─────────────┐
+│  PostgreSQL │      │  S3/R2      │        │  Redis      │
+│  (Supabase) │      │  (Models)   │        │  (Queue)    │
+└─────────────┘      └─────────────┘        └─────────────┘
+```
+
+### 14.3 API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/models` | GET | List user's models |
+| `/api/models` | POST | Upload new model (multipart) |
+| `/api/models/{id}` | GET | Get model details |
+| `/api/models/{id}/report` | GET | Get analysis report (JSON/HTML) |
+| `/api/models/{id}/compare` | POST | Compare with other models |
+| `/api/jobs/{id}` | GET | Check analysis job status |
+| `/api/jobs/{id}/ws` | WS | Real-time analysis progress |
+
+**Upload Flow:**
+
+```
+Client                    API                     Worker
+  │                        │                        │
+  │──POST /models─────────►│                        │
+  │  (multipart file)      │                        │
+  │                        │──Store to S3──────────►│
+  │                        │                        │
+  │                        │──Queue job────────────►│
+  │◄─202 Accepted──────────│                        │
+  │  {job_id, status_url}  │                        │
+  │                        │                        │
+  │──WS /jobs/{id}/ws─────►│                        │
+  │◄─progress: loading─────│◄─────────────────────►│
+  │◄─progress: analyzing───│                        │
+  │◄─progress: complete────│                        │
+  │                        │                        │
+  │──GET /models/{id}─────►│                        │
+  │◄─{report_data}─────────│                        │
+```
+
+### 14.4 Frontend Components
+
+| Component | Description |
+|-----------|-------------|
+| **UploadZone** | Drag-and-drop model upload with progress bar |
+| **ModelList** | Paginated list of analyzed models with search/filter |
+| **ReportViewer** | Renders HTML report in iframe or React components |
+| **GraphViewer** | Interactive Netron-style graph visualization |
+| **ComparePanel** | Side-by-side model comparison |
+| **TeamSettings** | Workspace management, member invites |
+
+### 14.5 Authentication and Authorization
+
+| Provider | Pros | Implementation |
+|----------|------|----------------|
+| **Clerk** | Best DX, great React components | `@clerk/nextjs` |
+| **Supabase Auth** | Integrated with DB, generous free tier | `@supabase/auth-helpers-nextjs` |
+| **Auth0** | Enterprise features, SAML/SSO | `@auth0/nextjs-auth0` |
+
+**Permission Model:**
+
+| Role | Capabilities |
+|------|--------------|
+| **Owner** | Full access, billing, delete workspace |
+| **Admin** | Manage members, all model operations |
+| **Editor** | Upload, analyze, compare models |
+| **Viewer** | View reports only |
+
+### 14.6 Infrastructure and Costs
+
+| Service | Provider | Estimated Cost (MVP) |
+|---------|----------|---------------------|
+| Frontend | Vercel (Hobby) | $0/mo |
+| Backend | Railway (Starter) | $5/mo |
+| Database | Supabase (Free) | $0/mo |
+| Storage | Cloudflare R2 | $0.015/GB/mo |
+| Queue | Upstash Redis | $0/mo (free tier) |
+| **Total MVP** | | **~$5-10/mo** |
+
+### 14.7 Security Considerations
+
+| Concern | Mitigation |
+|---------|------------|
+| Model privacy | Models stored encrypted, deleted after 30 days (configurable) |
+| API abuse | Rate limiting, file size limits (500MB default) |
+| Data isolation | Tenant isolation at DB level, S3 prefix per workspace |
+| CORS | Strict origin whitelist |
+
+### 14.8 CLI/PyPI Distribution (Secondary)
+
+For users who prefer local execution:
+
+**Installation:**
+
+```bash
+# From PyPI
+pip install onnx-autodoc
+
+# With all optional dependencies
+pip install onnx-autodoc[full]
+
+# Using Docker
+docker run -v $(pwd):/models onnx-autodoc analyze /models/model.onnx
+```
+
+**Package Structure:**
+
+```
+onnx-autodoc/
+├── pyproject.toml
+├── src/
+│   └── onnx_autodoc/
+│       ├── __init__.py
+│       ├── cli.py
+│       ├── analyzer.py
+│       ├── patterns.py
+│       ├── risks.py
+│       ├── report.py
+│       ├── visualizations.py
+│       └── hardware.py
+└── Dockerfile
+```
+
+---
+
 ## Appendix: Delta Log
 
 *Use this section to track changes to the PRD over time.*
@@ -941,3 +1350,5 @@ The tool should always produce *some* output, even if partial:
 | Dec 2, 2025 | Cloud | Added CloudInstanceProfile dataclass, 17 cloud instances (AWS p5/p4d/g5/inf2, Azure NC/ND, GCP a3/a2/g2), hourly cost estimates, --cloud and --list-cloud CLI flags | Story 6.7 complete |
 | Dec 2, 2025 | CLI | Added --gpu-count N for multi-GPU scaling, --cloud for cloud instances, --list-cloud to list instances, --out-pdf for PDF reports | CLI enhancements |
 | Dec 2, 2025 | PDF | Added pdf_generator.py with Playwright-based PDF generation, PDFGenerator class, --out-pdf CLI flag, header/footer templates | Task 5.3.4 complete |
+| Dec 2, 2025 | ML Feedback | Added Section 6.7-6.8 (Graph Viz, Per-Layer Summary), Section 7.5 (HW Recommendations), Section 8.5-8.6 (Resolution/Batch, Layer Quantization), Section 14 (SaaS Architecture) | ML Engineer/MLOps feedback integration |
+| Dec 2, 2025 | Backlog | Added Epic 4C (TF Conversion), Epic 10 (SaaS), Epic 10B (PyPI), Stories 5.4-5.5, 6.4 enhancements, Stories 6.8-6.9 | Feature roadmap expansion |

@@ -18,11 +18,14 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 | Epic 3: Pattern Analysis | **Complete** | 2 | 9/9 |
 | Epic 4: CLI and Output | **Complete** | 4 | 18/18 |
 | Epic 4B: PyTorch Integration | In Progress | 2 | 12/14 |
-| Epic 5: Visualization | **Complete** | 3 | 13/13 |
-| Epic 6: Hardware/Compare | In Progress | 7 | 27/28 |
+| Epic 4C: TensorFlow Conversion | Not Started | 3 | 0/15 |
+| Epic 5: Visualization | In Progress | 5 | 13/22 |
+| Epic 6: Hardware/Compare | In Progress | 9 | 27/47 |
 | Epic 7: LLM Integration | In Progress | 2 | 5/9 |
 | Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 |
 | Epic 9: Demo/Deliverables | Not Started | 3 | 0/13 |
+| Epic 10: SaaS Web App | Not Started | 5 | 0/27 |
+| Epic 10B: CLI/PyPI Distribution | Not Started | 2 | 0/10 |
 
 ---
 
@@ -146,6 +149,31 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 
 ---
 
+## Epic 4C: TensorFlow and Framework Conversion
+
+### Story 4C.1: TensorFlow to ONNX Conversion
+- [ ] **Task 4C.1.1**: Add `--from-tensorflow` CLI flag with SavedModel path argument
+- [ ] **Task 4C.1.2**: Implement TensorFlow SavedModel loading
+- [ ] **Task 4C.1.3**: Integrate tf2onnx conversion with sensible defaults
+- [ ] **Task 4C.1.4**: Support frozen graph (.pb) files
+- [ ] **Task 4C.1.5**: Handle conversion errors gracefully (missing tf, export failures)
+- [ ] **Task 4C.1.6**: Add tests for TensorFlow conversion flow
+
+### Story 4C.2: Keras to ONNX Conversion
+- [ ] **Task 4C.2.1**: Add `--from-keras` CLI flag with .h5/.keras path argument
+- [ ] **Task 4C.2.2**: Implement Keras model loading (Sequential, Functional, Subclassed)
+- [ ] **Task 4C.2.3**: Convert via tf2onnx or keras2onnx
+- [ ] **Task 4C.2.4**: Support both TF-Keras and standalone Keras models
+- [ ] **Task 4C.2.5**: Add tests for Keras conversion flow
+
+### Story 4C.3: JAX/Flax to ONNX Conversion (Stretch)
+- [ ] **Task 4C.3.1**: Add `--from-jax` CLI flag
+- [ ] **Task 4C.3.2**: Research JAX-to-ONNX conversion options (jax2onnx, tf interop)
+- [ ] **Task 4C.3.3**: Implement basic JAX function conversion
+- [ ] **Task 4C.3.4**: Support Flax modules via state dict export
+
+---
+
 ## Epic 5: Visualization Module
 
 ### Story 5.1: Chart Infrastructure
@@ -166,6 +194,19 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 5.3.2**: Add chart captions and descriptions
 - [x] **Task 5.3.3**: Support HTML output with embedded images (base64, single shareable file)
 - [x] **Task 5.3.4**: Support PDF output (Playwright-based, --out-pdf flag)
+
+### Story 5.4: Interactive Graph Visualization (Netron-style)
+- [ ] **Task 5.4.1**: Research Netron/EngineXplorer horizontal layout patterns
+- [ ] **Task 5.4.2**: Implement horizontal graph layout algorithm (D3.js or Cytoscape.js)
+- [ ] **Task 5.4.3**: Add node grouping with expandable/collapsible blocks
+- [ ] **Task 5.4.4**: Add interactive HTML export (pan/zoom/click-to-inspect nodes)
+- [ ] **Task 5.4.5**: Integrate graph visualization with existing HTML report
+
+### Story 5.5: Per-Layer Summary and Intermediate Visualization
+- [ ] **Task 5.5.1**: Create per-layer summary table (params, FLOPs, latency estimate, memory)
+- [ ] **Task 5.5.2**: Add sortable/filterable layer table to HTML report
+- [ ] **Task 5.5.3**: Visualize intermediate tensor shapes along the graph
+- [ ] **Task 5.5.4**: Add layer heatmap (color nodes by latency/memory intensity)
 
 ---
 
@@ -195,10 +236,15 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [ ] **Task 6.3.3**: Verify architecture compatibility
 - [ ] **Task 6.3.4**: Compute deltas vs baseline
 
-### Story 6.4: Quantization Impact Report
+### Story 6.4: Quantization Impact Report (TRT EngineXplorer-inspired)
 - [ ] **Task 6.4.1**: Generate comparison JSON schema
 - [ ] **Task 6.4.2**: Create comparison Markdown table
 - [ ] **Task 6.4.3**: Add trade-off analysis section
+- [ ] **Task 6.4.4**: Add layer-wise precision breakdown visualization
+- [ ] **Task 6.4.5**: Show accuracy vs speedup tradeoff chart
+- [ ] **Task 6.4.6**: Display memory savings per layer analysis
+- [ ] **Task 6.4.7**: Add engine summary panel (inspired by TRT EngineXplorer)
+- [ ] **Task 6.4.8**: Show quantization calibration recommendations
 
 ### Story 6.5: Expanded VRAM Variants - **COMPLETE**
 - [x] **Task 6.5.1**: Add all A100 variants (40GB PCIe, 80GB PCIe, 80GB SXM)
@@ -223,6 +269,21 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [x] **Task 6.7.2**: Add Azure instance profiles (NC, ND series)
 - [x] **Task 6.7.3**: Add GCP instance profiles (a2, a3, g2)
 - [x] **Task 6.7.4**: Include cost estimates per hour for cloud instances
+
+### Story 6.8: Resolution and Batch Size Impact Analysis
+- [ ] **Task 6.8.1**: Add `--input-resolution` CLI flag for CV models (e.g., 224x224, 640x640)
+- [ ] **Task 6.8.2**: Implement resolution scaling impact estimator (FLOPs/memory vs resolution)
+- [ ] **Task 6.8.3**: Add batch size sweep analysis (1, 2, 4, 8, 16, 32)
+- [ ] **Task 6.8.4**: Generate resolution/batch vs latency/memory trade-off charts
+- [ ] **Task 6.8.5**: Add resolution recommendations for target hardware
+
+### Story 6.9: Hardware Requirements Recommendations (Steam-style)
+- [ ] **Task 6.9.1**: Define deployment target categories (edge/Jetson, local server, cloud server)
+- [ ] **Task 6.9.2**: Calculate minimum HW spec for basic inference
+- [ ] **Task 6.9.3**: Calculate recommended HW spec for production throughput
+- [ ] **Task 6.9.4**: Add `--deployment-target` CLI flag (edge, local, cloud)
+- [ ] **Task 6.9.5**: Generate "System Requirements" section in reports (minimum/recommended like Steam)
+- [ ] **Task 6.9.6**: Factor in user-specified latency/throughput requirements
 
 ---
 
@@ -293,3 +354,63 @@ Jira-style Epic/Story/Task tracking for the ONNX Autodoc project.
 - [ ] **Task 9.3.2**: Document AI prompts used
 - [ ] **Task 9.3.3**: Capture learning breakthroughs
 - [ ] **Task 9.3.4**: Record technical decisions and rationale
+
+---
+
+## Epic 10: SaaS Web Application (W&B-style)
+
+### Story 10.1: Web Backend API
+- [ ] **Task 10.1.1**: Create FastAPI project structure
+- [ ] **Task 10.1.2**: Wrap existing analysis engine as API endpoints
+- [ ] **Task 10.1.3**: Implement file upload endpoint (ONNX, PT, TF models)
+- [ ] **Task 10.1.4**: Set up async job queue for analysis (Celery/RQ/Dramatiq)
+- [ ] **Task 10.1.5**: Create REST API for report retrieval
+- [ ] **Task 10.1.6**: Add WebSocket support for real-time analysis progress
+
+### Story 10.2: Frontend MVP
+- [ ] **Task 10.2.1**: Initialize React/Next.js project with TypeScript
+- [ ] **Task 10.2.2**: Implement model upload UI (drag-and-drop, progress bar)
+- [ ] **Task 10.2.3**: Create report viewer component (render existing HTML reports)
+- [ ] **Task 10.2.4**: Build dashboard layout (model list, recent analyses)
+- [ ] **Task 10.2.5**: Add responsive design for mobile/tablet
+- [ ] **Task 10.2.6**: Implement dark/light theme toggle
+
+### Story 10.3: Authentication and Users
+- [ ] **Task 10.3.1**: Integrate auth provider (Clerk/Supabase/Auth0)
+- [ ] **Task 10.3.2**: Implement user workspaces/projects
+- [ ] **Task 10.3.3**: Add basic permissions model (owner, viewer, editor)
+- [ ] **Task 10.3.4**: Create user settings page
+- [ ] **Task 10.3.5**: Add API key management for programmatic access
+
+### Story 10.4: Cloud Infrastructure
+- [ ] **Task 10.4.1**: Set up backend deployment (Railway/Render/Fly.io)
+- [ ] **Task 10.4.2**: Configure frontend deployment (Vercel)
+- [ ] **Task 10.4.3**: Set up object storage for models (S3/R2/GCS)
+- [ ] **Task 10.4.4**: Configure database (PostgreSQL via Supabase/Neon)
+- [ ] **Task 10.4.5**: Set up CI/CD pipeline for auto-deployments
+- [ ] **Task 10.4.6**: Configure monitoring and logging (Sentry, LogTail)
+
+### Story 10.5: Model History and Comparison
+- [ ] **Task 10.5.1**: Implement model versioning and history tracking
+- [ ] **Task 10.5.2**: Create side-by-side comparison view
+- [ ] **Task 10.5.3**: Add team sharing features (share links, embed codes)
+- [ ] **Task 10.5.4**: Implement model search and filtering
+- [ ] **Task 10.5.5**: Add export functionality (PDF, JSON, CSV)
+
+---
+
+## Epic 10B: CLI/PyPI Distribution (Secondary)
+
+### Story 10B.1: Python Wheel Packaging
+- [ ] **Task 10B.1.1**: Create pyproject.toml with proper metadata
+- [ ] **Task 10B.1.2**: Configure build system (setuptools/hatch/poetry)
+- [ ] **Task 10B.1.3**: Define optional dependencies ([viz], [llm], [full])
+- [ ] **Task 10B.1.4**: Test wheel installation in clean environment
+- [ ] **Task 10B.1.5**: Publish to PyPI (onnx-autodoc package)
+
+### Story 10B.2: Pre-built Docker Image
+- [ ] **Task 10B.2.1**: Create Dockerfile with ORT and all dependencies
+- [ ] **Task 10B.2.2**: Optimize image size (multi-stage build)
+- [ ] **Task 10B.2.3**: Add GPU support variant (CUDA base image)
+- [ ] **Task 10B.2.4**: Publish to Docker Hub / GitHub Container Registry
+- [ ] **Task 10B.2.5**: Create docker-compose.yml for easy local setup
