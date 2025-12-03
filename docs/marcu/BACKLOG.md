@@ -19,7 +19,7 @@
 | Epic 4: CLI and Output | **Complete** | 4 | 18/18 | Done |
 | Epic 4B: PyTorch Integration | **Complete** | 2 | 14/14 | Done |
 | Epic 4C: TensorFlow/Keras/JAX | **Complete** | 3 | 15/15 | Done |
-| Epic 5: Visualization | In Progress | 5 | 13/22 | P3 |
+| Epic 5: Visualization | In Progress | 8 | 13/47 | P3 |
 | Epic 6: Hardware/Compare | In Progress | 9 | 27/47 | P3 |
 | Epic 7: LLM Integration | In Progress | 2 | 5/9 | P3 |
 | Epic 8: Testing & CI/CD | In Progress | 4 | 12/18 | P3 |
@@ -109,7 +109,9 @@
 
 ---
 
-## Epic 5: Visualization Module (P3 - 13/22 done)
+## Epic 5: Visualization Module (P3 - 13/47 tasks)
+
+*Expanded for LLM-scale models (70B+ params, 80+ layers, 20k+ ops)*
 
 ### Story 5.1: Chart Infrastructure - **COMPLETE**
 - [x] **Task 5.1.1**: Set up matplotlib with Agg backend
@@ -130,18 +132,72 @@
 - [x] **Task 5.3.3**: Support HTML output with embedded images (base64, single shareable file)
 - [x] **Task 5.3.4**: Support PDF output (Playwright-based, --out-pdf flag)
 
-### Story 5.4: Interactive Graph Visualization (Netron-style)
-- [ ] **Task 5.4.1**: Research Netron/EngineXplorer horizontal layout patterns
-- [ ] **Task 5.4.2**: Implement horizontal graph layout algorithm (D3.js or Cytoscape.js)
-- [ ] **Task 5.4.3**: Add node grouping with expandable/collapsible blocks
-- [ ] **Task 5.4.4**: Add interactive HTML export (pan/zoom/click-to-inspect nodes)
-- [ ] **Task 5.4.5**: Integrate graph visualization with existing HTML report
+### Story 5.4: LLM-Scale Pattern Detection (BLOCKER for 5.7)
+*Must handle 70B+ param models with 80+ transformer layers*
+- [ ] **Task 5.4.1**: Detect attention patterns (Q/K/V projections, Softmax, Output proj)
+- [ ] **Task 5.4.2**: Detect MLP/FFN patterns (up-proj, activation, down-proj)
+- [ ] **Task 5.4.3**: Detect embedding patterns (token embed, position embed, RoPE/ALiBi)
+- [ ] **Task 5.4.4**: Detect normalization placement (pre-norm vs post-norm)
+- [ ] **Task 5.4.5**: Detect repetition - "N identical blocks" → collapse with ×N count
+- [ ] **Task 5.4.6**: Add `TransformerBlock`, `AttentionHead`, `MLPBlock` to Block types
+- [ ] **Task 5.4.7**: Handle MoE (Mixture of Experts) routing patterns
+- [ ] **Task 5.4.8**: Tests with BERT, GPT-2, LLaMA (if ONNX available)
 
-### Story 5.5: Per-Layer Summary and Intermediate Visualization
-- [ ] **Task 5.5.1**: Create per-layer summary table (params, FLOPs, latency estimate, memory)
-- [ ] **Task 5.5.2**: Add sortable/filterable layer table to HTML report
-- [ ] **Task 5.5.3**: Visualize intermediate tensor shapes along the graph
-- [ ] **Task 5.5.4**: Add layer heatmap (color nodes by latency/memory intensity)
+### Story 5.5: Op Type Icon System and Visual Vocabulary
+*180+ ONNX ops → ~20 visual categories*
+- [ ] **Task 5.5.1**: Define icon/shape for each op category (see table below)
+- [ ] **Task 5.5.2**: Map all 180 ONNX ops to visual categories
+- [ ] **Task 5.5.3**: Define size scaling function (FLOPs → node size)
+- [ ] **Task 5.5.4**: Define color mapping (compute intensity, precision, memory)
+- [ ] **Task 5.5.5**: Create SVG icon set for embedding in HTML
+- [ ] **Task 5.5.6**: Add legend/key to visualization output
+
+*Op Category Table:*
+| Category | Ops | Shape |
+|----------|-----|-------|
+| Conv | Conv, ConvTranspose | ◼️ Square |
+| Linear | MatMul, Gemm | ◆ Diamond |
+| Attention | (pattern) | ◉ Target |
+| Norm | BatchNorm, LayerNorm, etc. | ▬ Bar |
+| Activation | Relu, GELU, Softmax, etc. | ⚡ Bolt |
+| Pool | MaxPool, AvgPool, Global* | ▼ Down |
+| Residual | Add (skip connection) | ⊕ Plus |
+| Reshape | Reshape, Transpose, etc. | 🔄 Transform |
+| Slice | Gather, Slice, Split | ✂️ Cut |
+| Concat | Concat | ⊕ Join |
+| Reduce | ReduceSum, ReduceMean | Σ Sigma |
+| Elementwise | Add, Mul, Div, etc. | ± Math |
+| Embed | Gather on weights | 📖 Lookup |
+| KV Cache | Concat on seq dim | 💾 Cache |
+
+### Story 5.6: Edge-Centric Visualization (BLOCKER for 5.7)
+*Edges show tensor flow - THE key insight for bottleneck detection*
+- [ ] **Task 5.6.1**: Calculate tensor size at every edge (shape × dtype bytes)
+- [ ] **Task 5.6.2**: Map edge thickness to tensor size (log scale for LLMs)
+- [ ] **Task 5.6.3**: Color edges by precision (fp32=blue, fp16=green, int8=yellow, bf16=purple)
+- [ ] **Task 5.6.4**: Highlight memory bottleneck edges (red for largest tensors)
+- [ ] **Task 5.6.5**: Show tensor shape on hover: "[batch, seq, hidden]" 
+- [ ] **Task 5.6.6**: Detect and highlight skip connections (dashed lines)
+- [ ] **Task 5.6.7**: Calculate peak memory point in graph (where activations are largest)
+- [ ] **Task 5.6.8**: For attention: show O(seq²) edges prominently (this is why FlashAttention matters)
+
+### Story 5.7: Interactive Hierarchical Graph Visualization (BLOCKED)
+*Depends on: 5.4 (patterns), 5.5 (icons), 5.6 (edges)*
+- [ ] **Task 5.7.1**: Build hierarchical graph data structure (Model → Layers → Blocks → Ops)
+- [ ] **Task 5.7.2**: Implement D3.js or Cytoscape.js renderer
+- [ ] **Task 5.7.3**: Default view: collapsed (Input → [Block×N] → Output)
+- [ ] **Task 5.7.4**: Click-to-expand: show internal ops of any block
+- [ ] **Task 5.7.5**: Pan/zoom for large graphs
+- [ ] **Task 5.7.6**: Search by op type, layer name, or tensor name
+- [ ] **Task 5.7.7**: Export as standalone HTML (self-contained, shareable)
+- [ ] **Task 5.7.8**: Integrate with existing HTML report (--out-html includes graph)
+- [ ] **Task 5.7.9**: Performance: handle 20k+ nodes via virtualization/culling
+
+### Story 5.8: Per-Layer Summary Table
+- [ ] **Task 5.8.1**: Create per-layer summary table (params, FLOPs, latency estimate, memory)
+- [ ] **Task 5.8.2**: Add sortable/filterable table to HTML report
+- [ ] **Task 5.8.3**: Click row to highlight in graph visualization
+- [ ] **Task 5.8.4**: Export table as CSV
 
 ---
 
