@@ -443,8 +443,15 @@ class OperationalProfiler:
 
             latencies.append(round(p50_latency, 2))
             throughputs.append(round(throughput, 1))
-            # VRAM: estimate from input size (actual measurement requires pynvml)
-            vram_gb = (dummy_input.nbytes * 2) / (1024**3)  # Input + output approx
+
+            # VRAM: try to measure with pynvml, fall back to estimate
+            gpu_metrics = self.get_gpu_metrics()
+            if gpu_metrics:
+                vram_gb = gpu_metrics.vram_used_bytes / (1024**3)
+            else:
+                # Estimate: model weights + activations scale with batch
+                # Rough estimate: input * 10 accounts for intermediate activations
+                vram_gb = (dummy_input.nbytes * 10) / (1024**3)
             vram_usage.append(round(vram_gb, 3))
 
             if throughput > max_throughput:
@@ -1137,7 +1144,9 @@ class OperationalProfiler:
         # Estimate memory transfer time
         # Rough estimate: assume model params + activations need to be read
         # Memory bandwidth in bytes/s -> convert to bytes/ms
-        mem_bandwidth_bytes_per_ms = hardware.memory_bandwidth_bytes_per_s / 1000  # B/s -> B/ms
+        mem_bandwidth_bytes_per_ms = (
+            hardware.memory_bandwidth_bytes_per_s / 1000
+        )  # B/s -> B/ms
 
         # Estimate memory footprint accessed per inference
         # This is a rough estimate - actual depends on caching, batch size, etc.
