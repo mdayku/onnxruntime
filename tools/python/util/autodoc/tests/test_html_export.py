@@ -9,9 +9,9 @@ from pathlib import Path
 
 import pytest
 
-from ..html_export import generate_html, HTMLExporter
-from ..hierarchical_graph import HierarchicalNode, HierarchicalGraph
 from ..edge_analysis import EdgeAnalysisResult
+from ..hierarchical_graph import HierarchicalGraph, HierarchicalNode
+from ..html_export import HTMLExporter, generate_html
 
 
 def create_test_graph() -> HierarchicalGraph:

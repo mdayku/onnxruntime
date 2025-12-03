@@ -109,7 +109,7 @@ def infer_num_classes_from_output(
 
     # Fallback to first output
     if not primary_output:
-        primary_output = list(output_shapes.keys())[0]
+        primary_output = next(iter(output_shapes.keys()))
         primary_shape = output_shapes[primary_output]
 
     if not primary_shape:
@@ -137,7 +137,7 @@ def infer_num_classes_from_output(
     # Typical num_classes: 2-10000 (ImageNet=1000, CIFAR=10/100, etc.)
     if len(shape) == 2:
         # [batch, num_classes]
-        batch, num_classes = shape
+        _batch, num_classes = shape
         if num_classes is not None and 2 <= num_classes <= 10000:
             return DatasetInfo(
                 task="classify",
@@ -146,7 +146,7 @@ def infer_num_classes_from_output(
             )
 
     if len(shape) == 3:
-        batch, dim1, dim2 = shape
+        _batch, dim1, dim2 = shape
         # Could be [batch, 1, num_classes] for classification
         if dim1 == 1 and dim2 is not None and 2 <= dim2 <= 10000:
             return DatasetInfo(
@@ -174,7 +174,7 @@ def infer_num_classes_from_output(
                     )
 
     if len(shape) == 4:
-        batch, dim1, dim2, dim3 = shape
+        _batch, dim1, dim2, dim3 = shape
         # Segmentation pattern: [batch, num_classes, height, width]
         # Height/width are typically >= 32 and often equal
         if (

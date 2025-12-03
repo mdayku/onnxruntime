@@ -15,9 +15,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .analyzer import GraphInfo, NodeInfo
+    from .analyzer import GraphInfo
     from .patterns import Block
-    from .edge_analysis import EdgeInfo
 
 
 @dataclass
@@ -34,7 +33,7 @@ class HierarchicalNode:
     op_type: str | None = None  # ONNX op type for leaf nodes
 
     # Hierarchy
-    children: list["HierarchicalNode"] = field(default_factory=list)
+    children: list[HierarchicalNode] = field(default_factory=list)
     parent_id: str | None = None
     depth: int = 0
 
@@ -209,8 +208,8 @@ class HierarchicalGraphBuilder:
 
     def build(
         self,
-        graph_info: "GraphInfo",
-        blocks: list["Block"],
+        graph_info: GraphInfo,
+        blocks: list[Block],
         model_name: str = "Model",
     ) -> HierarchicalGraph:
         """
@@ -261,7 +260,7 @@ class HierarchicalGraphBuilder:
         # Process repeated blocks (Task 5.7.5)
         repeated_blocks = [b for b in blocks if b.block_type == "RepeatedBlock"]
         for rb in repeated_blocks:
-            block_type = rb.attributes.get("repeated_type", "")
+            rb.attributes.get("repeated_type", "")
             repeat_count = rb.attributes.get("num_repetitions", 1)
             block_names = rb.attributes.get("block_names", [])
 
@@ -310,7 +309,7 @@ class HierarchicalGraphBuilder:
             nodes_by_id[op_node.id] = op_node
 
         # Add non-hidden blocks to root
-        for block_name, block_node in block_nodes.items():
+        for _block_name, block_node in block_nodes.items():
             if not block_node.attributes.get("hidden_by_repeat", False):
                 root.children.append(block_node)
 
@@ -329,8 +328,8 @@ class HierarchicalGraphBuilder:
 
     def build_layer_hierarchy(
         self,
-        graph_info: "GraphInfo",
-        blocks: list["Block"],
+        graph_info: GraphInfo,
+        blocks: list[Block],
         model_name: str = "Model",
     ) -> HierarchicalGraph:
         """

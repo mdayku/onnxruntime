@@ -13,13 +13,13 @@ import onnx
 import pytest
 from onnx import TensorProto, helper
 
+from ..analyzer import ONNXGraphLoader
 from ..hierarchical_graph import (
-    HierarchicalNode,
     HierarchicalGraph,
     HierarchicalGraphBuilder,
+    HierarchicalNode,
     generate_summary,
 )
-from ..analyzer import ONNXGraphLoader
 from ..patterns import PatternAnalyzer
 
 

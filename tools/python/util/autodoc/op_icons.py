@@ -9,6 +9,7 @@ colors, and size scaling based on computational intensity.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from enum import Enum
 from typing import ClassVar
@@ -360,8 +361,7 @@ OP_TO_CATEGORY: dict[str, OpCategory] = {
     "Acos": OpCategory.ELEMENTWISE,
     "Atan": OpCategory.ELEMENTWISE,
     "Sinh": OpCategory.ELEMENTWISE,
-    "Cosh": OpCategory.ELEMENTWISE,
-    "Tanh": OpCategory.ACTIVATION,  # Also activation
+    "Cosh": OpCategory.ELEMENTWISE,  # Also activation
     "Asinh": OpCategory.ELEMENTWISE,
     "Acosh": OpCategory.ELEMENTWISE,
     "Atanh": OpCategory.ELEMENTWISE,
@@ -457,8 +457,6 @@ def compute_node_size(flops: int, min_size: float = 20, max_size: float = 80) ->
 
     Uses log scale to handle the huge range of FLOPs (1 to 1T+).
     """
-    import math
-
     if flops <= 0:
         return min_size
 
@@ -590,9 +588,7 @@ def generate_legend_svg(width: int = 400, height: int = 300) -> str:
     Task 5.5.6: Add legend/key to visualization.
     """
     lines = [
-        '<svg viewBox="0 0 {w} {h}" xmlns="http://www.w3.org/2000/svg">'.format(
-            w=width, h=height
-        )
+        f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg">'
     ]
     lines.append('<rect width="100%" height="100%" fill="#1a1a2e"/>')
     lines.append(
@@ -603,7 +599,7 @@ def generate_legend_svg(width: int = 400, height: int = 300) -> str:
     col_width = width // 2
     col = 0
 
-    for i, (category, icon) in enumerate(CATEGORY_ICONS.items()):
+    for _i, (category, icon) in enumerate(CATEGORY_ICONS.items()):
         if category == OpCategory.UNKNOWN:
             continue
 

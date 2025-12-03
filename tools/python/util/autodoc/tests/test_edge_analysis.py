@@ -12,17 +12,17 @@ import onnx
 import pytest
 from onnx import TensorProto, helper
 
+from ..analyzer import ONNXGraphLoader
 from ..edge_analysis import (
+    PRECISION_EDGE_COLORS,
     EdgeAnalyzer,
     EdgeInfo,
     compute_edge_thickness,
     format_tensor_shape,
     format_tensor_size,
-    get_edge_color,
     generate_edge_tooltip,
-    PRECISION_EDGE_COLORS,
+    get_edge_color,
 )
-from ..analyzer import ONNXGraphLoader
 
 
 def create_simple_model() -> onnx.ModelProto:
@@ -131,7 +131,7 @@ class TestEdgeAnalysis:
             result = analyzer.analyze(graph_info)
 
             # Should detect skip connection for X -> Add
-            skip_edges = [e for e in result.edges if e.is_skip_connection]
+            [e for e in result.edges if e.is_skip_connection]
             # May or may not detect depending on topological distance
             # At minimum the analysis should run without error
             assert result is not None

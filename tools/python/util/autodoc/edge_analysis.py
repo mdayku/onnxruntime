@@ -11,11 +11,11 @@ from __future__ import annotations
 
 import logging
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .analyzer import GraphInfo, NodeInfo
+    from .analyzer import GraphInfo
 
 
 # Data type sizes in bytes
@@ -115,7 +115,7 @@ class EdgeAnalyzer:
     def __init__(self, logger: logging.Logger | None = None):
         self.logger = logger or logging.getLogger("autodoc.edges")
 
-    def analyze(self, graph_info: "GraphInfo") -> EdgeAnalysisResult:
+    def analyze(self, graph_info: GraphInfo) -> EdgeAnalysisResult:
         """
         Perform complete edge analysis on a graph.
 
@@ -159,7 +159,7 @@ class EdgeAnalyzer:
             memory_profile=memory_profile,
         )
 
-    def _extract_edges(self, graph_info: "GraphInfo") -> list[EdgeInfo]:
+    def _extract_edges(self, graph_info: GraphInfo) -> list[EdgeInfo]:
         """Extract all edges (tensors) from the graph."""
         edges: list[EdgeInfo] = []
         tensor_to_consumers: dict[str, list[str]] = {}
@@ -248,7 +248,7 @@ class EdgeAnalyzer:
 
         return edges
 
-    def _get_tensor_dtype(self, name: str, graph_info: "GraphInfo") -> str:
+    def _get_tensor_dtype(self, name: str, graph_info: GraphInfo) -> str:
         """Get dtype for a tensor."""
         # Check if it's an initializer
         if name in graph_info.initializers:
@@ -305,7 +305,7 @@ class EdgeAnalyzer:
             return
 
         max_size = max(activation_sizes)
-        threshold = max_size * 0.5  # Top 50% are potential bottlenecks
+        max_size * 0.5  # Top 50% are potential bottlenecks
 
         for edge in edges:
             if edge.is_weight:
@@ -318,7 +318,7 @@ class EdgeAnalyzer:
                 edge.is_bottleneck = True
 
     def _detect_skip_connections(
-        self, edges: list[EdgeInfo], graph_info: "GraphInfo"
+        self, edges: list[EdgeInfo], graph_info: GraphInfo
     ) -> None:
         """Detect skip connection edges."""
         # Skip connections typically:
@@ -353,7 +353,7 @@ class EdgeAnalyzer:
                         break
 
     def _detect_attention_edges(
-        self, edges: list[EdgeInfo], graph_info: "GraphInfo"
+        self, edges: list[EdgeInfo], graph_info: GraphInfo
     ) -> None:
         """Detect O(seq^2) attention edges (Q @ K^T output)."""
         # Look for Softmax nodes and mark their input edges
@@ -379,7 +379,7 @@ class EdgeAnalyzer:
                                     edge.is_attention_qk = True
 
     def _calculate_memory_profile(
-        self, edges: list[EdgeInfo], graph_info: "GraphInfo"
+        self, edges: list[EdgeInfo], graph_info: GraphInfo
     ) -> list[tuple[str, int]]:
         """
         Calculate memory usage at each point in execution.
@@ -413,8 +413,7 @@ class EdgeAnalyzer:
                 t for t, last_node in tensor_last_use.items() if last_node == node.name
             ]
             for tensor in to_free:
-                if tensor in live_tensors:
-                    del live_tensors[tensor]
+                live_tensors.pop(tensor, None)
 
         return profile
 

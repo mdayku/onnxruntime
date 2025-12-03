@@ -6,10 +6,11 @@ Unit tests for TensorFlow/Keras/JAX to ONNX conversion functionality.
 """
 from __future__ import annotations
 
+import importlib.util
 import logging
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
@@ -17,29 +18,22 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from util.model_inspect import (
-    _convert_tensorflow_to_onnx,
-    _convert_keras_to_onnx,
     _convert_frozen_graph_to_onnx,
     _convert_jax_to_onnx,
+    _convert_keras_to_onnx,
+    _convert_tensorflow_to_onnx,
 )
 
 # Check if TensorFlow and tf2onnx are available
-try:
+_TF_AVAILABLE = (
+    importlib.util.find_spec("tensorflow") is not None
+    and importlib.util.find_spec("tf2onnx") is not None
+)
+_JAX_AVAILABLE = importlib.util.find_spec("jax") is not None
+
+# Import TensorFlow only when needed for tests
+if _TF_AVAILABLE:
     import tensorflow as tf
-    import tf2onnx
-
-    _TF_AVAILABLE = True
-except ImportError:
-    _TF_AVAILABLE = False
-
-# Check if JAX is available
-try:
-    import jax
-    import jax.numpy as jnp
-
-    _JAX_AVAILABLE = True
-except ImportError:
-    _JAX_AVAILABLE = False
 
 
 @pytest.fixture
@@ -73,15 +67,12 @@ class TestTensorFlowConversionErrors:
         # Mock tf2onnx import to fail
         with patch.dict("sys.modules", {"tf2onnx": None}):
             # Force re-import check by clearing cached imports
-            import importlib
-            import util.model_inspect as mi
 
             # Save original function
-            original_fn = mi._convert_tensorflow_to_onnx
 
             # The function checks for import at runtime, so we need to
             # test the actual error path
-            onnx_path, _ = _convert_tensorflow_to_onnx(
+            _onnx_path, _ = _convert_tensorflow_to_onnx(
                 fake_model,
                 output_path=None,
                 opset_version=17,
@@ -115,7 +106,7 @@ class TestKerasConversionErrors:
         fake_file.write_text("fake content")
 
         with caplog.at_level(logging.WARNING):
-            onnx_path, _ = _convert_keras_to_onnx(
+            _onnx_path, _ = _convert_keras_to_onnx(
                 fake_file,
                 output_path=None,
                 opset_version=17,
@@ -273,7 +264,7 @@ class TestTensorFlowConversion:
         model.save(str(saved_model_path), save_format="tf")
 
         # Convert to ONNX
-        onnx_path, temp_file = _convert_tensorflow_to_onnx(
+        onnx_path, _temp_file = _convert_tensorflow_to_onnx(
             saved_model_path,
             output_path=tmp_path / "output.onnx",
             opset_version=17,
@@ -295,7 +286,7 @@ class TestTensorFlowConversion:
         saved_model_path = tmp_path / "saved_model"
         model.save(str(saved_model_path), save_format="tf")
 
-        onnx_path, temp_file = _convert_tensorflow_to_onnx(
+        onnx_path, _temp_file = _convert_tensorflow_to_onnx(
             saved_model_path,
             output_path=None,  # Use temp file
             opset_version=17,
@@ -324,7 +315,7 @@ class TestKerasConversion:
         h5_path = tmp_path / "model.h5"
         model.save(str(h5_path), save_format="h5")
 
-        onnx_path, temp_file = _convert_keras_to_onnx(
+        onnx_path, _temp_file = _convert_keras_to_onnx(
             h5_path,
             output_path=tmp_path / "output.onnx",
             opset_version=17,
@@ -346,7 +337,7 @@ class TestKerasConversion:
         keras_path = tmp_path / "model.keras"
         model.save(str(keras_path))
 
-        onnx_path, temp_file = _convert_keras_to_onnx(
+        onnx_path, _temp_file = _convert_keras_to_onnx(
             keras_path,
             output_path=tmp_path / "output.onnx",
             opset_version=17,
@@ -385,13 +376,10 @@ class TestCLIValidation:
 
     def test_multiple_conversion_flags_error(self):
         """Using multiple conversion flags should error."""
-        import argparse
-        from util.model_inspect import parse_args
 
         # This would be tested via the main function, but we can verify
         # the argument structure allows these to be set
         # The actual validation happens in run_inspect()
-        pass
 
 
 if __name__ == "__main__":

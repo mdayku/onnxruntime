@@ -491,7 +491,7 @@ class PatternAnalyzer:
         return blocks
 
     def _trace_attention_pattern(
-        self, softmax: "NodeInfo", graph_info: GraphInfo
+        self, softmax: NodeInfo, graph_info: GraphInfo
     ) -> dict | None:
         """Trace back from Softmax to find Q/K/V projections."""
         result = {
@@ -668,7 +668,7 @@ class PatternAnalyzer:
         return blocks
 
     def _trace_mlp_pattern(
-        self, activation: "NodeInfo", graph_info: GraphInfo
+        self, activation: NodeInfo, graph_info: GraphInfo
     ) -> dict | None:
         """Trace MLP pattern from activation function."""
         result = {
