@@ -410,7 +410,9 @@ class VisualizationGenerator:
         )
         ax2.tick_params(colors=THEME.text, labelsize=10)
         ax2.legend(
-            facecolor=THEME.plot_background, edgecolor=THEME.grid, labelcolor=THEME.text,
+            facecolor=THEME.plot_background,
+            edgecolor=THEME.grid,
+            labelcolor=THEME.text,
             fontsize=11,
         )
         for spine in ax2.spines.values():

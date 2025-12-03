@@ -388,9 +388,9 @@ Examples:
     )
 
     hardware_group.add_argument(
-        "--benchmark",
+        "--no-benchmark",
         action="store_true",
-        help="Use actual ONNX Runtime inference for batch size sweep (more accurate but slower).",
+        help="Use theoretical estimates instead of actual inference for batch sweeps (faster but less accurate).",
     )
 
     hardware_group.add_argument(
@@ -1712,7 +1712,18 @@ def run_inspect():
             if args.sweep_batch_sizes:
                 profiler = OperationalProfiler(logger=logger)
 
-                if args.benchmark:
+                if args.no_benchmark:
+                    # Use theoretical estimates (faster but less accurate)
+                    progress.step("Running batch size sweep (theoretical)")
+                    sweep_result = profiler.run_batch_sweep(
+                        model_params=report.param_counts.total,
+                        model_flops=report.flop_counts.total,
+                        peak_activation_bytes=report.memory_estimates.peak_activation_bytes,
+                        hardware=hardware_profile,
+                        precision=args.precision,
+                    )
+                else:
+                    # Default: use actual inference benchmarking
                     progress.step("Benchmarking batch sizes (actual inference)")
                     sweep_result = profiler.run_batch_sweep_benchmark(
                         model_path=str(model_path),
@@ -1728,15 +1739,6 @@ def run_inspect():
                             hardware=hardware_profile,
                             precision=args.precision,
                         )
-                else:
-                    progress.step("Running batch size sweep (theoretical)")
-                    sweep_result = profiler.run_batch_sweep(
-                        model_params=report.param_counts.total,
-                        model_flops=report.flop_counts.total,
-                        peak_activation_bytes=report.memory_estimates.peak_activation_bytes,
-                        hardware=hardware_profile,
-                        precision=args.precision,
-                    )
 
                 report.batch_size_sweep = sweep_result
                 logger.info(
