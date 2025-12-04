@@ -49,6 +49,8 @@
 | Epic 33: QAT Linters | Not Started | 4 | 0/22 | **P1** |
 | Epic 34: Activation Visualization | Not Started | 5 | 0/25 | P2/P3 |
 | Epic 35: TRT-Aware Graph UX | Not Started | 3 | 0/16 | P3 |
+| Epic 36: Layer Visualization | Not Started | 5 | 0/25 | **P2** |
+| Epic 37: Hardware Recommender | Not Started | 2 | 0/10 | P3 |
 
 ---
 
@@ -1107,5 +1109,79 @@
 - [ ] **Task 35.3.2**: Add "show only bottleneck ops" toggle
 - [ ] **Task 35.3.3**: Add "show only fused chains" toggle
 - [ ] **Task 35.3.4**: Improve zoom/pan smoothness
+
+---
+
+## Epic 37: Hardware Recommendation Engine (P3)
+
+*Help users choose optimal deployment hardware based on model requirements.*
+
+**Current Design**: Assume user runs HaoLine on target deployment hardware. `--hardware auto` detects local GPU.
+
+**Future (with Streamlit UI)**:
+- Allow user to specify target hardware from profile list
+- Recommend cloud instances (AWS, Azure, GCP) based on model size/latency requirements
+- Recommend on-prem hardware based on budget and throughput needs
+- Show cost/performance tradeoffs
+
+### Story 37.1: Hardware Recommendation API
+- [ ] **Task 37.1.1**: Define user requirements input (latency SLA, throughput, budget)
+- [ ] **Task 37.1.2**: Score hardware profiles against requirements
+- [ ] **Task 37.1.3**: Rank and return top 3-5 recommendations with rationale
+- [ ] **Task 37.1.4**: Include cloud cost estimates ($/hour, $/1M inferences)
+- [ ] **Task 37.1.5**: Show "fits in VRAM" / "requires multi-GPU" warnings
+
+### Story 37.2: Streamlit Hardware Selector
+- [ ] **Task 37.2.1**: Add hardware profile dropdown in UI
+- [ ] **Task 37.2.2**: Add "Recommend for me" button with requirements form
+- [ ] **Task 37.2.3**: Display recommendation cards with key metrics
+- [ ] **Task 37.2.4**: Allow side-by-side hardware comparison
+- [ ] **Task 37.2.5**: Show "Your Hardware" vs "Recommended" comparison
+
+---
+
+## Epic 36: Layer-Level Visualization Expansion (P2)
+
+*Leverage per-layer metrics (layers.csv) for rich analysis visualizations in PDF/HTML reports.*
+
+### Story 36.1: Layer Waterfall Chart
+*Show per-layer latency as stacked horizontal bars (flame graph style).*
+- [ ] **Task 36.1.1**: Create horizontal waterfall chart from layer timing data
+- [ ] **Task 36.1.2**: Color-code by op type (Conv=blue, MatMul=green, etc.)
+- [ ] **Task 36.1.3**: Show cumulative latency on x-axis
+- [ ] **Task 36.1.4**: Add interactive hover for layer details
+- [ ] **Task 36.1.5**: Integrate into PDF report (new page)
+
+### Story 36.2: Memory Timeline Chart
+*Show activation memory building through network layers.*
+- [ ] **Task 36.2.1**: Plot activation memory vs layer index
+- [ ] **Task 36.2.2**: Mark peak memory location with annotation
+- [ ] **Task 36.2.3**: Show memory "released" after each layer (stacked area)
+- [ ] **Task 36.2.4**: Color-code by op type
+- [ ] **Task 36.2.5**: Add VRAM limit line for target hardware
+
+### Story 36.3: Layer Efficiency Analysis
+*Scatter plots and heatmaps for layer-level efficiency.*
+- [ ] **Task 36.3.1**: FLOPs vs Latency scatter plot (identify inefficient layers)
+- [ ] **Task 36.3.2**: Params vs Memory scatter plot
+- [ ] **Task 36.3.3**: Compute/Memory ratio heatmap by layer
+- [ ] **Task 36.3.4**: Per-layer roofline positioning
+- [ ] **Task 36.3.5**: Highlight outlier layers (>2σ from mean)
+
+### Story 36.4: Critical Path Analysis
+*Identify and visualize the longest execution path.*
+- [ ] **Task 36.4.1**: Compute critical path through graph (DAG longest path)
+- [ ] **Task 36.4.2**: Highlight critical path in graph visualization
+- [ ] **Task 36.4.3**: Show % of total latency on critical path
+- [ ] **Task 36.4.4**: Suggest parallelization opportunities
+- [ ] **Task 36.4.5**: Compare critical path: FP32 vs INT8
+
+### Story 36.5: Compute Distribution Sankey
+*Flow diagram showing FLOPs distribution through network.*
+- [ ] **Task 36.5.1**: Create Sankey diagram: Input → Op Types → Output
+- [ ] **Task 36.5.2**: Width proportional to FLOPs
+- [ ] **Task 36.5.3**: Color by op type
+- [ ] **Task 36.5.4**: Interactive hover for layer names
+- [ ] **Task 36.5.5**: Export as SVG for high-quality embedding
 - [ ] **Task 35.3.5**: Add minimap for large graphs
 - [ ] **Task 35.3.6**: Add keyboard shortcuts (/ to search, h for heatmap)
