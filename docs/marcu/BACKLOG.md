@@ -33,7 +33,7 @@
 | Epic 19: SafeTensors | Not Started | 2 | 0/8 | P2 |
 | Epic 20: CoreML | Not Started | 2 | 0/10 | P2 |
 | Epic 21: TFLite | Not Started | 2 | 0/10 | P2 |
-| Epic 22: TensorRT | Not Started | 2 | 0/8 | P3 |
+| Epic 22: TensorRT Engine Introspection | Not Started | 6 | 0/34 | P3 |
 | Epic 23: OpenVINO | Not Started | 2 | 0/8 | P3 |
 | Epic 24: GGUF | Not Started | 2 | 0/6 | P3 |
 | Epic 25: Privacy/Trust | Not Started | 3 | 0/9 | P1 |
@@ -590,21 +590,60 @@
 
 ---
 
-## Epic 22: TensorRT Format (P3 - Read-Only)
+## Epic 22: TensorRT Engine Introspection (P3)
 
-*NVIDIA's optimized inference engine. Read-only (compiled binaries).*
+*Deep analysis of NVIDIA TensorRT compiled engines. Inspired by [TRT Engine Explorer](https://github.com/NVIDIA/TensorRT/tree/main/tools/experimental/trt-engine-explorer).*
 
-### Story 22.1: TensorRT Engine Reader
-- [ ] **Task 22.1.1**: Add tensorrt dependency (optional)
-- [ ] **Task 22.1.2**: Implement TensorRTAdapter.read()
-- [ ] **Task 22.1.3**: Extract layer info (names, types, shapes, precision)
-- [ ] **Task 22.1.4**: Extract timing/profiling data
-- [ ] **Task 22.1.5**: Identify precision per layer
+### Story 22.1: Engine File Loader
+*Load .engine/.plan TRT blobs using TensorRT runtime APIs.*
+- [ ] **Task 22.1.1**: Add tensorrt dependency (optional, requires NVIDIA GPU)
+- [ ] **Task 22.1.2**: Implement `TRTEngineLoader.load()` to deserialize engine files
+- [ ] **Task 22.1.3**: Extract engine metadata (TRT version, build flags, calibration info)
+- [ ] **Task 22.1.4**: Handle engine compatibility checks (GPU arch, TRT version)
+- [ ] **Task 22.1.5**: Support both `.engine` and `.plan` file formats
 
-### Story 22.2: TensorRT Analysis Features
-- [ ] **Task 22.2.1**: Add engine comparison (original vs optimized)
-- [ ] **Task 22.2.2**: Show layer fusion visualization
-- [ ] **Task 22.2.3**: Estimate memory footprint
+### Story 22.2: Fused Graph Reconstruction
+*Parse the optimized TRT graph and reconstruct the execution plan.*
+- [ ] **Task 22.2.1**: Extract layer list from engine (names, types, shapes)
+- [ ] **Task 22.2.2**: Identify fused operations (Conv+BN+ReLU → single kernel)
+- [ ] **Task 22.2.3**: Detect removed/optimized-away layers
+- [ ] **Task 22.2.4**: Extract kernel substitutions (cuDNN vs custom kernels)
+- [ ] **Task 22.2.5**: Parse timing cache if present
+- [ ] **Task 22.2.6**: Identify precision per layer (FP32/FP16/INT8/TF32)
+
+### Story 22.3: ONNX ↔ TRT Diff View
+*Visual comparison between source ONNX and compiled TRT engine.*
+- [ ] **Task 22.3.1**: Map TRT layers back to original ONNX nodes
+- [ ] **Task 22.3.2**: Highlight fused operations (N ONNX ops → 1 TRT layer)
+- [ ] **Task 22.3.3**: Show precision auto-selection decisions
+- [ ] **Task 22.3.4**: Visualize layer rewrites (e.g., attention → Flash Attention)
+- [ ] **Task 22.3.5**: Display shape changes (dynamic → static binding)
+- [ ] **Task 22.3.6**: Generate side-by-side graph comparison HTML
+
+### Story 22.4: TRT Performance Metadata Panel
+*Extract and display engine profiling information.*
+- [ ] **Task 22.4.1**: Extract per-layer latency (if profiling was enabled)
+- [ ] **Task 22.4.2**: Show workspace size allocation per layer
+- [ ] **Task 22.4.3**: Display kernel/tactic selection choices
+- [ ] **Task 22.4.4**: Identify memory-bound vs compute-bound layers
+- [ ] **Task 22.4.5**: Show layer timing breakdown chart
+- [ ] **Task 22.4.6**: Extract device memory footprint
+
+### Story 22.5: TRT Engine Summary Block
+*Comprehensive summary matching PRD format.*
+- [ ] **Task 22.5.1**: Generate engine overview (layers, params, memory)
+- [ ] **Task 22.5.2**: Show optimization summary (fusions applied, precision mix)
+- [ ] **Task 22.5.3**: Display hardware binding info (GPU arch, compute capability)
+- [ ] **Task 22.5.4**: List builder configuration used (max batch, workspace, etc.)
+
+### Story 22.6: ONNX vs TRT Comparison Mode
+*Side-by-side analysis showing what changed and performance impact.*
+- [ ] **Task 22.6.1**: Load both ONNX source and TRT engine
+- [ ] **Task 22.6.2**: Compute layer count delta (before/after fusion)
+- [ ] **Task 22.6.3**: Show speedup contributions per optimization
+- [ ] **Task 22.6.4**: Display precision changes with accuracy impact notes
+- [ ] **Task 22.6.5**: Generate comparison report (JSON/MD/HTML)
+- [ ] **Task 22.6.6**: Visualize memory reduction from optimizations
 
 ---
 
