@@ -25,7 +25,7 @@
 | Epic 8: Testing & CI/CD | **COMPLETE** | 4 | 18/18 | P3 |
 | Epic 9: Runtime Profiling | **COMPLETE** | 6 | 22/22 | P2 |
 | Epic 10: SaaS Web App | Not Started | 5 | 0/27 | P4 |
-| Epic 10B: Standalone Package | Not Started | 3 | 0/17 | P0 |
+| Epic 10B: Standalone Package | Not Started | 5 | 0/31 | P0 |
 | Epic 11: Streamlit Web UI | Not Started | 3 | 0/14 | P0 |
 | Epic 12: Inference Platform | Not Started | 6 | 0/30 | P1 |
 | Epic 13-17: MLOps Platform | Future | 5 | 0/? | P5 |
@@ -400,25 +400,53 @@
 ### Story 10B.0: Greenfield Extraction
 - [ ] **Task 10B.0.1**: Create new GitHub repo (standalone, not ORT fork)
 - [ ] **Task 10B.0.2**: Copy autodoc modules from `tools/python/util/autodoc/`
-- [ ] **Task 10B.0.3**: Copy `model_inspect.py` as CLI entrypoint
-- [ ] **Task 10B.0.4**: Update all imports to standalone package structure
-- [ ] **Task 10B.0.5**: Verify all tests pass in new repo
-- [ ] **Task 10B.0.6**: Update README for standalone usage
+- [ ] **Task 10B.0.3**: Copy `model_inspect.py` and `model_inspect_compare.py` as CLI entrypoints
+- [ ] **Task 10B.0.4**: Update all imports to standalone package structure (`from model_analyzer import ...`)
+- [ ] **Task 10B.0.5**: Remove `ModelProtoWithShapeInfo` import (confirm fallback works)
+- [ ] **Task 10B.0.6**: Copy test fixtures (sample ONNX models for unit tests)
+- [ ] **Task 10B.0.7**: Verify all tests pass in new repo
+- [ ] **Task 10B.0.8**: Update README for standalone usage
 
 ### Story 10B.1: Python Wheel Packaging
-- [ ] **Task 10B.1.1**: Create pyproject.toml with proper metadata
-- [ ] **Task 10B.1.2**: Configure build system (hatch or poetry)
-- [ ] **Task 10B.1.3**: Define optional dependencies ([viz], [llm], [pdf], [full])
-- [ ] **Task 10B.1.4**: Add CLI entrypoint (`model-analyzer` command)
-- [ ] **Task 10B.1.5**: Test wheel installation in clean virtual environment
-- [ ] **Task 10B.1.6**: Publish to TestPyPI first, then PyPI
+- [ ] **Task 10B.1.1**: Create pyproject.toml with proper metadata (name, version, author, license)
+- [ ] **Task 10B.1.2**: Configure build system (hatchling recommended)
+- [ ] **Task 10B.1.3**: Define core dependencies: `onnx>=1.14`, `numpy>=1.20`
+- [ ] **Task 10B.1.4**: Define optional dependencies:
+  - `[runtime]`: onnxruntime
+  - `[viz]`: matplotlib
+  - `[llm]`: anthropic
+  - `[pdf]`: playwright
+  - `[gpu]`: nvidia-ml-py
+  - `[full]`: all of the above
+- [ ] **Task 10B.1.5**: Add CLI entrypoints:
+  - `model-analyzer` → `model_inspect:main`
+  - `model-compare` → `model_inspect_compare:main`
+- [ ] **Task 10B.1.6**: Test wheel installation in clean virtual environment
+- [ ] **Task 10B.1.7**: Publish to TestPyPI first, verify install works
+- [ ] **Task 10B.1.8**: Publish to PyPI
 
-### Story 10B.2: Pre-built Docker Image
-- [ ] **Task 10B.2.1**: Create Dockerfile with all dependencies
-- [ ] **Task 10B.2.2**: Optimize image size (multi-stage build)
-- [ ] **Task 10B.2.3**: Add GPU support variant (CUDA base image)
-- [ ] **Task 10B.2.4**: Publish to Docker Hub / GitHub Container Registry
-- [ ] **Task 10B.2.5**: Create docker-compose.yml for easy local setup
+### Story 10B.2: CI/CD Pipeline (New Repo)
+- [ ] **Task 10B.2.1**: Create GitHub Actions workflow for testing
+- [ ] **Task 10B.2.2**: Add Black + Ruff linting checks
+- [ ] **Task 10B.2.3**: Add mypy type checking
+- [ ] **Task 10B.2.4**: Add pytest with coverage
+- [ ] **Task 10B.2.5**: Auto-publish to PyPI on release tag
+- [ ] **Task 10B.2.6**: Add badge shields (build status, coverage, PyPI version)
+
+### Story 10B.3: Pre-built Docker Image
+- [ ] **Task 10B.3.1**: Create Dockerfile with all dependencies
+- [ ] **Task 10B.3.2**: Optimize image size (multi-stage build)
+- [ ] **Task 10B.3.3**: Add GPU support variant (CUDA base image)
+- [ ] **Task 10B.3.4**: Publish to Docker Hub / GitHub Container Registry
+- [ ] **Task 10B.3.5**: Create docker-compose.yml for easy local setup
+
+### Story 10B.4: Documentation and Branding
+- [ ] **Task 10B.4.1**: Create standalone README.md with installation instructions
+- [ ] **Task 10B.4.2**: Add quickstart examples (analyze, compare, profile)
+- [ ] **Task 10B.4.3**: Document all CLI flags and options
+- [ ] **Task 10B.4.4**: Add architecture overview for contributors
+- [ ] **Task 10B.4.5**: Choose final product name (model-analyzer? onnx-inspector? neural-scope?)
+- [ ] **Task 10B.4.6**: Create logo/branding assets
 
 ---
 
