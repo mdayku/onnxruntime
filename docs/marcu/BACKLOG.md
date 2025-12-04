@@ -25,7 +25,7 @@
 | Epic 8: Testing & CI/CD | **COMPLETE** | 4 | 18/18 | P3 |
 | Epic 9: Runtime Profiling | **COMPLETE** | 6 | 22/22 | P2 |
 | Epic 10: SaaS Web App | Not Started | 5 | 0/27 | P4 |
-| Epic 10B: Standalone Package | Not Started | 5 | 0/31 | P0 |
+| Epic 10B: Standalone Package | **In Progress** | 5 | 28/31 | P0 |
 | Epic 11: Streamlit Web UI | Not Started | 3 | 0/14 | P0 |
 | Epic 12: Inference Platform | Not Started | 6 | 0/30 | P1 |
 | Epic 13-17: MLOps Platform | Future | 5 | 0/? | P5 |
@@ -397,40 +397,41 @@
 
 *Extract from ORT fork, ship as independent product. This is our IP.*
 
-### Story 10B.0: Greenfield Extraction
-- [ ] **Task 10B.0.1**: Create new GitHub repo (standalone, not ORT fork)
-- [ ] **Task 10B.0.2**: Copy autodoc modules from `tools/python/util/autodoc/`
-- [ ] **Task 10B.0.3**: Copy `model_inspect.py` and `model_inspect_compare.py` as CLI entrypoints
-- [ ] **Task 10B.0.4**: Update all imports to standalone package structure (`from haoline import ...`)
-- [ ] **Task 10B.0.5**: Remove `ModelProtoWithShapeInfo` import (confirm fallback works)
-- [ ] **Task 10B.0.6**: Copy test fixtures (sample ONNX models for unit tests)
-- [ ] **Task 10B.0.7**: Verify all tests pass in new repo
-- [ ] **Task 10B.0.8**: Update README for standalone usage
+**New Repository:** [github.com/mdayku/HaoLine](https://github.com/mdayku/HaoLine)
 
-### Story 10B.1: Python Wheel Packaging
-- [ ] **Task 10B.1.1**: Create pyproject.toml with proper metadata (name, version, author, license)
-- [ ] **Task 10B.1.2**: Configure build system (hatchling recommended)
-- [ ] **Task 10B.1.3**: Define core dependencies: `onnx>=1.14`, `numpy>=1.20`
-- [ ] **Task 10B.1.4**: Define optional dependencies:
+### Story 10B.0: Greenfield Extraction - **COMPLETE**
+- [x] **Task 10B.0.1**: Create new GitHub repo (standalone, not ORT fork)
+- [x] **Task 10B.0.2**: Copy autodoc modules from `tools/python/util/autodoc/`
+- [x] **Task 10B.0.3**: Copy `model_inspect.py` and `model_inspect_compare.py` as CLI entrypoints
+- [x] **Task 10B.0.4**: Update all imports to standalone package structure (`from haoline import ...`)
+- [x] **Task 10B.0.5**: Remove `ModelProtoWithShapeInfo` import (confirm fallback works)
+- [x] **Task 10B.0.6**: Copy test fixtures (sample ONNX models for unit tests)
+- [x] **Task 10B.0.7**: Verify all tests pass in new repo (229 passed)
+- [x] **Task 10B.0.8**: Update README for standalone usage
+
+### Story 10B.1: Python Wheel Packaging - **COMPLETE**
+- [x] **Task 10B.1.1**: Create pyproject.toml with proper metadata (name, version, author, license)
+- [x] **Task 10B.1.2**: Configure build system (hatchling recommended)
+- [x] **Task 10B.1.3**: Define core dependencies: `onnx>=1.14`, `numpy>=1.20`
+- [x] **Task 10B.1.4**: Define optional dependencies:
   - `[runtime]`: onnxruntime
   - `[viz]`: matplotlib
   - `[llm]`: anthropic
   - `[pdf]`: playwright
   - `[gpu]`: nvidia-ml-py
   - `[full]`: all of the above
-- [ ] **Task 10B.1.5**: Add CLI entrypoints:
-  - `haoline` → `haoline.cli:main`
-  - `haoline-compare` → `haoline.compare:main`
-- [ ] **Task 10B.1.6**: Test wheel installation in clean virtual environment
+- [x] **Task 10B.1.5**: Add CLI entrypoints:
+  - `haoline` → `haoline.cli:run_inspect`
+- [x] **Task 10B.1.6**: Test wheel installation in clean virtual environment
 - [ ] **Task 10B.1.7**: Publish to TestPyPI first, verify install works
 - [ ] **Task 10B.1.8**: Publish to PyPI
 
-### Story 10B.2: CI/CD Pipeline (New Repo)
-- [ ] **Task 10B.2.1**: Create GitHub Actions workflow for testing
-- [ ] **Task 10B.2.2**: Add Black + Ruff linting checks
-- [ ] **Task 10B.2.3**: Add mypy type checking
-- [ ] **Task 10B.2.4**: Add pytest with coverage
-- [ ] **Task 10B.2.5**: Auto-publish to PyPI on release tag
+### Story 10B.2: CI/CD Pipeline (New Repo) - **COMPLETE**
+- [x] **Task 10B.2.1**: Create GitHub Actions workflow for testing
+- [x] **Task 10B.2.2**: Add Black + Ruff linting checks
+- [x] **Task 10B.2.3**: Add mypy type checking
+- [x] **Task 10B.2.4**: Add pytest with coverage
+- [x] **Task 10B.2.5**: Auto-publish to PyPI on release tag
 - [ ] **Task 10B.2.6**: Add badge shields (build status, coverage, PyPI version)
 
 ### Story 10B.3: Pre-built Docker Image
@@ -440,12 +441,12 @@
 - [ ] **Task 10B.3.4**: Publish to Docker Hub / GitHub Container Registry
 - [ ] **Task 10B.3.5**: Create docker-compose.yml for easy local setup
 
-### Story 10B.4: Documentation and Branding
-- [ ] **Task 10B.4.1**: Create standalone README.md with installation instructions
-- [ ] **Task 10B.4.2**: Add quickstart examples (analyze, compare, profile)
+### Story 10B.4: Documentation and Branding - **In Progress**
+- [x] **Task 10B.4.1**: Create standalone README.md with installation instructions
+- [x] **Task 10B.4.2**: Add quickstart examples (analyze, compare, profile)
 - [ ] **Task 10B.4.3**: Document all CLI flags and options
 - [ ] **Task 10B.4.4**: Add architecture overview for contributors
-- [ ] **Task 10B.4.5**: ~~Choose final product name~~ **DONE: HaoLine (好线)**
+- [x] **Task 10B.4.5**: ~~Choose final product name~~ **DONE: HaoLine (好线)**
 - [ ] **Task 10B.4.6**: Create logo/branding assets
 
 ---

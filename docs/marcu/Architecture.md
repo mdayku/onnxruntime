@@ -34,7 +34,7 @@ This document describes the system architecture for HaoLine, a universal model a
          v                        v                        v
 +------------------------------------------------------------------------+
 |                                                                        |
-|                          ONNX Autodoc                                  |
+|                          HaoLine (好线)                                 |
 |                                                                        |
 |   CLI Interface  -->  Analysis Engine  -->  Report Generators          |
 |                                                                        |
@@ -613,60 +613,67 @@ def generate_calibration_recommendations(compare_json: Dict) -> List[Calibration
 
 ## 5. File Structure
 
-### 5.1 Repository Layout
+### 5.1 Standalone Package (HaoLine)
+
+**Repository:** [github.com/mdayku/HaoLine](https://github.com/mdayku/HaoLine)
 
 ```
-onnxruntime/
+HaoLine/
 |
-+-- tools/
-|   +-- autodoc/
-|       +-- __init__.py
-|       +-- analysis.py           # Core analysis logic
-|       +-- visualizations.py     # Matplotlib chart generation
-|       +-- render_markdown.py    # Markdown report renderer
-|       +-- render_html.py        # HTML report renderer (optional)
-|       +-- hardware_profiles/
-|           +-- __init__.py
-|           +-- nvidia_rtx_4090.json
-|           +-- nvidia_a10.json
-|           +-- nvidia_t4.json
++-- pyproject.toml           # Package metadata, dependencies, CLI entrypoints
++-- README.md                # Installation and usage guide
++-- LICENSE                  # MIT License
 |
-+-- python/
-|   +-- tools/
-|       +-- model_inspect.py           # Main CLI entrypoint
-|       +-- model_inspect_compare.py   # Compare mode CLI
-|
-+-- core/
-|   +-- graph/
-|       +-- model_inspector.h     # C++ core (stretch goal)
-|       +-- model_inspector.cc
-|
-+-- test/
-|   +-- python/
-|   |   +-- tools/
-|   |       +-- test_model_inspect.py
-|   |       +-- test_model_inspect_compare.py
-|   |       +-- test_visualizations.py
-|   |       +-- fixtures/
-|   |           +-- resnet50_tiny.onnx
-|   |           +-- bert_tiny.onnx
++-- src/haoline/             # Main package
+|   +-- __init__.py          # Public API exports, version
+|   +-- cli.py               # Main CLI entrypoint (haoline command)
+|   +-- compare.py           # Compare mode CLI
+|   +-- analyzer.py          # ONNX graph analysis, FLOPs, params, memory
+|   +-- patterns.py          # Architecture pattern detection
+|   +-- risks.py             # Risk signal detection
+|   +-- report.py            # InspectionReport dataclass, ModelInspector
+|   +-- hardware.py          # GPU profiles, estimator, multi-GPU
+|   +-- operational_profiling.py  # Runtime benchmarking, profiling
+|   +-- visualizations.py    # Matplotlib chart generation
+|   +-- compare_visualizations.py # Compare mode charts, HTML
+|   +-- html_export.py       # Interactive D3.js graph visualization
+|   +-- pdf_generator.py     # Playwright PDF generation
+|   +-- llm_summarizer.py    # AI-powered summaries (Anthropic)
+|   +-- schema.py            # JSON schema validation
+|   +-- layer_summary.py     # Per-layer metrics
+|   +-- hierarchical_graph.py # Collapsible graph structure
+|   +-- edge_analysis.py     # Tensor flow analysis
 |   |
-|   +-- graph/
-|       +-- model_inspector_test.cc  # C++ tests (stretch goal)
+|   +-- tests/               # 229 unit tests
+|   |   +-- conftest.py
+|   |   +-- test_*.py
+|   |
+|   +-- examples/            # Usage examples
+|       +-- basic_inspection.py
+|       +-- compare_models.py
+|       +-- hardware_estimation.py
 |
-+-- samples/
-    +-- tools/
-        +-- model_inspect_resnet50.sh
-        +-- model_inspect_bert.sh
-        +-- model_inspect_compare_yolo.sh
++-- .github/workflows/ci.yml # GitHub Actions CI/CD
+```
+
+### 5.2 Legacy Location (ORT Fork)
+
+The original development occurred in the ORT fork at `tools/python/util/autodoc/`.
+This has been **extracted** to the standalone HaoLine package above.
+
+```
+onnxruntime/tools/python/util/
+|
++-- autodoc/                 # Original development location (legacy)
++-- model_inspect.py         # Original CLI (legacy)
++-- model_inspect_compare.py # Original compare CLI (legacy)
 
 docs/marcu/
 |
 +-- README.md             # Project overview
 +-- PRD.md                # Product requirements
 +-- Architecture.md       # This document
-+-- THE UNCHARTED TERRITORY CHALLENGE.md  # Challenge requirements
-+-- model_inspect_scaffold.md             # Code scaffolds
++-- BACKLOG.md            # Epic/Story tracking
 ```
 
 ### 5.2 Module Dependencies
