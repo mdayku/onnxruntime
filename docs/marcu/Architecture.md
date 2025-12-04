@@ -1,8 +1,8 @@
-# ONNX Autodoc - System Architecture
+# HaoLine (好线) - System Architecture
 
 ## Overview
 
-This document describes the system architecture for ONNX Autodoc, a model architecture inspection tool integrated into ONNX Runtime.
+This document describes the system architecture for HaoLine, a universal model architecture inspection tool supporting ONNX, PyTorch, TensorFlow, and TensorRT.
 
 ---
 

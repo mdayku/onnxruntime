@@ -1,13 +1,13 @@
-# ONNX Autodoc - Product Requirements Document
+# HaoLine (好线) - Product Requirements Document
 
 ## Document Info
 
 | Field | Value |
 |-------|-------|
-| Project | ONNX Autodoc / Model Architecture Inspector |
+| Project | HaoLine - Universal Model Inspector |
 | Author | Marcus |
-| Version | 1.0 |
-| Last Updated | December 2, 2025 |
+| Version | 2.0 |
+| Last Updated | December 4, 2025 |
 | Status | In Development |
 
 **Related Documents:**
@@ -45,7 +45,7 @@
 
 ### 1.1 One-Liner
 
-**ONNX Autodoc** is a graph-level analysis and documentation tool for ONNX Runtime that inspects a model's architecture, computes static complexity metrics (FLOPs, params, activation memory), surfaces structural risk signals, and auto-generates human-readable reports and model cards that explain *how* the model works, not just how it performs on a test set.
+**HaoLine** is a graph-level analysis and documentation tool for ONNX Runtime that inspects a model's architecture, computes static complexity metrics (FLOPs, params, activation memory), surfaces structural risk signals, and auto-generates human-readable reports and model cards that explain *how* the model works, not just how it performs on a test set.
 
 ### 1.2 Motivation
 
@@ -67,7 +67,7 @@ Existing ONNX Runtime tooling focuses on **performance** and **operator support*
 
 ### 1.3 Core Idea
 
-Given a model `model.onnx`, ONNX Autodoc will:
+Given a model `model.onnx`, HaoLine will:
 
 1. Parse the graph (nodes, tensors, shapes, ops, attributes).
 2. Compute structural metrics:
@@ -913,7 +913,7 @@ Identify layers where quantization causes significant accuracy degradation:
 
 ### 9.1 Design Philosophy
 
-ONNX Autodoc is **evaluation-source agnostic**. It does not run benchmarks itself; instead, it consumes eval/perf metrics from external pipelines in a small, generic JSON format.
+HaoLine is **evaluation-source agnostic**. It does not run benchmarks itself; instead, it consumes eval/perf metrics from external pipelines in a small, generic JSON format.
 
 ### 9.2 Generic Eval/Perf JSON Schema
 
@@ -1251,7 +1251,7 @@ The tool should always produce *some* output, even if partial:
 
 ### 14.1 Overview
 
-Transform ONNX Autodoc from a CLI tool into a full SaaS web application, similar to Weights & Biases, enabling team collaboration, model history, and easy access without local installation.
+Transform HaoLine from a CLI tool into a full SaaS web application, similar to Weights & Biases, enabling team collaboration, model history, and easy access without local installation.
 
 ### 14.2 System Architecture
 
@@ -1370,7 +1370,7 @@ Client                    API                     Worker
 
 **Decision: Greenfield over ORT Fork**
 
-The original plan embedded ONNX Autodoc within the ONNX Runtime repository. After analysis, we're pivoting to a standalone package because:
+The original plan embedded HaoLine within the ONNX Runtime repository. After analysis, we're pivoting to a standalone package because:
 
 | Factor | ORT Fork | Standalone |
 |--------|----------|------------|
@@ -1461,7 +1461,7 @@ For maximum accessibility, provide a web interface that requires no installation
 import streamlit as st
 from onnx_autodoc import analyze_model, generate_html_report
 
-st.title("ONNX Autodoc")
+st.title("HaoLine")
 
 uploaded_file = st.file_uploader("Upload ONNX model", type=["onnx"])
 hardware = st.selectbox("Target Hardware", list_hardware_profiles())
@@ -1612,7 +1612,7 @@ This is a pip package dependency, **not** the ORT fork.
 
 ### 16.1 The Bigger Picture
 
-If ONNX Autodoc gains traction, the natural evolution is a full MLOps platform:
+If HaoLine gains traction, the natural evolution is a full MLOps platform:
 
 | Capability | Current (Path A) | Future (Path B) |
 |------------|------------------|-----------------|

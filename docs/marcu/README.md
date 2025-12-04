@@ -1,14 +1,14 @@
-# ONNX Autodoc
+# HaoLine (好线)
 
-**Model Architecture Inspector for ONNX Runtime**
+**Universal Model Inspector — See what's really inside your models.**
 
-A graph-level analysis and documentation tool that inspects ONNX model architectures, computes static complexity metrics, surfaces structural risk signals, and auto-generates human-readable reports.
+A graph-level analysis tool that inspects neural network architectures (ONNX, PyTorch, TensorFlow, TensorRT), computes static complexity metrics, surfaces structural risk signals, and auto-generates human-readable reports.
 
 ---
 
-## What is ONNX Autodoc?
+## What is HaoLine?
 
-ONNX Autodoc answers the question:
+HaoLine answers the question:
 
 > *"What is this model structurally, how expensive is it, what are its likely failure modes, and how should we position it in our system?"*
 
@@ -27,41 +27,47 @@ It provides:
 
 ## Quick Start
 
+### Installation (Coming Soon)
+
+```bash
+pip install haoline
+
+# Or with all optional dependencies
+pip install haoline[full]
+```
+
 ### Basic Usage
 
 ```bash
-# From the tools/python directory:
-cd tools/python
-
 # Inspect a single model (auto-detects local hardware)
-python model_inspect.py model.onnx
+haoline analyze model.onnx
 
 # Use a specific hardware profile
-python model_inspect.py model.onnx --hardware a100
+haoline analyze model.onnx --hardware a100
 
 # Generate JSON report
-python model_inspect.py model.onnx --out-json report.json
+haoline analyze model.onnx --out-json report.json
 
 # Generate Markdown model card
-python model_inspect.py model.onnx --out-md model_card.md
+haoline analyze model.onnx --out-md model_card.md
 
 # Generate shareable HTML report (single file with embedded images)
-python model_inspect.py model.onnx --out-html report.html --with-plots
+haoline analyze model.onnx --out-html report.html --with-plots
 
-# Add AI-generated executive summary (requires OPENAI_API_KEY)
-python model_inspect.py model.onnx --llm-summary --out-html report.html
+# Add AI-generated executive summary (requires ANTHROPIC_API_KEY)
+haoline analyze model.onnx --llm-summary --out-html report.html
 
 # Full report with everything
-python model_inspect.py model.onnx --hardware auto --with-plots --llm-summary --out-html full_report.html
+haoline analyze model.onnx --hardware auto --with-plots --llm-summary --out-html full_report.html
 
 # Specify precision and batch size for hardware estimates
-python model_inspect.py model.onnx --hardware rtx4090 --precision fp16 --batch-size 8
+haoline analyze model.onnx --hardware rtx4090 --precision fp16 --batch-size 8
 
 # Resolution sweep (vision models) - auto-detects aspect ratio and training resolution
-python model_inspect.py model.onnx --hardware rtx4090 --sweep-resolutions auto
+haoline analyze model.onnx --hardware rtx4090 --sweep-resolutions auto
 
 # Batch size sweep - find optimal throughput
-python model_inspect.py model.onnx --hardware rtx4090 --sweep-batch-sizes
+haoline analyze model.onnx --hardware rtx4090 --sweep-batch-sizes
 ```
 
 ### Compare Multiple Model Variants
@@ -69,8 +75,7 @@ python model_inspect.py model.onnx --hardware rtx4090 --sweep-batch-sizes
 Compare quantized variants (fp32/fp16/int8) to analyze trade-offs:
 
 ```bash
-# From the tools/python/util directory:
-python -m model_inspect_compare \
+haoline compare \
   --models resnet_fp32.onnx resnet_fp16.onnx resnet_int8.onnx \
   --eval-metrics eval_fp32.json eval_fp16.json eval_int8.json \
   --baseline-precision fp32 \

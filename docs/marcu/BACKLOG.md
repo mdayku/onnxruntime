@@ -1,6 +1,6 @@
-# Model Analysis Platform - Project Backlog
+# HaoLine (好线) - Project Backlog
 
-*Formerly "ONNX Autodoc" - now a universal model analysis and conversion platform.*
+*Universal model analysis and inspection platform. See what's really inside your models.*
 
 **Related Documents:**
 - [PRD.md](PRD.md) - Product requirements and specifications
@@ -401,7 +401,7 @@
 - [ ] **Task 10B.0.1**: Create new GitHub repo (standalone, not ORT fork)
 - [ ] **Task 10B.0.2**: Copy autodoc modules from `tools/python/util/autodoc/`
 - [ ] **Task 10B.0.3**: Copy `model_inspect.py` and `model_inspect_compare.py` as CLI entrypoints
-- [ ] **Task 10B.0.4**: Update all imports to standalone package structure (`from model_analyzer import ...`)
+- [ ] **Task 10B.0.4**: Update all imports to standalone package structure (`from haoline import ...`)
 - [ ] **Task 10B.0.5**: Remove `ModelProtoWithShapeInfo` import (confirm fallback works)
 - [ ] **Task 10B.0.6**: Copy test fixtures (sample ONNX models for unit tests)
 - [ ] **Task 10B.0.7**: Verify all tests pass in new repo
@@ -419,8 +419,8 @@
   - `[gpu]`: nvidia-ml-py
   - `[full]`: all of the above
 - [ ] **Task 10B.1.5**: Add CLI entrypoints:
-  - `model-analyzer` → `model_inspect:main`
-  - `model-compare` → `model_inspect_compare:main`
+  - `haoline` → `haoline.cli:main`
+  - `haoline-compare` → `haoline.compare:main`
 - [ ] **Task 10B.1.6**: Test wheel installation in clean virtual environment
 - [ ] **Task 10B.1.7**: Publish to TestPyPI first, verify install works
 - [ ] **Task 10B.1.8**: Publish to PyPI
@@ -445,7 +445,7 @@
 - [ ] **Task 10B.4.2**: Add quickstart examples (analyze, compare, profile)
 - [ ] **Task 10B.4.3**: Document all CLI flags and options
 - [ ] **Task 10B.4.4**: Add architecture overview for contributors
-- [ ] **Task 10B.4.5**: Choose final product name (model-analyzer? onnx-inspector? neural-scope?)
+- [ ] **Task 10B.4.5**: ~~Choose final product name~~ **DONE: HaoLine (好线)**
 - [ ] **Task 10B.4.6**: Create logo/branding assets
 
 ---
