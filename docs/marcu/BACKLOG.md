@@ -46,6 +46,9 @@
 | **OPTIMIZATION** ||||
 | Epic 31: Quantization Service | Not Started | 6 | 0/32 | **P2** |
 | Epic 32: Model Optimization | Not Started | 3 | 0/14 | P3 |
+| Epic 33: QAT Linters | Not Started | 4 | 0/22 | **P1** |
+| Epic 34: Activation Visualization | Not Started | 5 | 0/25 | P2/P3 |
+| Epic 35: TRT-Aware Graph UX | Not Started | 3 | 0/16 | P3 |
 
 ---
 
@@ -954,3 +957,126 @@
 - [ ] **Task 32.3.2**: Implement magnitude-based pruning
 - [ ] **Task 32.3.3**: Report sparsity achieved
 - [ ] **Task 32.3.4**: Validate accuracy after pruning
+
+---
+
+## Epic 33: QAT & Quantization Linters (P1 - High Leverage)
+
+*Provide "preflight checks" and guidance to help users build QAT/quant-friendly models. Static analysis only - no runtime required.*
+
+**Value Proposition:**
+- Tell users if their model is "good quantization material" BEFORE they invest time in QAT
+- Catch anti-patterns and mistakes that cause accuracy drops
+- Actionable recommendations, not just warnings
+
+### Story 33.1: Quantization-Unfriendly Op Detection
+*Detect ops that are commonly problematic in INT8.*
+- [ ] **Task 33.1.1**: Build list of quantization-unfriendly ops (custom ops, certain activations)
+- [ ] **Task 33.1.2**: Detect dynamic shapes in problematic positions
+- [ ] **Task 33.1.3**: Flag ops with no ONNX quantization support
+- [ ] **Task 33.1.4**: Identify ops that typically cause large accuracy drops (e.g., LayerNorm, Softmax)
+- [ ] **Task 33.1.5**: Generate severity-ranked warning list
+
+### Story 33.2: QAT Graph Validation
+*Validate QAT-annotated graphs for correctness.*
+- [ ] **Task 33.2.1**: Detect missing fake-quantization nodes
+- [ ] **Task 33.2.2**: Check for inconsistent fake-quant placement across branches
+- [ ] **Task 33.2.3**: Validate per-tensor vs per-channel quantization consistency
+- [ ] **Task 33.2.4**: Flag suspiciously wide activation ranges (suggests calibration issue)
+- [ ] **Task 33.2.5**: Detect inconsistent scales/zero points across residual connections
+
+### Story 33.3: Quantization Readiness Score
+*Emit an overall "QAT readiness score" with breakdown.*
+- [ ] **Task 33.3.1**: Define scoring rubric (op support, graph structure, precision mix)
+- [ ] **Task 33.3.2**: Calculate per-layer quantization risk scores
+- [ ] **Task 33.3.3**: Aggregate into overall readiness score (0-100)
+- [ ] **Task 33.3.4**: Generate "problem layers" list with reasons
+- [ ] **Task 33.3.5**: Add `--lint-quantization` CLI flag
+
+### Story 33.4: Actionable Recommendations
+*Don't just warn - tell users what to do.*
+- [ ] **Task 33.4.1**: Recommend keeping sensitive layers at FP16 (classifier, final conv)
+- [ ] **Task 33.4.2**: Suggest fake-quant insertion points for QAT
+- [ ] **Task 33.4.3**: Recommend op substitutions (e.g., LayerNorm → RMSNorm for INT8)
+- [ ] **Task 33.4.4**: Suggest per-channel vs per-tensor for specific layers
+- [ ] **Task 33.4.5**: Generate "QAT Readiness Report" (Markdown/HTML)
+- [ ] **Task 33.4.6**: Integrate recommendations into compare mode (FP32 vs INT8)
+
+---
+
+## Epic 34: Feature Map & Activation Visualization (P2/P3)
+
+*Let users inspect what each layer is "doing" on real data, and compare activations across FP32 vs quantized models.*
+
+**Requires:** Runtime execution, user-provided sample inputs.
+
+### Story 34.1: Activation Capture Pipeline
+*Run model and capture intermediate activations.*
+- [ ] **Task 34.1.1**: Implement ONNX Runtime activation hook mechanism
+- [ ] **Task 34.1.2**: Capture outputs of all intermediate nodes
+- [ ] **Task 34.1.3**: Store activations efficiently (memory-mapped for large models)
+- [ ] **Task 34.1.4**: Add `--capture-activations` CLI flag
+- [ ] **Task 34.1.5**: Accept user sample input (image path, tensor file, etc.)
+
+### Story 34.2: Conv Feature Map Visualization
+*Visualize CNN feature maps as heatmaps/grids.*
+- [ ] **Task 34.2.1**: Extract per-channel feature maps from Conv outputs
+- [ ] **Task 34.2.2**: Generate grid visualization (N channels × spatial)
+- [ ] **Task 34.2.3**: Apply colormap (viridis, jet, etc.)
+- [ ] **Task 34.2.4**: Add channel-wise statistics (mean, std, sparsity)
+- [ ] **Task 34.2.5**: Highlight "dead" channels (all zeros)
+
+### Story 34.3: Activation Distribution Analysis
+*Show histograms and statistics per layer.*
+- [ ] **Task 34.3.1**: Compute activation histogram per layer
+- [ ] **Task 34.3.2**: Detect saturation/clipping (values at extremes)
+- [ ] **Task 34.3.3**: Identify potential quantization issues (very wide or skewed distributions)
+- [ ] **Task 34.3.4**: Generate distribution comparison chart (FP32 vs INT8)
+- [ ] **Task 34.3.5**: Flag layers with high activation divergence after quantization
+
+### Story 34.4: FP32 vs Quantized Comparison
+*Side-by-side activation comparison.*
+- [ ] **Task 34.4.1**: Run both FP32 and quantized model on same input
+- [ ] **Task 34.4.2**: Compute per-layer activation difference (MSE, cosine)
+- [ ] **Task 34.4.3**: Highlight layers with largest divergence
+- [ ] **Task 34.4.4**: Visualize divergence heatmap on graph
+- [ ] **Task 34.4.5**: Generate "Quantization Impact by Layer" report
+
+### Story 34.5: Interactive UI Integration
+*Click-to-inspect in Streamlit/HTML.*
+- [ ] **Task 34.5.1**: Add "Inspect Activations" button in graph UI
+- [ ] **Task 34.5.2**: Click node → show feature maps/histogram popup
+- [ ] **Task 34.5.3**: Layer comparison slider (FP32 ↔ INT8)
+- [ ] **Task 34.5.4**: Export activation visualizations as images
+- [ ] **Task 34.5.5**: Add activation inspection to Streamlit UI
+
+---
+
+## Epic 35: TensorRT-Aware Graph Visualization (P3)
+
+*Enhance graph visualization with TRT fusion hints and inspector-quality UX.*
+
+### Story 35.1: TRT Fusion Hints on ONNX Graph
+*Show "would be fused" annotations for common TRT fusion patterns.*
+- [ ] **Task 35.1.1**: Define common TRT fusion patterns (Conv+BN+ReLU, etc.)
+- [ ] **Task 35.1.2**: Detect fusion candidates in ONNX graph
+- [ ] **Task 35.1.3**: Annotate graph nodes with "fusible with: [list]"
+- [ ] **Task 35.1.4**: Color-code fusible groups in visualization
+- [ ] **Task 35.1.5**: Show estimated layer count after TRT optimization
+
+### Story 35.2: TRT Engine Overlay
+*Accept TRT engine metadata and overlay on ONNX graph.*
+- [ ] **Task 35.2.1**: Parse TRT Engine Explorer JSON exports
+- [ ] **Task 35.2.2**: Map TRT layers back to ONNX nodes
+- [ ] **Task 35.2.3**: Highlight fused regions (N ONNX → 1 TRT)
+- [ ] **Task 35.2.4**: Show precision per fused block
+- [ ] **Task 35.2.5**: Display kernel/tactic info on hover
+
+### Story 35.3: Graph UX Improvements (TRT Explorer-Inspired)
+*Make the graph visualization best-in-class.*
+- [ ] **Task 35.3.1**: Add node search/filter (by type, precision, name)
+- [ ] **Task 35.3.2**: Add "show only bottleneck ops" toggle
+- [ ] **Task 35.3.3**: Add "show only fused chains" toggle
+- [ ] **Task 35.3.4**: Improve zoom/pan smoothness
+- [ ] **Task 35.3.5**: Add minimap for large graphs
+- [ ] **Task 35.3.6**: Add keyboard shortcuts (/ to search, h for heatmap)
